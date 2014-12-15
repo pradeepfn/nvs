@@ -1,0 +1,15 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+alloc	px_checkpoint.c	/^void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){$/;"	f
+chkpt_all	px_checkpoint.c	/^void chkpt_all(int process_id){$/;"	f
+init	px_checkpoint.c	/^void init(int process_id){$/;"	f
+isDebugEnabled	px_debug.c	/^int isDebugEnabled(){$/;"	f
+lib_initializedi	px_checkpoint.c	/^int lib_initializedi = 0;$/;"	v
+log_init	px_log.c	/^void log_init(){$/;"	f
+log_read	px_log.c	/^ log_read(){$/;"	f
+log_write	px_log.c	/^int log_write(){$/;"	f
+nvm_size	px_checkpoint.c	/^int nvm_size = -1;$/;"	v
