@@ -1,14 +1,29 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <assert.h>
+
 #include "px_checkpoint.h"
+#include "px_log.h"
+#include "px_copy.h"
+#include "px_debug.h"
 
+#define LOG_SIZE 2500000000
+#define CONFIG_FILE_NAME "phoenix.config"
+#define NVRAM_SIZE "nvramcapacity"
 
+int is_remaining_space_enough(int);
 
-int nvm_size = -1;
-int lib_initializedi = 0;
+long log_size = -1;
+int lib_initialized = 0;
+
+log_t chlog;
 
 
 void init(int process_id){
-
-
+	// these configs should get load from the config file 
+	log_size = LOG_SIZE;	
+	log_init(&chlog,log_size,process_id);
 
 }
 
@@ -17,7 +32,7 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
     //initialize the library
     if(!lib_initialized){
         init(process_id);
-        libg_initialized = 1;
+        lib_initialized = 1;
     }   
     struct entry *n = malloc(sizeof(struct entry)); // new node in list
     memcpy(n->var_name,var_name,VAR_SIZE);
@@ -25,11 +40,11 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
     n->process_id = process_id;
     n->version = 0;
 	//if checkpoint data present, then read from the the checkpoint
-	if(is_ckpt_available){
+	if(is_chkpoint_present(&chlog)){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
-        n->ptr = nvread(var_name,process_id);
+        n->ptr = chkpt_read(var_name,process_id);
 	}else{
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");
@@ -49,16 +64,10 @@ void chkpt_all(int process_id){
 		printf("Runtime Error : allocated space is not enough for checkpointing\n");
 		assert(0);	
     }   
-    struct entry *np;
-    for (np = head.lh_first; np != NULL; np = np->entries.le_next){
-        if(np->process_id == process_id){ 
-            checkpoint(np->var_name, np->process_id, np->version,   np->size,np->ptr);
-        }
-    }   
-	// TODO : update the log head
+	log_write(&chlog);
     return;
 }
 
-
-
-
+int is_remaining_space_enough(process_id){
+	return 1;
+}
