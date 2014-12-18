@@ -18,12 +18,14 @@ long log_size = -1;
 int lib_initialized = 0;
 
 log_t chlog;
+listhead_t head;
 
 
 void init(int process_id){
 	// these configs should get load from the config file 
 	log_size = LOG_SIZE;	
 	log_init(&chlog,log_size,process_id);
+	LIST_INIT(&head);
 
 }
 
@@ -64,7 +66,7 @@ void chkpt_all(int process_id){
 		printf("Runtime Error : allocated space is not enough for checkpointing\n");
 		assert(0);	
     }   
-	log_write(&chlog);
+	log_write(&chlog,&head);
     return;
 }
 

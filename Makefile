@@ -26,4 +26,3 @@ $(ODIR)/%.o: $(SRC)/%.c
 
 clean: 
 	rm -f $(ODIR)/*.o librvm.a $(TEST_OBJ) 
-	rm -rf $(ODIR)

@@ -19,6 +19,8 @@
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
 static memmap_t *get_latest_mapfile(log_t *log);
+static void checkpoint(void *base_addr, char *var_name, int process_id, int version, size_t size, void *data);
+static void checkpoint1(void *start_addr, checkpoint_t *chkpt, void *data);
 
 void log_init(log_t *log , long log_size, int process_id){
 	if(isDebugEnabled()){
@@ -29,8 +31,14 @@ void log_init(log_t *log , long log_size, int process_id){
     init_mmap_files(log);
 }
 
-int log_write(log_t *log){
-	printf("yet to implement\n");
+int log_write(log_t *log, listhead_t *lhead){
+	entry_t *np;
+    for (np = lhead.lh_first; np != NULL; np = np->entries.le_next){
+        if(np->process_id == process_id){ 
+            checkpoint(log->current.meta, np->var_name, np->process_id, np->version, np->size, np->ptr);
+        }
+    }	
+
 	return 1;
 }
 
@@ -101,6 +109,37 @@ static memmap_t *get_latest_mapfile(log_t *log){
         printf("Runtime Error: wrong program execution path...\n");
         assert(0);
     }
+}
+
+void checkpoint(void *base_addr, char *var_name, int process_id, int version, size_t size, void *data){
+    checkpoint_t chkpt;
+    void *start_addr;
+    strncpy(chkpt.var_name,var_name,VAR_SIZE-1);
+    chkpt.var_name[VAR_SIZE-1] = '\0'; // null terminating
+    printf("checkpoint var name : %s\n",chkpt.var_name);
+    chkpt.process_id = process_id;
+    chkpt.version = version;
+    chkpt.data_size = size;
+    if(current->head->offset != -1 ){
+        checkpoint_t *last_meta = get_meta(base_addr, current->head->offset);
+        start_addr = get_start_addr(base_addr, last_meta);
+        chkpt.prv_offset = current->head->offset;
+        chkpt.offset = last_meta->offset + sizeof(checkpoint_t)+last_meta->data_size;
+    }else{
+        start_addr = current->meta;
+        chkpt.prv_offset = -1;
+        chkpt.offset = 0;
+    }
+    checkpoint1(start_addr, &chkpt,data);
+    return;
+}
+
+void checkpoint1(void *start_addr, checkpoint_t *chkpt, void *data){
+    memcpy(start_addr,chkpt,sizeof(checkpoint_t));
+    void *data_offset = ((char *)start_addr)+sizeof(checkpoint_t);
+    memcpy_write(data_offset,data,chkpt->data_size);
+    current->head->offset = chkpt->offset;
+    return;
 }
 
 static void *get_start_addr(void *base_addr,checkpoint_t *last_meta){

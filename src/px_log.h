@@ -1,6 +1,8 @@
 #ifndef __PX_LOG_H
 #define __PX_LOG_H
 
+#include "px_checkpoint.h"
+
 typedef long offset_t;
 
 typedef struct checkpoint_t_{
@@ -33,7 +35,7 @@ typedef struct log_t_{
 
 
 void log_init(log_t *, long, int);
-int log_write(log_t *);
+int log_write(log_t *,listhead_t *);
 void log_read();
 
 #endif

@@ -5,7 +5,7 @@
 
 #define VAR_SIZE 20
 
-LIST_HEAD(listhead, entry) head;
+LIST_HEAD(listhead, entry);
 struct entry {
     void *ptr;
     size_t size;
@@ -15,8 +15,6 @@ struct entry {
     int version;
     LIST_ENTRY(entry) entries;
 };
+typedef struct entry entry_t;
 typedef struct listhead listhead_t;
-
-
-
 #endif
