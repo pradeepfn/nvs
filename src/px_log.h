@@ -35,7 +35,8 @@ typedef struct log_t_{
 
 
 void log_init(log_t *, long, int);
-int log_write(log_t *,listhead_t *);
-void log_read();
+int log_write(log_t *,listhead_t *,int);
+checkpoint_t *log_read(log_t *, char *, int);
+int is_chkpoint_present(log_t *log);
 
 #endif

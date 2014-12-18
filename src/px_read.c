@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "px_log.h"
+#include "px_checkpoint.h"
+#include "px_debug.h"
+#include "px_util.h"
 
 void *copy_read(char *var_name,int process_id){
 	void *buffer=NULL;

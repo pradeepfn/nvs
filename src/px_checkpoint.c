@@ -3,9 +3,10 @@
 #include <string.h>
 #include <assert.h>
 
+#include "phoenix.h"
 #include "px_checkpoint.h"
 #include "px_log.h"
-#include "px_copy.h"
+#include "px_read.h"
 #include "px_debug.h"
 
 #define LOG_SIZE 2500000000
@@ -26,7 +27,6 @@ void init(int process_id){
 	log_size = LOG_SIZE;	
 	log_init(&chlog,log_size,process_id);
 	LIST_INIT(&head);
-
 }
 
 
@@ -36,17 +36,19 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
         init(process_id);
         lib_initialized = 1;
     }   
-    struct entry *n = malloc(sizeof(struct entry)); // new node in list
+
+    entry_t *n = malloc(sizeof(struct entry)); // new node in list
     memcpy(n->var_name,var_name,VAR_SIZE);
     n->size = size;
     n->process_id = process_id;
     n->version = 0;
+
 	//if checkpoint data present, then read from the the checkpoint
 	if(is_chkpoint_present(&chlog)){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
-        n->ptr = chkpt_read(var_name,process_id);
+        n->ptr = copy_read(var_name,process_id);
 	}else{
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");
@@ -62,14 +64,7 @@ void chkpt_all(int process_id){
 	if(isDebugEnabled()){
 		printf("checkpointing data of process : %d \n",process_id);
 	}
-    if(!is_remaining_space_enough(process_id)){
-		printf("Runtime Error : allocated space is not enough for checkpointing\n");
-		assert(0);	
-    }   
-	log_write(&chlog,&head);
+	log_write(&chlog,&head,process_id);
     return;
 }
 
-int is_remaining_space_enough(process_id){
-	return 1;
-}
