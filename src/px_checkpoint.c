@@ -9,7 +9,7 @@
 #include "px_read.h"
 #include "px_debug.h"
 
-#define LOG_SIZE 2500000000
+#define LOG_SIZE 1000000
 #define CONFIG_FILE_NAME "phoenix.config"
 #define NVRAM_SIZE "nvramcapacity"
 
@@ -48,7 +48,7 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
-        n->ptr = copy_read(var_name,process_id);
+        n->ptr = copy_read(&chlog, var_name,process_id);
 	}else{
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");

@@ -2,11 +2,13 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-#include "util.h"
+
+#include "px_util.h"
 
 //#define NVRAM_BW  450
 #define NVRAM_W_BW  600
 #define NVRAM_R_BW  2*NVRAM_W_BW
+#define MICROSEC 1000000
 
 unsigned long calc_delay_ns(size_t datasize,int bandwidth){
         unsigned long delay;

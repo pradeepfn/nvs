@@ -15,7 +15,6 @@
 
 #define FILE_PATH_ONE "/mnt/ramdisk/mmap.file.one"
 #define FILE_PATH_TWO "/mnt/ramdisk/mmap.file.two"
-#define MICROSEC 1000000
 
 //global variables
 int first_run=0;
@@ -34,6 +33,7 @@ void log_init(log_t *log , long log_size, int process_id){
 	if(isDebugEnabled()){
 		printf("initializing the structures... %d \n", process_id);
 	}
+	log->log_size = log_size;
     snprintf(log->m[0].file_name, sizeof(log->m[0].file_name), "%s%d",FILE_PATH_ONE,process_id);
     snprintf(log->m[1].file_name, sizeof(log->m[1].file_name),"%s%d",FILE_PATH_TWO,process_id);
     init_mmap_files(log);
@@ -85,6 +85,7 @@ int is_chkpoint_present(log_t *log){
 static void init_mmap_files(log_t *log){
 	int i,fd;
 	struct stat st;
+	void *addr;
 	for(i=0; i<2; i++){
 		if (stat(log->m[i].file_name, &st) == -1) {
 			first_run=1;
@@ -94,10 +95,17 @@ static void init_mmap_files(log_t *log){
 		lseek (fd, log->log_size, SEEK_SET);
 		write (fd, "", 1);
 		lseek (fd, 0, SEEK_SET);
-		log->m[i].map_file_ptr = mmap (0,log->log_size, PROT_WRITE, MAP_SHARED, fd, 0);
+		addr = mmap (NULL,log->log_size, PROT_WRITE, MAP_SHARED, fd, 0);
+		if(addr == MAP_FAILED){
+			printf("Runtime Error: error while memory mapping the file\n");
+			exit(1);
+		}
+		log->m[i].map_file_ptr = addr;
 		log->m[i].head = log->m[i].map_file_ptr;
 		log->m[i].meta =(checkpoint_t *)((headmeta_t *)log->m[i].map_file_ptr)+1;
 		close (fd);
+		
+
 	}
 	
 	if(first_run){
@@ -112,6 +120,13 @@ static void init_mmap_files(log_t *log){
 			//TODO: introduce a magic value to check atomicity
 		}
 		log->current = &log->m[0];
+		if(isDebugEnabled()){
+			headmeta_t *h1 = log->m[0].head;
+			headmeta_t *h2 = log->m[1].head;
+			printf("init_map_files:timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
+			printf("init_map_files:timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
+
+		}
 	}else{
 		if(isDebugEnabled()){
 			printf("restart run. Most recent map file set as current.\n");
@@ -126,12 +141,21 @@ static memmap_t *get_latest_mapfile(log_t *log){
     headmeta_t *h1 = log->m[0].head;
     headmeta_t *h2 = log->m[1].head;
     struct timeval result;
-    if(!timeval_subtract(&result, &(h1->timestamp),&(h2->timestamp)) && (h1->offset !=-1)){
+	if(isDebugEnabled()){
+			headmeta_t *h1 = log->m[0].head;
+			headmeta_t *h2 = log->m[1].head;
+			printf("init_map_files:timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
+			printf("init_map_files:timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
+
+		}
+    if(timercmp(&(h1->timestamp),&(h2->timestamp),<) && (h1->offset !=-1)){
         return &log->m[0];
     }else if(h2->offset != -1){
         return &log->m[1];
     }else{
         printf("Runtime Error: wrong program execution path...\n");
+		printf("timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
+		printf("timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
         assert(0);
     }
 }
@@ -165,7 +189,7 @@ static void checkpoint(log_t *log, char *var_name, int process_id, int version, 
 static void checkpoint1(log_t *log, void *start_addr, checkpoint_t *chkpt, void *data){
     memcpy(start_addr,chkpt,sizeof(checkpoint_t));
     void *data_offset = ((char *)start_addr)+sizeof(checkpoint_t);
-    memcpy_write(data_offset,data,chkpt->data_size);
+    nvmmemcpy_write(data_offset,data,chkpt->data_size);
     log->current->head->offset = chkpt->offset;
     return;
 }

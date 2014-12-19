@@ -1,11 +1,11 @@
 CC=gcc
-CFLAGS= -g -Wall -iquote ../
-CLFLAGS=
+CFLAGS= -g -Wall -iquote ../ -I../include 
+LIB_DEP=../libphoenix.a
 
 
 all:
-	$(CC) $(CFLAGS) -o test_write test_write.c matrix.c matrix.h 
-	$(CC) $(CFLAGS) -o test_read test_read.c matrix.c matrix.h 
+	$(CC) $(CFLAGS) -o test_write test_write.c matrix.c matrix.h $(LIB_DEP) 
+	$(CC) $(CFLAGS) -o test_read test_read.c matrix.c matrix.h $(LIB_DEP) 
 
 
 clean:
@@ -14,5 +14,4 @@ clean:
 	rm -f test_read
 
 restartclean:
-	make -C ../../ restartclean
-	rm *.lck0
+	rm -rf /mnt/ramdisk/*
