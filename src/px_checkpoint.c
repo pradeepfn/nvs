@@ -48,7 +48,8 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
-        n->ptr = copy_read(&chlog, var_name,process_id);
+        //n->ptr = copy_read(&chlog, var_name,process_id);
+        n->ptr = fault_read(&chlog, var_name,process_id);
 	}else{
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");

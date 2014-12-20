@@ -14,17 +14,17 @@ int main(int argc, char *argv[]){
 	matrix_t a;	
 	a.m = A_ROWS;
 	a.n = COMMON;
-	a.matrix = alloc("a",a.m*a.n*sizeof(int),-1,0);
+	a.matrix = alloc("a",a.m*a.n*sizeof(long),-1,0);
 
 	matrix_t b;
 	b.m = COMMON;
 	b.n = B_COLUMNS;
-	b.matrix = alloc("b",b.m*b.n*sizeof(int),-1,0);
+	b.matrix = alloc("b",b.m*b.n*sizeof(long),-1,0);
 	
 	matrix_t c;
 	c.m = A_ROWS;
 	c.n = B_COLUMNS;
-	c.matrix = alloc("c",c.m*c.n*sizeof(int),-1,0);
+	c.matrix = alloc("c",c.m*c.n*sizeof(long),-1,0);
 
 	//initialize matrices
 	init_matrix(a,1);
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]){
 		increment_matrix(b);
 		multiply_matrix(a,b,c);	
 		if((a.matrix[0]%1000000)==0){
-			printf("checkpointing : %d \n",a.matrix[0]);
+			printf("checkpointing : %ld \n",a.matrix[0]);
 			chkpt_all(0);
 		}
 		i++;

@@ -140,7 +140,6 @@ static memmap_t *get_latest_mapfile(log_t *log){
     //first check the time stamps of the head values
     headmeta_t *h1 = log->m[0].head;
     headmeta_t *h2 = log->m[1].head;
-    struct timeval result;
 	if(isDebugEnabled()){
 			headmeta_t *h1 = log->m[0].head;
 			headmeta_t *h2 = log->m[1].head;

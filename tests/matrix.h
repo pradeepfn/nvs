@@ -1,6 +1,6 @@
 
 typedef struct _matrix_t{
-	int *matrix;
+	long *matrix;
 	int m;
 	int n;
 }matrix_t;
