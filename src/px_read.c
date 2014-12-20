@@ -51,13 +51,17 @@ void *fault_read(log_t *log, char *var_name, int process_id){
         return NULL;
     }
 	long page_size = sysconf(_SC_PAGESIZE);
+	long page_aligned_size = ((checkpoint->data_size+page_size-1)& ~(page_size-1));
+	if(isDebugEnabled()){
+		printf("fault_read: actual size and page aligned size %ld : %ld \n", checkpoint->data_size, page_aligned_size);
+	}
 	nvdataptr = get_data_addr(cbptr,checkpoint);
-    int s = posix_memalign(&ddataptr,page_size, checkpoint->data_size);
+    int s = posix_memalign(&ddataptr,page_size, page_aligned_size);
 	if (s != 0){
         handle_error("posix memalign");
 	}
 	install_bchandler();
-	enable_protection(ddataptr, checkpoint->data_size);
+	enable_protection(ddataptr, page_aligned_size);
 	put_pagemap(ddataptr, nvdataptr, checkpoint->data_size);
 	return ddataptr;
 }
@@ -69,8 +73,8 @@ static void bchandler(int sig, siginfo_t *si, void *unused){
 		printf("bchandler:page fault handler begin\n");
 	}	
 	pagemap_t *pagenode = get_pagemap(si->si_addr);
-	nvmmemcpy_read(pagenode->pageptr, pagenode->nvpageptr, pagenode->size);
     disable_protection(pagenode);
+	nvmmemcpy_read(pagenode->pageptr, pagenode->nvpageptr, pagenode->size);
 	if(isDebugEnabled()){
 		printf("bchandler:page fault handler end\n");
 	}	
@@ -87,7 +91,7 @@ void install_bchandler(){
 }
 
 int enable_protection(void *ptr, size_t size) {
-	if (mprotect(ptr, size,PROT_READ|PROT_WRITE) == -1){
+	if (mprotect(ptr, size,PROT_NONE) == -1){
         handle_error("mprotect");
 	}
     return 0;
