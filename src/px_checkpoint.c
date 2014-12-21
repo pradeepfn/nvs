@@ -10,6 +10,7 @@
 #include "px_debug.h"
 
 #define LOG_SIZE 1000000
+#define CHUNK_SIZE 4096
 #define CONFIG_FILE_NAME "phoenix.config"
 #define NVRAM_SIZE "nvramcapacity"
 
@@ -17,6 +18,7 @@ int is_remaining_space_enough(int);
 
 long log_size = -1;
 int lib_initialized = 0;
+int chunk_size;
 
 log_t chlog;
 listhead_t head;
@@ -25,6 +27,7 @@ listhead_t head;
 void init(int process_id){
 	// these configs should get load from the config file 
 	log_size = LOG_SIZE;	
+	chunk_size = CHUNK_SIZE;
 	log_init(&chlog,log_size,process_id);
 	LIST_INIT(&head);
 }
