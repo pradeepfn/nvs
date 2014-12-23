@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS= -g -Wall -iquote ../ -I../include 
+CFLAGS= -g -Wall -pthread -iquote ../ -I../include  
 LIB_DEP=../libphoenix.a
 
 

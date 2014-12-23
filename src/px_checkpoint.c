@@ -22,6 +22,9 @@ int chunk_size;
 
 log_t chlog;
 listhead_t head;
+tlisthead_t thead;
+
+thread_t thread;
 
 
 void init(int process_id){
@@ -30,6 +33,7 @@ void init(int process_id){
 	chunk_size = CHUNK_SIZE;
 	log_init(&chlog,log_size,process_id);
 	LIST_INIT(&head);
+	
 }
 
 
@@ -51,8 +55,10 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
+	/*Different copy methods*/
         //n->ptr = copy_read(&chlog, var_name,process_id);
-        n->ptr = fault_read(&chlog, var_name,process_id);
+        //n->ptr = fault_read(&chlog, var_name,process_id);
+        n->ptr = pc_read(&chlog, var_name,process_id);
 	}else{
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");

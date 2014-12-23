@@ -4,12 +4,246 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-alloc	px_checkpoint.c	/^void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){$/;"	f
-chkpt_all	px_checkpoint.c	/^void chkpt_all(int process_id){$/;"	f
-init	px_checkpoint.c	/^void init(int process_id){$/;"	f
-isDebugEnabled	px_debug.c	/^int isDebugEnabled(){$/;"	f
-lib_initializedi	px_checkpoint.c	/^int lib_initializedi = 0;$/;"	v
-log_init	px_log.c	/^void log_init(){$/;"	f
-log_read	px_log.c	/^ log_read(){$/;"	f
-log_write	px_log.c	/^int log_write(){$/;"	f
-nvm_size	px_checkpoint.c	/^int nvm_size = -1;$/;"	v
+CHUNK_SIZE	./px_checkpoint.c	13;"	d	file:
+CONFIG_FILE_NAME	./px_checkpoint.c	14;"	d	file:
+DECLTYPE	./uthash.h	37;"	d
+DECLTYPE	./uthash.h	40;"	d
+DECLTYPE	./uthash.h	44;"	d
+DECLTYPE	./uthash.h	46;"	d
+DECLTYPE_ASSIGN	./uthash.h	50;"	d
+DECLTYPE_ASSIGN	./uthash.h	56;"	d
+ELMT_FROM_HH	./uthash.h	101;"	d
+FILE_PATH_ONE	./px_log.c	16;"	d	file:
+FILE_PATH_TWO	./px_log.c	17;"	d	file:
+HASH_ADD	./uthash.h	169;"	d
+HASH_ADD_INT	./uthash.h	269;"	d
+HASH_ADD_KEYPTR	./uthash.h	182;"	d
+HASH_ADD_PTR	./uthash.h	275;"	d
+HASH_ADD_STR	./uthash.h	263;"	d
+HASH_ADD_TO_BKT	./uthash.h	622;"	d
+HASH_BER	./uthash.h	364;"	d
+HASH_BKT_CAPACITY_THRESH	./uthash.h	98;"	d
+HASH_BLOOM_ADD	./uthash.h	136;"	d
+HASH_BLOOM_ADD	./uthash.h	145;"	d
+HASH_BLOOM_BITLEN	./uthash.h	117;"	d
+HASH_BLOOM_BITSET	./uthash.h	133;"	d
+HASH_BLOOM_BITTEST	./uthash.h	134;"	d
+HASH_BLOOM_BYTELEN	./uthash.h	118;"	d
+HASH_BLOOM_BYTELEN	./uthash.h	147;"	d
+HASH_BLOOM_FREE	./uthash.h	128;"	d
+HASH_BLOOM_FREE	./uthash.h	144;"	d
+HASH_BLOOM_MAKE	./uthash.h	119;"	d
+HASH_BLOOM_MAKE	./uthash.h	143;"	d
+HASH_BLOOM_SIGNATURE	./uthash.h	913;"	d
+HASH_BLOOM_TEST	./uthash.h	139;"	d
+HASH_BLOOM_TEST	./uthash.h	146;"	d
+HASH_CLEAR	./uthash.h	860;"	d
+HASH_CNT	./uthash.h	889;"	d
+HASH_COUNT	./uthash.h	888;"	d
+HASH_DEL	./uthash.h	279;"	d
+HASH_DELETE	./uthash.h	224;"	d
+HASH_DEL_IN_BKT	./uthash.h	636;"	d
+HASH_EMIT_KEY	./uthash.h	346;"	d
+HASH_EMIT_KEY	./uthash.h	353;"	d
+HASH_EXPAND_BUCKETS	./uthash.h	677;"	d
+HASH_FCN	./uthash.h	358;"	d
+HASH_FCN	./uthash.h	360;"	d
+HASH_FIND	./uthash.h	103;"	d
+HASH_FIND_INT	./uthash.h	267;"	d
+HASH_FIND_IN_BKT	./uthash.h	608;"	d
+HASH_FIND_PTR	./uthash.h	273;"	d
+HASH_FIND_STR	./uthash.h	261;"	d
+HASH_FNV	./uthash.h	386;"	d
+HASH_FSCK	./uthash.h	287;"	d
+HASH_FSCK	./uthash.h	339;"	d
+HASH_INITIAL_NUM_BUCKETS	./uthash.h	96;"	d
+HASH_INITIAL_NUM_BUCKETS_LOG2	./uthash.h	97;"	d
+HASH_ITER	./uthash.h	878;"	d
+HASH_ITER	./uthash.h	882;"	d
+HASH_JEN	./uthash.h	427;"	d
+HASH_JEN_MIX	./uthash.h	414;"	d
+HASH_KEYCMP	./uthash.h	605;"	d
+HASH_MAKE_TABLE	./uthash.h	150;"	d
+HASH_MUR	./uthash.h	565;"	d
+HASH_OAT	./uthash.h	398;"	d
+HASH_OOPS	./uthash.h	286;"	d
+HASH_OVERHEAD	./uthash.h	871;"	d
+HASH_REPLACE	./uthash.h	172;"	d
+HASH_REPLACE_INT	./uthash.h	271;"	d
+HASH_REPLACE_PTR	./uthash.h	277;"	d
+HASH_REPLACE_STR	./uthash.h	265;"	d
+HASH_SAX	./uthash.h	376;"	d
+HASH_SELECT	./uthash.h	822;"	d
+HASH_SFH	./uthash.h	479;"	d
+HASH_SIGNATURE	./uthash.h	912;"	d
+HASH_SORT	./uthash.h	729;"	d
+HASH_SRT	./uthash.h	730;"	d
+HASH_TO_BKT	./uthash.h	207;"	d
+LOG_SIZE	./px_checkpoint.c	12;"	d	file:
+MICROSEC	./px_util.c	14;"	d	file:
+MUR_FMIX	./uthash.h	556;"	d
+MUR_GETBLOCK	./uthash.h	534;"	d
+MUR_GETBLOCK	./uthash.h	550;"	d
+MUR_ONE_THREE	./uthash.h	544;"	d
+MUR_ONE_THREE	./uthash.h	548;"	d
+MUR_PLUS0_ALIGNED	./uthash.h	536;"	d
+MUR_PLUS1_ALIGNED	./uthash.h	537;"	d
+MUR_PLUS2_ALIGNED	./uthash.h	538;"	d
+MUR_PLUS3_ALIGNED	./uthash.h	539;"	d
+MUR_ROTL32	./uthash.h	555;"	d
+MUR_THREE_ONE	./uthash.h	542;"	d
+MUR_THREE_ONE	./uthash.h	546;"	d
+MUR_TWO_TWO	./uthash.h	543;"	d
+MUR_TWO_TWO	./uthash.h	547;"	d
+NO_DECLTYPE	./uthash.h	39;"	d
+NO_DECLTYPE	./uthash.h	43;"	d
+NVRAM_R_BW	./px_util.c	13;"	d	file:
+NVRAM_SIZE	./px_checkpoint.c	15;"	d	file:
+NVRAM_W_BW	./px_util.c	12;"	d	file:
+UTHASH_H	./uthash.h	25;"	d
+UTHASH_VERSION	./uthash.h	76;"	d
+UT_hash_bucket	./uthash.h	/^typedef struct UT_hash_bucket {$/;"	s
+UT_hash_bucket	./uthash.h	/^} UT_hash_bucket;$/;"	t	typeref:struct:UT_hash_bucket
+UT_hash_handle	./uthash.h	/^typedef struct UT_hash_handle {$/;"	s
+UT_hash_handle	./uthash.h	/^} UT_hash_handle;$/;"	t	typeref:struct:UT_hash_handle
+UT_hash_table	./uthash.h	/^typedef struct UT_hash_table {$/;"	s
+UT_hash_table	./uthash.h	/^} UT_hash_table;$/;"	t	typeref:struct:UT_hash_table
+VAR_SIZE	./px_checkpoint.h	7;"	d
+WP	./uthash.h	540;"	d
+__PX_CHECKPOINT_H	./px_checkpoint.h	2;"	d
+__PX_DEBUG_H	./px_debug.h	2;"	d
+__PX_LOG_H	./px_log.h	2;"	d
+__PX_READ_H	./px_read.h	2;"	d
+__PX_UITL_H	./px_util.h	2;"	d
+__nsleep	./px_util.c	/^int __nsleep(const struct timespec *req, struct timespec *rem)$/;"	f
+addr	./px_checkpoint.h	/^	void *addr;$/;"	m	struct:tcontext_t_
+alloc	./px_checkpoint.c	/^void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){$/;"	f
+bchandler	./px_read.c	/^static void bchandler(int sig, siginfo_t *si, void *unused){$/;"	f	file:
+bloom_bv	./uthash.h	/^   uint8_t *bloom_bv;$/;"	m	struct:UT_hash_table
+bloom_nbits	./uthash.h	/^   char bloom_nbits;$/;"	m	struct:UT_hash_table
+bloom_sig	./uthash.h	/^   uint32_t bloom_sig; \/* used only to test bloom exists in external analysis *\/$/;"	m	struct:UT_hash_table
+buckets	./uthash.h	/^   UT_hash_bucket *buckets;$/;"	m	struct:UT_hash_table
+calc_delay_ns	./px_util.c	/^unsigned long calc_delay_ns(size_t datasize,int bandwidth){$/;"	f
+checkpoint	./px_log.c	/^static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data){$/;"	f	file:
+checkpoint1	./px_log.c	/^static void checkpoint1(log_t *log, void *start_addr, checkpoint_t *chkpt, void *data){$/;"	f	file:
+checkpoint_t	./px_log.h	/^}checkpoint_t;$/;"	t	typeref:struct:checkpoint_t_
+checkpoint_t_	./px_log.h	/^typedef struct checkpoint_t_{$/;"	s
+chkpt_all	./px_checkpoint.c	/^void chkpt_all(int process_id){$/;"	f
+chlog	./px_checkpoint.c	/^log_t chlog;$/;"	v
+chunk_size	./px_checkpoint.c	/^int chunk_size;$/;"	v
+chunk_size	./px_checkpoint.h	/^	int chunk_size;$/;"	m	struct:tcontext_t_
+copy_read	./px_read.c	/^void *copy_read(log_t *log, char *var_name,int process_id){$/;"	f
+count	./uthash.h	/^   unsigned count;$/;"	m	struct:UT_hash_bucket
+current	./px_log.h	/^	memmap_t *current;$/;"	m	struct:log_t_
+data_size	./px_log.h	/^    offset_t data_size;$/;"	m	struct:checkpoint_t_
+disable_protection	./px_util.c	/^int disable_protection(pagemap_t *pagenode, void *fault_addr){$/;"	f
+enable_protection	./px_util.c	/^int enable_protection(void *ptr, size_t size) {$/;"	f
+entries	./px_checkpoint.h	/^    LIST_ENTRY(entry) entries;$/;"	m	struct:entry
+entries	./px_checkpoint.h	/^    LIST_ENTRY(thread_t_) entries;$/;"	m	struct:thread_t_
+entry	./px_checkpoint.h	/^struct entry {$/;"	s
+entry_t	./px_checkpoint.h	/^typedef struct entry entry_t;$/;"	t	typeref:struct:entry
+expand_mult	./uthash.h	/^   unsigned expand_mult;$/;"	m	struct:UT_hash_bucket
+fault_read	./px_read.c	/^void *fault_read(log_t *log, char *var_name, int process_id){$/;"	f
+file_name	./px_log.h	/^	char file_name[256];$/;"	m	struct:memmap_t_
+first_run	./px_log.c	/^int first_run=0;$/;"	v
+flag	./px_checkpoint.h	/^	volatile sig_atomic_t flag;$/;"	m	struct:thread_t_
+get16bits	./uthash.h	469;"	d
+get16bits	./uthash.h	472;"	d
+get16bits	./uthash.h	476;"	d
+get_data_addr	./px_util.c	/^void *get_data_addr(void *base_addr, checkpoint_t *chkptr){$/;"	f
+get_latest_mapfile	./px_log.c	/^static memmap_t *get_latest_mapfile(log_t *log){$/;"	f	file:
+get_meta	./px_log.c	/^static checkpoint_t *get_meta(void *base_addr,size_t offset){$/;"	f	file:
+get_pagemap	./px_util.c	/^pagemap_t *get_pagemap(pagemap_t **pagemapptr, void *pageptr){$/;"	f
+get_start_addr	./px_log.c	/^static void *get_start_addr(void *base_addr,checkpoint_t *last_meta){$/;"	f	file:
+handle_error	./px_read.c	15;"	d	file:
+handle_error	./px_util.c	16;"	d	file:
+hashv	./uthash.h	/^   unsigned hashv;                   \/* result of hash-fcn(key)        *\/$/;"	m	struct:UT_hash_handle
+head	./px_checkpoint.c	/^listhead_t head;$/;"	v
+head	./px_log.h	/^    headmeta_t *head;$/;"	m	struct:memmap_t_
+headmeta_t	./px_log.h	/^}headmeta_t;$/;"	t	typeref:struct:headmeta_t_
+headmeta_t_	./px_log.h	/^typedef struct headmeta_t_{$/;"	s
+hh	./px_read.h	/^    UT_hash_handle hh;         \/* makes this structure hashable *\/$/;"	m	struct:pagemap_t_
+hh_head	./uthash.h	/^   struct UT_hash_handle *hh_head;$/;"	m	struct:UT_hash_bucket	typeref:struct:UT_hash_bucket::UT_hash_handle
+hh_next	./uthash.h	/^   struct UT_hash_handle *hh_next;   \/* next hh in bucket order        *\/$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_handle
+hh_prev	./uthash.h	/^   struct UT_hash_handle *hh_prev;   \/* previous hh in bucket order    *\/$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_handle
+hho	./uthash.h	/^   ptrdiff_t hho; \/* hash handle offset (byte pos of hash handle in element *\/$/;"	m	struct:UT_hash_table
+id	./px_checkpoint.h	/^    int id;$/;"	m	struct:entry
+ideal_chain_maxlen	./uthash.h	/^   unsigned ideal_chain_maxlen;$/;"	m	struct:UT_hash_table
+ineff_expands	./uthash.h	/^   unsigned ineff_expands, noexpand;$/;"	m	struct:UT_hash_table
+init	./px_checkpoint.c	/^void init(int process_id){$/;"	f
+init_mmap_files	./px_log.c	/^static void init_mmap_files(log_t *log){$/;"	f	file:
+install_sighandler	./px_util.c	/^void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){$/;"	f
+isDebugEnabled	./px_debug.c	/^int isDebugEnabled(){$/;"	f
+is_chkpoint_present	./px_log.c	/^int is_chkpoint_present(log_t *log){$/;"	f
+key	./uthash.h	/^   void *key;                        \/* ptr to enclosing struct's key  *\/$/;"	m	struct:UT_hash_handle
+keylen	./uthash.h	/^   unsigned keylen;                  \/* enclosing struct's key len     *\/$/;"	m	struct:UT_hash_handle
+lib_initialized	./px_checkpoint.c	/^int lib_initialized = 0;$/;"	v
+listhead_t	./px_checkpoint.h	/^typedef struct listhead listhead_t;$/;"	t	typeref:struct:listhead
+log2_num_buckets	./uthash.h	/^   unsigned num_buckets, log2_num_buckets;$/;"	m	struct:UT_hash_table
+log_init	./px_log.c	/^void log_init(log_t *log , long log_size, int process_id){$/;"	f
+log_read	./px_log.c	/^checkpoint_t *log_read(log_t *log, char *var_name, int process_id){$/;"	f
+log_size	./px_checkpoint.c	/^long log_size = -1;$/;"	v
+log_size	./px_log.h	/^	offset_t log_size;$/;"	m	struct:log_t_
+log_t	./px_log.h	/^}log_t;$/;"	t	typeref:struct:log_t_
+log_t_	./px_log.h	/^typedef struct log_t_{$/;"	s
+log_write	./px_log.c	/^int log_write(log_t *log, listhead_t *lhead, int process_id){$/;"	f
+m	./px_log.h	/^	memmap_t m[2];$/;"	m	struct:log_t_
+map_file_ptr	./px_log.h	/^    void *map_file_ptr;$/;"	m	struct:memmap_t_
+memmap_t	./px_log.h	/^}memmap_t;$/;"	t	typeref:struct:memmap_t_
+memmap_t_	./px_log.h	/^typedef struct memmap_t_{$/;"	s
+meta	./px_log.h	/^    checkpoint_t *meta;$/;"	m	struct:memmap_t_
+msleep	./px_util.c	/^int msleep(unsigned long nanosec)$/;"	f
+next	./uthash.h	/^   void *next;                       \/* next element in app order      *\/$/;"	m	struct:UT_hash_handle
+noexpand	./uthash.h	/^   unsigned ineff_expands, noexpand;$/;"	m	struct:UT_hash_table
+nonideal_items	./uthash.h	/^   unsigned nonideal_items;$/;"	m	struct:UT_hash_table
+num_buckets	./uthash.h	/^   unsigned num_buckets, log2_num_buckets;$/;"	m	struct:UT_hash_table
+num_items	./uthash.h	/^   unsigned num_items;$/;"	m	struct:UT_hash_table
+nvmmemcpy_read	./px_util.c	/^int nvmmemcpy_read(void *dest, void *src, size_t len) {$/;"	f
+nvmmemcpy_write	./px_util.c	/^int nvmmemcpy_write(void *dest, void *src, size_t len) {$/;"	f
+nvpageptr	./px_read.h	/^    void *nvpageptr;                    \/* key *\/$/;"	m	struct:pagemap_t_
+offset	./px_log.h	/^	offset_t offset;$/;"	m	struct:log_t_
+offset	./px_log.h	/^    offset_t offset;$/;"	m	struct:checkpoint_t_
+offset	./px_log.h	/^    offset_t offset;$/;"	m	struct:headmeta_t_
+offset_t	./px_log.h	/^typedef long offset_t;$/;"	t
+pagemap	./px_read.c	/^pagemap_t *pagemap = NULL;$/;"	v
+pagemap_t	./px_read.h	/^} pagemap_t;$/;"	t	typeref:struct:pagemap_t_
+pagemap_t_	./px_read.h	/^typedef struct pagemap_t_ {$/;"	s
+pageptr	./px_read.h	/^    void *pageptr;                    \/* key *\/$/;"	m	struct:pagemap_t_
+paligned_size	./px_read.h	/^	offset_t paligned_size;$/;"	m	struct:pagemap_t_
+pc_func	./px_read.c	/^static void *pc_func(void *arg){$/;"	f	file:
+pc_read	./px_read.c	/^void *pc_read(log_t *log, char *var_name, int process_id){$/;"	f
+pchandler	./px_read.c	/^static void pchandler(int sig, siginfo_t *si, void *unused){$/;"	f	file:
+prev	./uthash.h	/^   void *prev;                       \/* prev element in app order      *\/$/;"	m	struct:UT_hash_handle
+process_id	./px_checkpoint.h	/^    int process_id;$/;"	m	struct:entry
+process_id	./px_log.h	/^    int process_id;$/;"	m	struct:checkpoint_t_
+prv_offset	./px_log.h	/^    offset_t prv_offset;$/;"	m	struct:checkpoint_t_
+pthredid	./px_checkpoint.h	/^	pthread_t pthredid;$/;"	m	struct:thread_t_
+ptr	./px_checkpoint.h	/^    void *ptr;$/;"	m	struct:entry
+put_pagemap	./px_util.c	/^void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_t size, offset_t asize){$/;"	f
+signature	./uthash.h	/^   uint32_t signature; \/* used only to find hash tables in external analysis *\/$/;"	m	struct:UT_hash_table
+size	./px_checkpoint.h	/^    size_t size;$/;"	m	struct:entry
+size	./px_read.h	/^    offset_t size;$/;"	m	struct:pagemap_t_
+spawn_pc_thread	./px_read.c	/^static void spawn_pc_thread(){$/;"	f	file:
+tail	./uthash.h	/^   struct UT_hash_handle *tail; \/* tail hh in app order, for fast append    *\/$/;"	m	struct:UT_hash_table	typeref:struct:UT_hash_table::UT_hash_handle
+tbl	./uthash.h	/^   struct UT_hash_table *tbl;$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_table
+tcontext_t	./px_checkpoint.h	/^}tcontext_t;$/;"	t	typeref:struct:tcontext_t_
+tcontext_t_	./px_checkpoint.h	/^typedef struct tcontext_t_{$/;"	s
+thead	./px_checkpoint.c	/^tlisthead_t thead;$/;"	v
+thread	./px_checkpoint.c	/^thread_t thread;$/;"	v
+thread_flag	./px_read.c	/^int thread_flag = 0;$/;"	v
+thread_t	./px_checkpoint.h	/^typedef struct thread_t_ thread_t;$/;"	t	typeref:struct:thread_t_
+thread_t_	./px_checkpoint.h	/^struct thread_t_{$/;"	s
+timestamp	./px_log.h	/^    struct timeval timestamp;$/;"	m	struct:headmeta_t_	typeref:struct:headmeta_t_::timeval
+timeval_subtract	./px_util.c	/^int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y) $/;"	f
+tlisthead_t	./px_checkpoint.h	/^typedef struct tlisthead tlisthead_t;$/;"	t	typeref:struct:tlisthead
+uint32_t	./uthash.h	/^typedef unsigned int uint32_t;$/;"	t
+uint8_t	./uthash.h	/^typedef unsigned char uint8_t;$/;"	t
+uthash_expand_fyi	./uthash.h	92;"	d
+uthash_fatal	./uthash.h	79;"	d
+uthash_free	./uthash.h	85;"	d
+uthash_malloc	./uthash.h	82;"	d
+uthash_noexpand_fyi	./uthash.h	89;"	d
+var_name	./px_checkpoint.h	/^    char var_name[VAR_SIZE];$/;"	m	struct:entry
+var_name	./px_log.h	/^    char var_name[20];$/;"	m	struct:checkpoint_t_
+version	./px_checkpoint.h	/^    int version;$/;"	m	struct:entry
+version	./px_log.h	/^    int version;$/;"	m	struct:checkpoint_t_

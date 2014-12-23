@@ -2,6 +2,7 @@
 #define __PX_CHECKPOINT_H
 
 #include <sys/queue.h>
+#include <signal.h>
 
 #define VAR_SIZE 20
 
@@ -15,6 +16,21 @@ struct entry {
     int version;
     LIST_ENTRY(entry) entries;
 };
+
+LIST_HEAD(tlisthead, thread_t_);
+struct thread_t_{
+	pthread_t pthreadid;
+	volatile sig_atomic_t flag;
+    LIST_ENTRY(thread_t_) entries;
+}; 
+
+typedef struct tcontext_t_{
+	void *addr;
+	int chunk_size;
+}tcontext_t;
+
 typedef struct entry entry_t;
 typedef struct listhead listhead_t;
+typedef struct thread_t_ thread_t;
+typedef struct tlisthead tlisthead_t;
 #endif
