@@ -9,7 +9,7 @@
 
 typedef struct pagemap_t_ {
     void *pageptr;                    /* key */
-    void *nvpageptr;                    /* key */
+    void *nvpageptr;            
     offset_t size;
 	offset_t paligned_size;
     UT_hash_handle hh;         /* makes this structure hashable */

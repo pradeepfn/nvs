@@ -33,7 +33,7 @@ void log_init(log_t *log , long log_size, int process_id){
 	if(isDebugEnabled()){
 		printf("initializing the structures... %d \n", process_id);
 	}
-	log->log_size = log_size;
+	log->log_size = log_size/2;
     snprintf(log->m[0].file_name, sizeof(log->m[0].file_name), "%s%d",FILE_PATH_ONE,process_id);
     snprintf(log->m[1].file_name, sizeof(log->m[1].file_name),"%s%d",FILE_PATH_TWO,process_id);
     init_mmap_files(log);
