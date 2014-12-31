@@ -15,6 +15,7 @@
 #define NVM_SIZE "nvm.size"
 #define CHUNK_SIZE "chunk.size"
 #define COPY_STRATEGY "copy.strategy"
+#define DEBUG_ENABLE "debug.enable"
 
 
 //copy stategies
@@ -56,6 +57,10 @@ void init(int process_id){
 			chunk_size = (int)varvalue;	
 		}else if(!strncmp("copy.strategy",varname,sizeof(varname))){
 			copy_strategy = (int)varvalue;	
+		}else if(!strncmp(DEBUG_ENABLE,varname,sizeof(varname))){
+			if(((int)varvalue) == 1){			//enable debug
+				enable_debug();		
+			}
 		}else{
 			printf("unknown varibale. please check the config\n");
 			exit(1);
@@ -137,3 +142,15 @@ void chkpt_all(int process_id){
     return;
 }
 
+
+void* alloc_(unsigned int* n, char *s, int *iid, int *cmtsize) {
+	return alloc(s,*n,*cmtsize,*iid); 
+}
+
+void afree_(char* arr) {
+	free(arr);
+}
+
+void chkpt_all_(int *process_id){
+	chkpt_all(*process_id);
+}

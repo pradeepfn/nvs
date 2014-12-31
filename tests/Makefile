@@ -1,11 +1,11 @@
 CC=gcc
 CFLAGS= -g -Wall -pthread -iquote ../ -I../include  
-LIB_DEP=../libphoenix.a
+LDFLAGS= -L../lib -lphoenix 
 
 
 all:
-	$(CC) $(CFLAGS) -o test_write test_write.c matrix.c matrix.h $(LIB_DEP) 
-	$(CC) $(CFLAGS) -o test_read test_read.c matrix.c matrix.h $(LIB_DEP) 
+	$(CC) $(CFLAGS) -o test_write test_write.c matrix.c matrix.h $(LDFLAGS) 
+	$(CC) $(CFLAGS) -o test_read test_read.c matrix.c matrix.h $(LDFLAGS) 
 
 
 clean:

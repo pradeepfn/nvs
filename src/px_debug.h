@@ -3,6 +3,8 @@
 
 
 int isDebugEnabled();
+void enable_debug();
+void disable_debug();
 
 
 #endif

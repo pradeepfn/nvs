@@ -4,7 +4,7 @@ CFLAGS= -g -Wall -I$(IDIR)
 LDFLAGS=
 
 _DEPS = phoenix.h
-_LIB_OBJ = px_checkpoint.o px_log.o px_util.o px_read.o px_debug.o
+_LIB_OBJ = px_checkpoint.o px_log.o px_util.o px_read.o px_debug.o timecount.o
 _LIB_HEADER = px_checkpoint.h px_log.h px_util.h px_read.h px_debug.h
 
 SRC=src
@@ -18,8 +18,8 @@ LIB_HEADER = $(patsubst %,$(SRC)/%,$(_LIB_HEADER))
 
 all: lib
 
-lib: ${LIB_OBJ} ${LIB_HEADER}
-	ar -cvq libphoenix.a $^
+lib: ${LIB_OBJ}
+	ar -cvq lib/libphoenix.a $^
 
 $(ODIR)/%.o: $(SRC)/%.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -28,4 +28,4 @@ $(ODIR)/%.o: $(SRC)/%.c
 
 clean: 
 	rm -f $(ODIR)/*.o librvm.a $(TEST_OBJ) 
-	rm -f libphoenix.a
+	rm -f lib/libphoenix.a

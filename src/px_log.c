@@ -43,6 +43,9 @@ int log_write(log_t *log, listhead_t *lhead, int process_id){
 	entry_t *np;
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
         if(np->process_id == process_id){ 
+			if(isDebugEnabled()){
+				printf("checkpointing  varname : %s , process_id :  %d , version : %d , size : %ld , pointer : %p \n", np->var_name, np->process_id, np->version, np->size, np->ptr);
+			}
             checkpoint(log, np->var_name, np->process_id, np->version, np->size, np->ptr);
         }
     }	
@@ -154,7 +157,9 @@ static memmap_t *get_latest_mapfile(log_t *log){
     }else{
         printf("Runtime Error: wrong program execution path...\n");
 		printf("timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
+		printf("log offset of log[0] %ld\n", h1->offset);
 		printf("timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
+		printf("log offset of log[1] %ld\n", h2->offset);
         assert(0);
     }
 }
@@ -167,7 +172,9 @@ static void checkpoint(log_t *log, char *var_name, int process_id, int version, 
 	
     strncpy(chkpt.var_name,var_name,VAR_SIZE-1);
     chkpt.var_name[VAR_SIZE-1] = '\0'; // null terminating
-    printf("checkpoint var name : %s\n",chkpt.var_name);
+	if(isDebugEnabled()){
+		printf("checkpoint var name : %s\n",chkpt.var_name);
+	}
     chkpt.process_id = process_id;
     chkpt.version = version;
     chkpt.data_size = size;
