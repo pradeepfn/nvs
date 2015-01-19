@@ -33,6 +33,10 @@ int chunk_size = 4096;
 int copy_strategy = 1;
 int lib_initialized = 0;
 
+int lib_process_id = -1;
+int  checkpoint_size_printed = 0; // flag variable
+long checkpoint_size = 0;
+
 log_t chlog;
 listhead_t head;
 tlisthead_t thead;
@@ -43,6 +47,7 @@ thread_t thread;
 void init(int process_id){
 	char varname[30];
 	long varvalue;
+	lib_process_id = process_id;
 	
 	//naive way of reading the config file
 	FILE *fp = fopen(CONFIG_FILE_NAME,"r");
@@ -85,6 +90,9 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
         init(process_id);
         lib_initialized = 1;
     }   
+
+	//counting the total checkpoint data size per core
+	checkpoint_size+= size;
 
     entry_t *n = malloc(sizeof(struct entry)); // new node in list
     memcpy(n->var_name,var_name,VAR_SIZE);
@@ -137,6 +145,10 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 void chkpt_all(int process_id){
 	if(isDebugEnabled()){
 		printf("checkpointing data of process : %d \n",process_id);
+	}
+	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
+		printf("checkpoint size : %ld \n", checkpoint_size);
+		checkpoint_size_printed = 1;
 	}
 	log_write(&chlog,&head,process_id);
     return;

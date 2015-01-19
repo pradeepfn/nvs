@@ -26,6 +26,7 @@ static void checkpoint(log_t *log, char *var_name, int process_id, int version, 
 static void checkpoint1(log_t *log,void *start_addr, checkpoint_t *chkpt, void *data);
 static checkpoint_t *get_meta(void *base_addr,size_t offset);
 static void *get_start_addr(void *base_addr,checkpoint_t *last_meta);
+static int is_remaining_space_enough(log_t *log, listhead_t *lhead);
 
 
 
@@ -39,13 +40,24 @@ void log_init(log_t *log , long log_size, int process_id){
     init_mmap_files(log);
 }
 
+
+/* writing to the data to persistent storage*/
 int log_write(log_t *log, listhead_t *lhead, int process_id){
 	entry_t *np;
+	if(!is_remaining_space_enough(log, lhead)){
+		if(isDebugEnabled()){ 
+			printf("remaining space is not enough. Switching to other file....\n");
+		}
+		log->current = (log->current == &(log->m[0]))?&(log->m[1]):&(log->m[0]);	
+		log->current->head->offset = -1; // invalidate the data
+		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
+	}
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
         if(np->process_id == process_id){ 
 			if(isDebugEnabled()){
 				printf("checkpointing  varname : %s , process_id :  %d , version : %d , size : %ld , pointer : %p \n", np->var_name, np->process_id, np->version, np->size, np->ptr);
 			}
+		
             checkpoint(log, np->var_name, np->process_id, np->version, np->size, np->ptr);
         }
     }	
@@ -173,7 +185,7 @@ static void checkpoint(log_t *log, char *var_name, int process_id, int version, 
     strncpy(chkpt.var_name,var_name,VAR_SIZE-1);
     chkpt.var_name[VAR_SIZE-1] = '\0'; // null terminating
 	if(isDebugEnabled()){
-		printf("checkpoint var name : %s\n",chkpt.var_name);
+		//printf("checkpoint var name : %s\n",chkpt.var_name);
 	}
     chkpt.process_id = process_id;
     chkpt.version = version;
@@ -214,12 +226,20 @@ static checkpoint_t *get_meta(void *base_addr,size_t offset){
     return ptr;
 }
 
-/*static void *get_addr(void *base_addr, size_t offset){
-    char *temp = ((char *)base_addr)+offset;
-    return temp;
+static int is_remaining_space_enough(log_t *log, listhead_t *lhead){
+	size_t tot_size=0;
+	struct entry *np;
+	for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
+			tot_size+=(sizeof(checkpoint_t)+np->size);	
+	}	
+	if(tot_size > (log->log_size - sizeof(headmeta_t))){
+		printf("allocated buffer is not sufficient for program exec\n");
+		assert(0);
+	}
+	size_t remain_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1); //adding 1 since offset can be -1
+	if(isDebugEnabled()){
+		printf("log size details, remaining size and total checkpoint size - %ld , %ld \n",remain_size,tot_size);
+	}
+	return (remain_size > tot_size); 
 }
 
-static int get_new_offset(offset_t offset, size_t data_size){
-    int temp = offset + sizeof(checkpoint_t) + data_size;
-    return temp;
-}*/
