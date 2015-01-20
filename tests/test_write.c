@@ -4,8 +4,8 @@
 #include "matrix.h"
 #include "phoenix.h"
 
-#define A_ROWS 10
-#define B_COLUMNS 20
+#define A_ROWS 5
+#define B_COLUMNS 10
 #define COMMON 3
 
 int main(int argc, char *argv[]){
@@ -30,16 +30,16 @@ int main(int argc, char *argv[]){
 	init_matrix(a,1);
 	init_matrix(b,1);
 
-	//print_matrix(a);
-	//print_matrix(b);
-	//print_matrix(c);
+	print_matrix(a);
+	print_matrix(b);
+	print_matrix(c);
 	 
 	int i=0;
 	while(1){
 		increment_matrix(a);
 		increment_matrix(b);
 		multiply_matrix(a,b,c);	
-		if((a.matrix[0]%1000)==0){
+		if((a.matrix[0]%1000000)==0){
 			printf("checkpointing : %ld \n",a.matrix[0]);
 			chkpt_all(0);
 		}
