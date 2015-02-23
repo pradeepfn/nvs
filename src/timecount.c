@@ -7,6 +7,7 @@
 #define MICROSEC 1000000
 
 FILE *fp;
+FILE *fp2;
 int irun;
 int process_id;
 struct timeval t_start;
@@ -56,20 +57,25 @@ void end_time_(){
 
 void start_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
 	char file_name[50];
-	snprintf(file_name,sizeof(file_name),"stats/tot_n%d_p%d_mpsi%d.log",*processes,*mype,*mpsi);
-	fp=fopen(file_name,"w");
+	snprintf(file_name,sizeof(file_name),"stats/time_n%d_p%d_mpsi%d.log",*processes,*mype,*mpsi);
+	fp2=fopen(file_name,"w");
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
-	fprintf(fp,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
-	fclose(fp);
+	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
+	fflush(fp2);
+}
+
+void make_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
+	struct timeval current_time;
+	gettimeofday(&current_time,NULL);
+	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
+	fflush(fp2);
 }
 
 void end_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
-	char file_name[50];
-	snprintf(file_name,sizeof(file_name),"stats/tot_n%d_p%d_mpsi%d.log",*processes,*mype,*mpsi);
-	fp=fopen(file_name,"a");
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
-	fprintf(fp,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
-	fclose(fp);
+	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
+	fflush(fp2);
+	fclose(fp2);
 }
