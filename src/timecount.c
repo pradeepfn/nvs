@@ -23,7 +23,7 @@ void start_time_(int *mype){
 	process_id = *mype;
 	char file_name[50];
 	snprintf(file_name,sizeof(file_name),"stats/nvram_p%d.log",*mype);
-	fp=fopen(file_name,"a+");
+	fp=fopen(file_name,"w");
 	gettimeofday(&t_start,NULL);
 	tot_etime=0;
 }
@@ -41,10 +41,10 @@ void resume_time_(){
 void end_time_(){
 	gettimeofday(&t_end,NULL);
 	tot_etime+=get_elapsed_time(&t_end,&t_start);
-	if(irun == 1){//write upon valid data reads
-		fprintf(fp,"%lu\n", tot_etime);
-		fclose(fp);
-	}
+	fprintf(fp,"%lu\n", tot_etime);
+	fflush(fp);
+	fclose(fp);
+
 	if(process_id == 0){
 		printf("batch read time:  %zd \n",tot_etime);
 	}
