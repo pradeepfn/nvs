@@ -19,14 +19,11 @@ unsigned long get_elapsed_time(struct timeval *end, struct timeval *start){
 	return diff;
 }
 
-void start_time_(int *prefix,int *processes, int *mype, int *mpsi, int *restart){
-	irun=*restart;
-	process_id=*mype;
-	if(irun == 1){
-		char file_name[50];
-		snprintf(file_name,sizeof(file_name),"stats/nvram%d_n%d_p%d_mpsi%d.log",*prefix,*processes,*mype,*mpsi);
-		fp=fopen(file_name,"a+");
-	}
+void start_time_(int *mype){
+	process_id = *mype;
+	char file_name[50];
+	snprintf(file_name,sizeof(file_name),"stats/nvram_p%d.log",*mype);
+	fp=fopen(file_name,"a+");
 	gettimeofday(&t_start,NULL);
 	tot_etime=0;
 }
@@ -55,9 +52,9 @@ void end_time_(){
 
 
 
-void start_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
+void start_timestamp_(int *mype){
 	char file_name[50];
-	snprintf(file_name,sizeof(file_name),"stats/time_n%d_p%d_mpsi%d.log",*processes,*mype,*mpsi);
+	snprintf(file_name,sizeof(file_name),"stats/time_p%d.log",*mype);
 	fp2=fopen(file_name,"w");
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
@@ -65,14 +62,14 @@ void start_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
 	fflush(fp2);
 }
 
-void make_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
+void make_timestamp_(int *mype){
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
 	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
 	fflush(fp2);
 }
 
-void end_timestamp_(int *processes, int *mype, int *mpsi, int *restart){
+void end_timestamp_(int *mype){
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
 	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
