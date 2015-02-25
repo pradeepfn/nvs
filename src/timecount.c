@@ -62,14 +62,14 @@ void start_timestamp_(int *mype){
 	fflush(fp2);
 }
 
-void make_timestamp_(int *mype){
+void make_timestamp_(){
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
 	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
 	fflush(fp2);
 }
 
-void end_timestamp_(int *mype){
+void end_timestamp_(){
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
 	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
