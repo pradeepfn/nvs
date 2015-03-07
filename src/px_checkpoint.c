@@ -147,7 +147,7 @@ void chkpt_all(int process_id){
 		printf("checkpointing data of process : %d \n",process_id);
 	}
 	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
-		printf("checkpoint size : %ld \n", checkpoint_size);
+		printf("checkpoint size : %.2f \n", checkpoint_size/1000000);
 		checkpoint_size_printed = 1;
 	}
 	log_write(&chlog,&head,process_id);
