@@ -1,4 +1,4 @@
-CFLAGS = -g -I/home/pradeep/checkout/phoenix/include 
+CFLAGS = -g -I/home/pradeep/checkout/phoenix/include -std=legacy 
 LDFLAGS = -L/home/pradeep/checkout/phoenix/lib -lphoenix 
 
 CC = mpif90
