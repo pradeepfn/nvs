@@ -7,15 +7,21 @@
 #include "px_util.h"
 #include "px_debug.h"
 
-//#define NVRAM_BW  450
-#define NVRAM_W_BW  600
-#define NVRAM_R_BW  2*NVRAM_W_BW
+// read bandwidth to constant maching
+// 2048Mb/s -> 600
+// 1024Mb/s -> 300 
+// 512Mb/s -> 150
+// 256Mb/s -> 75
+// 128Mb/s -> 38
+// 64Mb/s ->19
+// -1 relates to DRAM -> no delay
 #define MICROSEC 1000000
 
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 extern int chunk_size;
+extern int nvram_wbw;
 
 unsigned long calc_delay_ns(size_t datasize,int bandwidth){
         unsigned long delay;
@@ -48,17 +54,22 @@ int msleep(unsigned long nanosec)
 
 
 int nvmmemcpy_read(void *dest, void *src, size_t len) {
-    unsigned long lat_ns;
-    lat_ns = calc_delay_ns(len,NVRAM_R_BW);
-    msleep(lat_ns);
+	if(nvram_wbw > 0){
+		unsigned long lat_ns;
+		//read bandwidth is taken as the two times, write bandwidth
+		lat_ns = calc_delay_ns(len,nvram_wbw*2);
+		msleep(lat_ns);
+	}
     memcpy(dest,src,len);
     return 0;
 }
 
 int nvmmemcpy_write(void *dest, void *src, size_t len) {
-    unsigned long lat_ns;
-    lat_ns = calc_delay_ns(len,NVRAM_W_BW);
-    msleep(lat_ns);
+	if(nvram_wbw > 0){
+		unsigned long lat_ns;
+		lat_ns = calc_delay_ns(len,nvram_wbw);
+		msleep(lat_ns);
+	}
     memcpy(dest,src,len);
     return 0;
 }
