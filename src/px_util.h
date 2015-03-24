@@ -14,9 +14,10 @@ void *get_data_addr(void *, checkpoint_t *);
 int timeval_subtract (struct timeval *, struct timeval *, struct timeval *);
 void put_pagemap(pagemap_t ** ,void *, void *, offset_t, offset_t);
 pagemap_t *get_pagemap(pagemap_t **, void *);
-int disable_protection(pagemap_t *, void *);
+long disable_protection(void *addr, size_t size);
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
-int enable_protection(void *ptr, size_t size);
+void enable_protection(void *ptr, size_t size);
+void copy_chunks(pagemap_t **page_map_ptr);
 
 
 

@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 
 #include "px_util.h"
+#include "px_debug.h"
 
 //#define NVRAM_BW  450
 #define NVRAM_W_BW  600
@@ -29,9 +30,9 @@ unsigned long calc_delay_ns(size_t datasize,int bandwidth){
 int __nsleep(const struct timespec *req, struct timespec *rem)
 {
     struct timespec temp_rem;
-    if(nanosleep(req,rem)==-1)
+    if(nanosleep(req,rem)==-1){
         __nsleep(rem,&temp_rem);
-    else
+    }
         return 1;
 }
 
@@ -101,34 +102,26 @@ void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
 	}
 }
 
-int enable_protection(void *ptr, size_t size) {
+void enable_protection(void *ptr, size_t size) {
 	if (mprotect(ptr, size,PROT_NONE) == -1){
         handle_error("mprotect");
 	}
-    return 0;
-}
-/*Disable protection in chunk wise. Chunks are multiples of pages */
-int disable_protection(pagemap_t *pagenode, void *fault_addr){
-	int length;
-	offset_t disposition = (fault_addr - pagenode->pageptr);
-	long chunk_index = disposition & ~(chunk_size-1);
-	long chunk_index_of_last_page = pagenode->paligned_size & ~(chunk_size-1);
-	void *chunk_start_addr = (void *)(((char *)pagenode->pageptr) + (chunk_index*chunk_size));
-	if(chunk_index == chunk_index_of_last_page){
-		length = pagenode->paligned_size % chunk_size;
-	}else if(chunk_index < chunk_index_of_last_page){
-		length = chunk_size;
-	}else{
-		printf("disable_protection: chunk index should fall within memory block\n");
-		assert(0);
-	}
-	if (mprotect(chunk_start_addr,length,PROT_READ|PROT_WRITE) == -1){
-        handle_error("mprotect");
-	}
-	nvmmemcpy_read(pagenode->pageptr, pagenode->nvpageptr, length);
-    return 0;
 }
 
+/*
+* Disable the protection of the whole aligned memory block related to each variable access
+* return : size of memory
+*/
+long disable_protection(void *page_start_addr,size_t aligned_size){
+	if (mprotect(page_start_addr,aligned_size,PROT_READ|PROT_WRITE) == -1){
+        handle_error("mprotect");
+	}
+    return aligned_size;
+}
+
+/*
+* put an element to pagemap.wrapper method
+*/
 void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_t size, offset_t asize){
 	pagemap_t *s;
 	HASH_FIND_INT(*pagemapptr, &pageptr, s);
@@ -137,17 +130,50 @@ void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_
 		s->pageptr = pageptr;
 		s->nvpageptr = nvpageptr;
 		s->size = size;
-		s->size = asize;
+		s->paligned_size = asize;
+		s->copied = 0;
 		HASH_ADD_INT( *pagemapptr, pageptr, s );
 	}
 }
 
+/*
+* get an element to pagemap.wrapper method
+*/
 pagemap_t *get_pagemap(pagemap_t **pagemapptr, void *pageptr){
 	pagemap_t *s, *tmp;
+	long offset = 0;
+	if(isDebugEnabled()){
+		printf("memory address trying to access %p\n",pageptr);
+	}
 	HASH_ITER(hh, *pagemapptr, s, tmp) {
-		if(s->pageptr == pageptr){ // TODO: range check
+		offset = pageptr - s->pageptr;
+		if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
+			if(isDebugEnabled()){
+				printf("starting address of the matching chunk %p\n",s->pageptr);
+			}
 			return s;
 		}
 	}
 	handle_error("address not found in pagemap");
+}
+
+/*
+* this utility method copies all the not copied data from NVRAM to DRAM
+* the pre-copy thread make use of this method
+*/
+void copy_chunks(pagemap_t **page_map_ptr){
+	pagemap_t *s, *tmp;
+	//1. iterate and copy all the not copied chunks.
+	//2. disable the protection
+	//3. copy them to DRAM location
+	HASH_ITER(hh, *page_map_ptr, s, tmp) {
+		if(!s->copied){
+			if(isDebugEnabled()){
+				printf("*****copying data using pre-fetcher******\n");
+			}
+			disable_protection(s->pageptr,s->paligned_size);
+			nvmmemcpy_read(s->pageptr,s->nvpageptr,s->size);	
+			s->copied = 1;
+		}	
+	}
 }

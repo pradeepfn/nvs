@@ -25,15 +25,23 @@ int main(int argc, char *argv[]){
 	c.m = A_ROWS;
 	c.n = B_COLUMNS;
 	c.matrix = alloc("c",c.m*c.n*sizeof(long),-1,0);
+	
+	long temp = c.matrix[50]; 
+	printf("%ld\n",temp);
 
+	temp = c.matrix[4]; 
+	printf("%ld\n",temp);
 
+	temp = c.matrix[20]; 
+	printf("%ld\n",temp);
+//	sleep(1);
 	print_matrix(a);
 	print_matrix(b);
 	print_matrix(c);
 
 
-	int i=0;
-	while(1){
+//	int i=0;
+	/*while(1){
 		increment_matrix(a);
 		increment_matrix(b);
 		multiply_matrix(a,b,c);	
@@ -42,6 +50,6 @@ int main(int argc, char *argv[]){
 			chkpt_all(0);
 		}
 		i++;
-	}	
+	}*/	
 	exit(0);
 }

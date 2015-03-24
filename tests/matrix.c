@@ -39,7 +39,7 @@ void print_matrix(matrix_t A){
 	long i,j;
 	for(i=0;i<A.m;i++){
 		for(j=0;j<A.n;j++){
-			printf("%ld  ",A.matrix[i*A.n+j]);
+			printf("%ld : %p  ",A.matrix[i*A.n+j],&(A.matrix[i*A.n+j]));
 		}
 		printf("\n");
 	}

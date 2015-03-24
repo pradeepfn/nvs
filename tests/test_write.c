@@ -9,7 +9,6 @@
 #define COMMON 3
 
 int main(int argc, char *argv[]){
-
 	//creating matrices	
 	matrix_t a;	
 	a.m = A_ROWS;

@@ -13,11 +13,12 @@
 #include "px_checkpoint.h"
 #include "px_util.h"
 
-#define FILE_PATH_ONE "/mnt/ramdisk/mmap.file.one"
-#define FILE_PATH_TWO "/mnt/ramdisk/mmap.file.two"
+#define FILE_PATH_ONE "/mmap.file.one"
+#define FILE_PATH_TWO "/mmap.file.two"
 
 //global variables
 int first_run=0;
+extern char pfile_location[32];
 
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
@@ -35,8 +36,8 @@ void log_init(log_t *log , long log_size, int process_id){
 		printf("initializing the structures... %d \n", process_id);
 	}
 	log->log_size = log_size/2;
-    snprintf(log->m[0].file_name, sizeof(log->m[0].file_name), "%s%d",FILE_PATH_ONE,process_id);
-    snprintf(log->m[1].file_name, sizeof(log->m[1].file_name),"%s%d",FILE_PATH_TWO,process_id);
+    snprintf(log->m[0].file_name, sizeof(log->m[0].file_name), "%s%s%d",pfile_location,FILE_PATH_ONE,process_id);
+    snprintf(log->m[1].file_name, sizeof(log->m[1].file_name),"%s%s%d",pfile_location,FILE_PATH_TWO,process_id);
     init_mmap_files(log);
 }
 
