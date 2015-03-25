@@ -131,6 +131,8 @@ static void pchandler(int sig, siginfo_t *si, void *unused){
 
 static void *pc_func(void *arg){
 	//tcontext_t *tcontext = (tcontext_t *)arg;
+	pthread_detach(pthread_self()); // self cleanup after terminate
+
 	if(isDebugEnabled()){
 		printf("pc_func: pre-fetch thread started\n");
 	}
