@@ -116,6 +116,9 @@ static void init_mmap_files(log_t *log){
 			printf("Runtime Error: error while memory mapping the file\n");
 			exit(1);
 		}
+		if(isDebugEnabled()){
+			printf("mapped the file: %s \n", log->m[i].file_name);
+		}
 		log->m[i].map_file_ptr = addr;
 		log->m[i].head = log->m[i].map_file_ptr;
 		log->m[i].meta =(checkpoint_t *)((headmeta_t *)log->m[i].map_file_ptr)+1;
