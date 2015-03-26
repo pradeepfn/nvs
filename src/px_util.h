@@ -18,6 +18,7 @@ long disable_protection(void *addr, size_t size);
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
 void enable_protection(void *ptr, size_t size);
 void copy_chunks(pagemap_t **page_map_ptr);
+void call_oldhandler(int signo);
 
 
 

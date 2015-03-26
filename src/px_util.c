@@ -22,6 +22,7 @@
 
 extern int chunk_size;
 extern int nvram_wbw;
+struct sigaction old_sa; 
 
 unsigned long calc_delay_ns(size_t datasize,int bandwidth){
         unsigned long delay;
@@ -108,9 +109,13 @@ void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = sighandler;
-    if (sigaction(SIGSEGV, &sa, NULL) == -1){ 
+    if (sigaction(SIGSEGV, &sa, &old_sa) == -1){ 
         handle_error("sigaction");
 	}
+}
+
+void call_oldhandler(int signo){
+    (*old_sa.sa_handler)(signo);
 }
 
 void enable_protection(void *ptr, size_t size) {

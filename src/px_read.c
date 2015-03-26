@@ -84,18 +84,25 @@ void *fault_read(log_t *log, char *var_name, int process_id,void (*sighandler)(i
 */
 static void bchandler(int sig, siginfo_t *si, void *unused){
 	long size_of_variable;
+
 	if(isDebugEnabled()){
 		printf("bchandler:page fault handler begin\n");
 	}	
-	//the addres returned from the si->si_addr is a random adress
-    // within the allocated range
-	pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
-	pagenode->copied = 1;
-    size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
-	assert(size_of_variable != pagenode->size);
-	nvmmemcpy_read(pagenode->pageptr,pagenode->nvpageptr,pagenode->size);
-	if(isDebugEnabled()){
-		printf("bchandler:page fault handler end\n");
+
+	if(si != NULL && si->si_addr !=  NULL){
+		//the addres returned from the si->si_addr is a random adress
+		// within the allocated range
+		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
+		pagenode->copied = 1;
+		size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
+		assert(size_of_variable != pagenode->size);
+		nvmmemcpy_read(pagenode->pageptr,pagenode->nvpageptr,pagenode->size);
+		if(isDebugEnabled()){
+			printf("bchandler:page fault handler end\n");
+		}
+	}else{ 
+		// this is a Original SIGSEGV segfault signal it seems.
+		call_oldhandler(sig);
 	}	
 }
 
