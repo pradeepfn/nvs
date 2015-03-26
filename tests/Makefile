@@ -14,4 +14,4 @@ clean:
 	rm -f test_read
 
 restartclean:
-	rm -rf /mnt/ramdisk/*
+	rm -rf /mnt/ramdisk/mmap.file.*
