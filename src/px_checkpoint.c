@@ -140,7 +140,11 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 				}
 				break;
 			case 4:	
-				//fall through
+				n->ptr = page_aligned_copy_read(&chlog, var_name,process_id);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : page aligned copy read\n");
+				}
+				break;
 			default:
 				printf("wrong copy strategy specified. please check the configuration\n");
 				exit(1);

@@ -45,6 +45,31 @@ void *copy_read(log_t *log, char *var_name,int process_id){
 }
 
 
+void *page_aligned_copy_read(log_t *log, char *var_name,int process_id){
+	void *ddata_ptr = NULL;
+	void *nvdata_ptr = NULL;
+	checkpoint_t *cbptr = log->current->meta;
+    checkpoint_t *checkpoint = log_read(log,var_name,process_id);
+    if(checkpoint == NULL){ // data not found
+        printf("Error data not found");
+        assert(0);
+        return NULL;
+    }
+	nvdata_ptr = get_data_addr(cbptr,checkpoint);
+	//allocating page aligned memory
+	long page_size = sysconf(_SC_PAGESIZE);
+	long page_aligned_size = ((checkpoint->data_size+page_size-1)& ~(page_size-1));
+	if(isDebugEnabled()){
+		printf("fault_read: actual size and page aligned size %ld : %ld \n", checkpoint->data_size, page_aligned_size);
+	}
+    int s = posix_memalign(&ddata_ptr,page_size, page_aligned_size);
+	if (s != 0){
+        handle_error("posix memalign");
+	}
+	nvmmemcpy_read(ddata_ptr,nvdata_ptr,checkpoint->data_size);
+	return ddata_ptr;
+}
+
 /*
 * fault read copies the data during a page fault
 */
