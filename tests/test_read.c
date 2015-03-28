@@ -39,9 +39,7 @@ int main(int argc, char *argv[]){
 	print_matrix(b);
 	print_matrix(c);
 
-
-//	int i=0;
-	/*while(1){
+	while(1){
 		increment_matrix(a);
 		increment_matrix(b);
 		multiply_matrix(a,b,c);	
@@ -49,7 +47,6 @@ int main(int argc, char *argv[]){
 			printf("checkpointing : %ld \n", a.matrix[0]);
 			chkpt_all(0);
 		}
-		i++;
-	}*/	
+	}	
 	exit(0);
 }

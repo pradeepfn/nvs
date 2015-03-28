@@ -50,6 +50,20 @@ module Allocator
         call c_f_pointer(cptr,arr,[row])
       end subroutine
 
+      subroutine alloc_1d_int(arr,row,varname, mype, cmtsize)
+        integer :: row
+        integer, pointer :: arr(:)
+        type(c_ptr) :: cptr
+        integer :: val, nvsize 
+        character(len=10) varname
+        integer :: mype, cmtsize
+
+         val = row*SIZEOF(real)
+        nvsize = cmtsize * SIZEOF(real)
+        cptr = alloc(val,varname, mype, nvsize)
+        call c_f_pointer(cptr,arr,[row])
+      end subroutine
+
       subroutine alloc_2d_real(arr,row,col,varname, mype, cmtsize)
         integer :: row
         integer :: col

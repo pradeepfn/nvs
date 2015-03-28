@@ -6,7 +6,6 @@ program checkpoint_write
     integer, pointer :: istep
     CHARACTER(LEN=10) varname
     integer cmtsize
-    integer __dummy
     integer i
 
     print *, "checkpointing"
