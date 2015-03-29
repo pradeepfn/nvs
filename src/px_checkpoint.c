@@ -18,6 +18,7 @@
 #define DEBUG_ENABLE "debug.enable"
 #define PFILE_LOCATION "pfile.location"
 #define NVRAM_WBW "nvram.wbw"
+#define RSTART "rstart"
 
 
 //copy stategies
@@ -39,6 +40,7 @@ int lib_process_id = -1;
 int  checkpoint_size_printed = 0; // flag variable
 long checkpoint_size = 0;
 int nvram_wbw = -1;
+int rstart = 0;
 char pfile_location[32];
 
 log_t chlog;
@@ -78,6 +80,8 @@ void init(int process_id){
 			strncpy(pfile_location,varvalue,sizeof(pfile_location));
 		}else if(!strncmp(NVRAM_WBW,varname,sizeof(varname))){
 			nvram_wbw = atoi(varvalue);
+		}else if(!strncmp(RSTART,varname,sizeof(varname))){
+			rstart = atoi(varvalue);
 		}else{
 			printf("unknown varibale. please check the config\n");
 			exit(1);
@@ -161,9 +165,11 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 
 
 void chkpt_all(int process_id){
-	if(isDebugEnabled()){
-		printf("checkpointing data of process : %d \n",process_id);
+        if(rstart == 1){
+		printf("skipping checkpointing data of process : %d \n",process_id);
+		return;
 	}
+	printf("checkpointing data of process : %d \n",process_id);
 	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
 		printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
 		checkpoint_size_printed = 1;

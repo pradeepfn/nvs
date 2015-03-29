@@ -120,7 +120,9 @@ static void bchandler(int sig, siginfo_t *si, void *unused){
 		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
 		pagenode->copied = 1;
 		size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
-		assert(size_of_variable != pagenode->size);
+		if(isDebugEnabled()){
+			printf("size of variable : %ld, pagenode->size : %ld  pagenode->alignedsize : %ld\n",size_of_variable,pagenode->size,pagenode->paligned_size);
+		}
 		nvmmemcpy_read(pagenode->pageptr,pagenode->nvpageptr,pagenode->size);
 		if(isDebugEnabled()){
 			printf("bchandler:page fault handler end\n");
@@ -139,10 +141,6 @@ void *chunk_read(log_t *log, char *var_name, int process_id){
 * pre copy read function
 */
 void *pc_read(log_t *log, char *var_name, int process_id){
-	if(!thread_flag){
-		spawn_pc_thread();
-		thread_flag = 1;
-	}
 	return fault_read(log,var_name,process_id,pchandler);
 }
 
@@ -152,11 +150,9 @@ void *pc_read(log_t *log, char *var_name, int process_id){
 */
 static void pchandler(int sig, siginfo_t *si, void *unused){
 	bchandler(sig,si,unused);
-	if(!thread.flag){
-		if(isDebugEnabled()){
-			printf("pchandler: raising the SIGUSR1 signal.\n");
-		}
-		kill(getpid(),SIGUSR1);
+	if(!thread_flag){
+		spawn_pc_thread();
+		thread_flag = 1;
 	}
 }
 
@@ -164,25 +160,9 @@ static void pchandler(int sig, siginfo_t *si, void *unused){
 static void *pc_func(void *arg){
 	//tcontext_t *tcontext = (tcontext_t *)arg;
 	pthread_detach(pthread_self()); // self cleanup after terminate
-
 	if(isDebugEnabled()){
 		printf("pc_func: pre-fetch thread started\n");
 	}
-	// newly spawned thread wait on the SIGUSR1 upon spawn
-	int caught;	
-	sigset_t sigs_to_catch;	
-	sigemptyset(&sigs_to_catch);	
-	sigaddset(&sigs_to_catch, SIGUSR1);
-	if(isDebugEnabled()){
-		printf("pc_func: waiting for SIGUSR1 signal\n");
-	}
-	// wait till the memory access occure
-	sigwait(&sigs_to_catch, &caught);
-	if(isDebugEnabled()){
-		printf("pc_func: starting the pre-fetch thread\n");
-	}
-	// once signal received for the first time, we mark the thread as spwaned
-	thread.flag = 1;
 	copy_chunks(&pagemap);
 	return (void *)1;
 }
@@ -191,16 +171,9 @@ static void *pc_func(void *arg){
   signal. This is the pre-copy thread. */
 static void spawn_pc_thread(){
 	int s;
-	//block the SIGUSR1 signal in main thread.
-	sigset_t sigs_to_block;
-	sigemptyset(&sigs_to_block);	
-	sigaddset(&sigs_to_block, SIGUSR1);	
-	pthread_sigmask(SIG_BLOCK, &sigs_to_block, NULL);
-	
 	if(isDebugEnabled()){
 		printf("spawning the pre-fetch thread. \n");
 	}
-	thread.flag = 0;
 	tcontext_t *tcontext  = malloc(sizeof(tcontext_t));
 	//execute the pre-fetch thread
 	s = pthread_create(&thread.pthreadid,NULL, pc_func, tcontext);	

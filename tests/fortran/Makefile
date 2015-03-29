@@ -1,5 +1,5 @@
-CFLAGS = -g -fbacktrace -I/home/pradeep/checkout/phoenix/include -std=legacy 
-LDFLAGS = -g -L/home/pradeep/checkout/phoenix/lib -lphoenix 
+CFLAGS = -g -fbacktrace -I../../include -std=legacy 
+LDFLAGS = -g -L../../lib -lphoenix 
 
 CC = mpif90
 
