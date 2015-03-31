@@ -15,6 +15,9 @@ struct entry {
     int process_id;
     int version;
     LIST_ENTRY(entry) entries;
+
+    /*Remote checkpoint specific members*/
+    void **rmt_ptr;
 };
 
 LIST_HEAD(tlisthead, thread_t_);
