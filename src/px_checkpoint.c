@@ -7,6 +7,7 @@
 #include "px_checkpoint.h"
 #include "px_log.h"
 #include "px_read.h"
+#include "px_remote.h"
 #include "px_debug.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
@@ -19,6 +20,7 @@
 #define PFILE_LOCATION "pfile.location"
 #define NVRAM_WBW "nvram.wbw"
 #define RSTART "rstart"
+#define REMOTE_CHECKPOINT_ENABLE "rmt.chkpt.enable"
 
 
 //copy stategies
@@ -26,6 +28,9 @@
 #define FAULT_COPY 2
 #define PRE_COPY 3
 #define FAST_RESTART 4
+#define REMOTE_NAIVE_COPY 5
+#define REMOTE_FAULT_COPy 6
+#define REMOTE_PRE_COPY 7
 
 
 int is_remaining_space_enough(int);
@@ -41,6 +46,7 @@ int  checkpoint_size_printed = 0; // flag variable
 long checkpoint_size = 0;
 int nvram_wbw = -1;
 int rstart = 0;
+int remote_checkpoint = 0;
 char pfile_location[32];
 
 log_t chlog;
@@ -49,10 +55,15 @@ tlisthead_t thead;
 
 thread_t thread;
 
-void init(int process_id){
+int init(int proc_id, int nproc){
 	char varname[30];
 	char varvalue[32];// we are reading integers in to this
-	lib_process_id = process_id;
+	if(lib_initialized){
+		printf("Error: the library already initialized.");
+		exit(1);
+	}
+
+	lib_process_id = proc_id;
 	
 	//naive way of reading the config file
 	FILE *fp = fopen(CONFIG_FILE_NAME,"r");
@@ -66,11 +77,11 @@ void init(int process_id){
 			fscanf(fp,"%*[^\n]");  
 			fscanf(fp,"%*1[\n]"); 
 			continue;
-		}else if(!strncmp("nvm.size",varname,sizeof(varname))){
+		}else if(!strncmp(NVM_SIZE,varname,sizeof(varname))){
 			log_size = atoi(varvalue)*1024*1024;		
-		}else if(!strncmp("chunk.size",varname,sizeof(varname))){
+		}else if(!strncmp(CHUNK_SIZE,varname,sizeof(varname))){
 			chunk_size = atoi(varvalue);	
-		}else if(!strncmp("copy.strategy",varname,sizeof(varname))){
+		}else if(!strncmp(COPY_STRATEGY,varname,sizeof(varname))){
 			copy_strategy = atoi(varvalue);	
 		}else if(!strncmp(DEBUG_ENABLE,varname,sizeof(varname))){
 			if(atoi(varvalue) == 1){		
@@ -82,7 +93,9 @@ void init(int process_id){
 			nvram_wbw = atoi(varvalue);
 		}else if(!strncmp(RSTART,varname,sizeof(varname))){
 			rstart = atoi(varvalue);
-		}else{
+		}else if(!strncmp(REMOTE_CHECKPOINT_ENABLE,varname,sizeof(varname))){
+			remote_checkpoint = 1;		
+		}else {
 			printf("unknown varibale. please check the config\n");
 			exit(1);
 		}
@@ -95,19 +108,18 @@ void init(int process_id){
 		printf("persistant file location : %s\n", pfile_location);
 		printf("NVRAM write bandwidth : %d Mb\n", nvram_wbw);
 	}
-
-	log_init(&chlog,log_size,process_id);
-	LIST_INIT(&head);
 	
+	if(remote_checkpoint){
+		int status = remote_init(proc_id,nproc);
+		if(!status){printf("Error: initializing remote copy procedures..\n");}
+	}
+	log_init(&chlog,log_size,proc_id);
+	LIST_INIT(&head);
+	return 0;	
 }
 
 
 void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
-    //initialize the library
-    if(!lib_initialized){
-        init(process_id);
-        lib_initialized = 1;
-    }   
 
 	//counting the total checkpoint data size per core
 	checkpoint_size+= size;
@@ -149,6 +161,24 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 					printf("copy strategy set to : page aligned copy read\n");
 				}
 				break;
+			case 5:	
+				n->ptr = remote_copy_read(&chlog, var_name,process_id);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : remote naive copy read\n");
+				}
+				break;
+			case 6:	
+				n->ptr = remote_chunk_read(&chlog, var_name,process_id);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : remote fault copy read\n");
+				}
+				break;
+			case 7:	
+				n->ptr = remote_pc_read(&chlog, var_name,process_id);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : remote pre copy read\n");
+				}
+				break;
 			default:
 				printf("wrong copy strategy specified. please check the configuration\n");
 				exit(1);
@@ -183,8 +213,13 @@ void* alloc_(unsigned int* n, char *s, int *iid, int *cmtsize) {
 	return alloc(s,*n,*cmtsize,*iid); 
 }
 
-void afree_(char* arr) {
-	free(arr);
+void afree_(void* ptr) {
+	free(ptr);
+}
+
+
+void afree(void* ptr) {
+	free(ptr);
 }
 
 void chkpt_all_(int *process_id){

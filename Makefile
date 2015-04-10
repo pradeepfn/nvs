@@ -1,11 +1,11 @@
 IDIR =include
 CC=mpicc
-CFLAGS= -g -Wall -I$(IDIR) -D_ARMCI_CHECKPOINT
+CFLAGS= -g -Wall -I$(IDIR)
 LDFLAGS=
 
 _DEPS = phoenix.h
-_LIB_OBJ = px_checkpoint.o px_log.o px_util.o px_read.o px_debug.o timecount.o rmtchkpt.o
-_LIB_HEADER = px_checkpoint.h px_log.h px_util.h px_read.h px_debug.h rmtchkpt.h
+_LIB_OBJ = px_checkpoint.o px_log.o px_util.o px_read.o px_debug.o timecount.o px_remote.o
+_LIB_HEADER = px_checkpoint.h px_log.h px_util.h px_read.h px_debug.h px_remote.h
 
 SRC=src
 ODIR=obj

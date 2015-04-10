@@ -70,6 +70,20 @@ void *page_aligned_copy_read(log_t *log, char *var_name,int process_id){
 	return ddata_ptr;
 }
 
+void *remote_copy_read(log_t *log, char *var_name,int process_id){
+	retrun NULL;
+}
+
+
+void *remote_chunk_read(log_t *log, char *var_name,int process_id){
+	retrun NULL;
+}
+
+
+void *remote_pc_read(log_t *log, char *var_name,int process_id){
+	retrun NULL;
+}
+
 /*
 * fault read copies the data during a page fault
 */
