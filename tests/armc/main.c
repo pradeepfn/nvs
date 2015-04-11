@@ -23,22 +23,42 @@ int main(int argc, char **argv) {
     MPI_Comm_size(MPI_COMM_WORLD, &nranks);
 	printf("done with MPI init...\n");
     remote_init(myrank,nranks);
+
     char string[]= "Hello world";
+	char secondstr[] = "Bello world";
+
     bytes = 20;
-    ptr = (void *)alloc_remote(&memory_grid, bytes);
-    if(!ptr){errors = -1;}
+    ptr = (void *)remote_alloc(&memory_grid, bytes);
+
+	//printf("memory_grid[0] = %p \n", memory_grid[0]);
+	//printf("memory_grid[1] = %p \n", memory_grid[1]);
+
 
     //copying to my local memory
-    strncpy(ptr,string,15);
-    remote_write(myrank, memory_grid,bytes);
-	printf("copying to remote memory\n");
+    if(myrank){
+		strncpy(ptr,string,15);
+	}else{
+		strncpy(ptr,secondstr,15);
+	}
+
+	if(!myrank){
+		printf("rank : %d memory_grid[0] = %s \n", myrank, (char *)memory_grid[0]);
+	}else{
+		printf("rank : %d memory_grid[1] = %s \n", myrank, (char *)memory_grid[1]);
+	}
+	if(!myrank){
+		printf("copying to remote memory from rank %d\n", myrank);
+		remote_write(myrank, memory_grid,bytes);
+	}
+	MPI_Barrier(MPI_COMM_WORLD);
+	if(!myrank){
+		printf("rank : %d memory_grid[0] = %s \n", myrank, (char *)memory_grid[0]);
+	}else{
+		printf("rank : %d memory_grid[1] = %s \n", myrank, (char *)memory_grid[1]);
+	}
+	remote_free(ptr);
     remote_finalize();
     MPI_Finalize();
-    if (errors == 0) {
-        printf("%d: Success\n", myrank);
-        return 0;
-    } else {
-        printf("%d: Fail\n", myrank);
-        return 1;
-    }
+    printf("%d: Success\n", myrank);
+    return 0;
 }

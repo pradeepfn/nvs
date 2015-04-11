@@ -10,8 +10,9 @@ extern "C" {
 int remote_init(int my_rank, int n_rank);
 
 /*Remote memory allocation*/
-void* alloc_remote(void ***memory_grid, size_t size);
+void* remote_alloc(void ***memory_grid, size_t size);
 
+int remote_free(void *mem_ptr);
 /*Remote memory copy*/
 int remote_write(int myrank, void** memory_grid,size_t size);
 

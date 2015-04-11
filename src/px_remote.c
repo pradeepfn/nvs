@@ -21,7 +21,7 @@ int armci_remote_memcpy(int my_rank, int mypeer_rank,
 				void **rmt_armci_ptr, size_t size);
 
 
-int invoke_barrier() {
+int remote_barrier() {
 	ARMCI_Barrier();
 	return 0;
 }
@@ -61,24 +61,36 @@ int remote_init(int my_rank, int n_rank) {
 	returns rmtptrs
 		rmtprtrs[myrank] - 
 */
-void* alloc_remote(void ***memory_grid, size_t size){
+void* remote_alloc(void ***memory_grid, size_t size){
 
 	void **rmtptrs;
 	rmtptrs = group_create_memory(nranks, size);
 	*memory_grid = rmtptrs;
+	if(isDebugEnabled()){
+		printf("rmtptrs[0] = %p\n", rmtptrs[0]);
+		printf("rmtptrs[1] = %p\n", rmtptrs[1]);
+	}
 	return rmtptrs[grp_my_rank];
 }
 
+int remote_free(void *ptr){
+	int status = ARMCI_Free_group(ptr,&my_grp); 
+	if(status){
+		printf("Error : freeing memory");
+		assert(0);
+	}
+}
+
+
 int remote_write(int myrank,void ** memory_grid, size_t size){
 	armci_remote_memcpy(myrank,mypeer,memory_grid, size);
-	invoke_barrier();
+	//invoke_barrier();
 	return 0;
 }
 
 /* TODO : not working like this */
 int remote_read(int myrank, void** remote_ptr, size_t size){
 	armci_remote_memcpy(mypeer, myrank,remote_ptr, size);
-	invoke_barrier();
 	return 0;
 }
 
@@ -143,6 +155,6 @@ int armci_remote_memcpy(int my_rank, int mypeer_rank,
 		printf("Error: copying data to remote node.\n");
 		assert(0);	
 	}
-	ARMCI_Barrier();
+	//ARMCI_Barrier();
 	return 0;
 }
