@@ -6,6 +6,7 @@
 #include <sys/time.h>
 #include "px_remote.h"
 #include "px_checkpoint.h"
+#include "px_debug.h"
 
 
 ARMCI_Group  g_world, my_grp;
@@ -20,8 +21,6 @@ int armci_remote_memcpy(int my_rank, int mypeer_rank,
 				void **rmt_armci_ptr, size_t size);
 
 
-
-
 int invoke_barrier() {
 	ARMCI_Barrier();
 	return 0;
@@ -33,7 +32,7 @@ int remote_init(int my_rank, int n_rank) {
 
 	/*For now lets assume 1 buddy for each node*/
 	int no_members=2;
-	int members[no_members];
+	int members[2];
 	int errors=-1;
 	
 	myrank = my_rank;
@@ -47,6 +46,10 @@ int remote_init(int my_rank, int n_rank) {
 	}
 	members[myrank % no_members] = myrank;
 	members[mypeer % no_members] = mypeer;
+	if(isDebugEnabled()){
+		printf("Rank %d , members[%d] = %d \n",myrank,myrank%no_members,myrank);
+		printf("Rank %d , members[%d] = %d \n",myrank,mypeer%no_members,mypeer);
+	}
 	/*registering with armci-lib about our grouping*/
 	create_group(members, no_members, myrank, nranks);
 	return errors;
@@ -89,10 +92,16 @@ int remote_finalize(void){
 
 
 int create_group ( int *members, int nmembers, int myrank,  int numrank) {
+	if(isDebugEnabled()){
+		printf("Creating a member group..\n");
+	}
 	ARMCI_Group_get_world(&g_world);
 	ARMCI_Group_create_child(nmembers, members, &my_grp, &g_world);
 	ARMCI_Group_rank(&my_grp, &grp_my_rank);
 	ARMCI_Group_size(&my_grp, &grp_nproc);
+	if(isDebugEnabled()){
+		printf("Done creating the group..\n");
+	}
 	return 0;
 }
 
@@ -103,8 +112,11 @@ void** group_create_memory(int nranks, size_t size) {
 	void **rmt_armci_ptr;
 
 	rmt_armci_ptr = (void **) calloc(nranks,sizeof(void *));
-	assert(rmt_armci_ptr);
-	ARMCI_Malloc_group(rmt_armci_ptr, u_bytes, &my_grp);
+	int status = ARMCI_Malloc_group(rmt_armci_ptr, u_bytes, &my_grp);
+	if(status){
+		printf("Error: creating group memory\n");
+		assert(0);
+	}
 	ARMCI_Barrier();
 	assert(rmt_armci_ptr);
 	return rmt_armci_ptr;
@@ -125,7 +137,12 @@ int armci_remote_memcpy(int my_rank, int mypeer_rank,
 		gpeer_rank = grp_my_rank - 1;
 	}
 
-	ARMCI_Put(rmt_armci_ptr[grp_my_rank],rmt_armci_ptr[gpeer_rank],size,mypeer_rank);
+	int status = ARMCI_Put(rmt_armci_ptr[grp_my_rank],
+					rmt_armci_ptr[gpeer_rank],size,mypeer_rank);
+	if(status){
+		printf("Error: copying data to remote node.\n");
+		assert(0);	
+	}
 	ARMCI_Barrier();
 	return 0;
 }
