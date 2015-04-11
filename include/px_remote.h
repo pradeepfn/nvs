@@ -14,7 +14,7 @@ void* remote_alloc(void ***memory_grid, size_t size);
 
 int remote_free(void *mem_ptr);
 /*Remote memory copy*/
-int remote_write(int myrank, void** memory_grid,size_t size);
+int remote_write(void *src, void** memory_grid,size_t size);
 
 /*call this during MPI_Finalize*/
 int remote_finalize(void);

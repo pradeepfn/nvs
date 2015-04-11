@@ -17,7 +17,7 @@ int grp_nproc;
 
 int create_group ( int *members, int nmembers, int myrank,  int numrank);
 void** group_create_memory(int nranks, size_t size);
-int armci_remote_memcpy(int my_rank, int mypeer_rank,
+int armci_remote_memcpy(void *src, int mypeer_rank,
 				void **rmt_armci_ptr, size_t size);
 
 
@@ -82,8 +82,8 @@ int remote_free(void *ptr){
 }
 
 
-int remote_write(int myrank,void ** memory_grid, size_t size){
-	armci_remote_memcpy(myrank,mypeer,memory_grid, size);
+int remote_write(void *src,void ** memory_grid, size_t size){
+	armci_remote_memcpy(src,mypeer,memory_grid, size);
 	//invoke_barrier();
 	return 0;
 }
@@ -135,7 +135,7 @@ void** group_create_memory(int nranks, size_t size) {
 }
 
 
-int armci_remote_memcpy(int my_rank, int mypeer_rank,
+int armci_remote_memcpy(void *src, int mypeer_rank,
 				void **rmt_armci_ptr, size_t size){
 
 	int gpeer_rank = 0;
@@ -149,7 +149,7 @@ int armci_remote_memcpy(int my_rank, int mypeer_rank,
 		gpeer_rank = grp_my_rank - 1;
 	}
 
-	int status = ARMCI_Put(rmt_armci_ptr[grp_my_rank],
+	int status = ARMCI_Put(src,
 					rmt_armci_ptr[gpeer_rank],size,mypeer_rank);
 	if(status){
 		printf("Error: copying data to remote node.\n");
