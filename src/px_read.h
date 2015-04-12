@@ -23,7 +23,7 @@ void *pc_read(log_t *log, char *var_name, int process_id);
 void *page_aligned_copy_read(log_t *log, char *var_name,int process_id);
 
 
-void *remote_copy_read(log_t *, char *var_name,int process_id);
-void *remote_chunk_read(log_t *, char *var_name,int process_id);
-void *remote_pc_read(log_t *, char *var_name,int process_id);
+void remote_copy_read(log_t *, char *var_name,int process_id,entry_t *entry);
+void remote_chunk_read(log_t *, char *var_name,int process_id,entry_t *entry);
+void remote_pc_read(log_t *, char *var_name,int process_id,entry_t *entry);
 #endif

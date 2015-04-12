@@ -19,7 +19,7 @@ int create_group ( int *members, int nmembers, int myrank,  int numrank);
 void** group_create_memory(int nranks, size_t size);
 int armci_remote_memcpy(void *src, int mypeer_rank,
 				void **rmt_armci_ptr, size_t size);
-
+int get_mypeer_group(int my_grp_rank);
 
 int remote_barrier() {
 	ARMCI_Barrier();
@@ -33,7 +33,7 @@ int remote_init(int my_rank, int n_rank) {
 	/*For now lets assume 1 buddy for each node*/
 	int no_members=2;
 	int members[2];
-	int errors=-1;
+	int errors=0;
 	
 	myrank = my_rank;
 	nranks = n_rank;
@@ -84,8 +84,22 @@ int remote_free(void *ptr){
 
 
 int remote_write(void *src,void ** memory_grid, size_t size){
-	armci_remote_memcpy(src,mypeer,memory_grid, size);
-	//invoke_barrier();
+	int peer = get_mypeer_group(grp_my_rank);
+	int status = ARMCI_Put(src,memory_grid[peer],size,mypeer);
+	if(status){
+		printf("Error: copying data to remote node.\n");
+		assert(0);	
+	}
+	return 0;
+}
+
+int remote_read(void *dest, void **memory_grid, size_t size){
+	int peer = get_mypeer_group(grp_my_rank);
+	int status = ARMCI_Get(memory_grid[peer],dest,size,mypeer);
+	if(status){
+		printf("Error: copying data from remote node.\n");
+		assert(0);	
+	}
 	return 0;
 }
 
@@ -130,27 +144,12 @@ void** group_create_memory(int nranks, size_t size) {
 	return rmt_armci_ptr;
 }
 
-
-int armci_remote_memcpy(void *src, int mypeer_rank,
-				void **rmt_armci_ptr, size_t size){
-
+int get_mypeer_group(int my_grp_rank){
 	int gpeer_rank = 0;
-	/* grp_my_rank, group_peer set when creating
-	 * a group. These are not same as global
-	 * rank and peer
-	 */
-	if(grp_my_rank == 0){
-		gpeer_rank = grp_my_rank + 1;
-	}else{
-		gpeer_rank = grp_my_rank - 1;
+	if(my_grp_rank == 0){
+		gpeer_rank = my_grp_rank + 1;
+		return gpeer_rank;
 	}
-
-	int status = ARMCI_Put(src,
-					rmt_armci_ptr[gpeer_rank],size,mypeer_rank);
-	if(status){
-		printf("Error: copying data to remote node.\n");
-		assert(0);	
-	}
-	//ARMCI_Barrier();
-	return 0;
+	gpeer_rank = my_grp_rank - 1;
+	return gpeer_rank;	
 }

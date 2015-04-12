@@ -11,6 +11,7 @@
 #include "px_debug.h"
 #include "px_util.h"
 #include "px_read.h"
+#include "px_remote.h"
 
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -70,18 +71,31 @@ void *page_aligned_copy_read(log_t *log, char *var_name,int process_id){
 	return ddata_ptr;
 }
 
-void *remote_copy_read(log_t *log, char *var_name,int process_id){
-	return (void *)0;
+void remote_copy_read(log_t *log, char *var_name,int process_id, entry_t *entry){
+	void *buffer=NULL;
+    void *data_addr = NULL;
+	checkpoint_t *cbptr = log->current->meta;
+    checkpoint_t *checkpoint = log_read(log,var_name,process_id);
+    if(checkpoint == NULL){ // data not found
+        printf("Error data not found");
+        assert(0);
+    }
+	data_addr = get_data_addr(cbptr,checkpoint);
+
+    entry->ptr = malloc(checkpoint->data_size);
+	entry->local_ptr = remote_alloc(&entry->rmt_ptr,checkpoint->data_size);
+	//copy the data to local armci memory
+	memcpy(entry->local_ptr,data_addr,checkpoint->data_size);
+	//get the remote data to localy allocated memory
+	remote_read(entry->rmt_ptr, buffer, checkpoint->data_size);
 }
 
 
-void *remote_chunk_read(log_t *log, char *var_name,int process_id){
-	return (void *)0;
+void remote_chunk_read(log_t *log, char *var_name,int process_id,entry_t *entry){
 }
 
 
-void *remote_pc_read(log_t *log, char *var_name,int process_id){
-	return (void *)0;
+void remote_pc_read(log_t *log, char *var_name,int process_id,entry_t *entry){
 }
 
 /*

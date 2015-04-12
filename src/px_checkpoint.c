@@ -28,9 +28,9 @@
 #define NAIVE_COPY 1
 #define FAULT_COPY 2
 #define PRE_COPY 3
-#define FAST_RESTART 4
-#define REMOTE_NAIVE_COPY 5
-#define REMOTE_FAULT_COPy 6
+#define PAGE_ALIGNED_COPY 4
+#define REMOTE_COPY 5
+#define REMOTE_FAULT_COPY 6
 #define REMOTE_PRE_COPY 7
 
 
@@ -97,7 +97,9 @@ int init(int proc_id, int nproc){
 		}else if(!strncmp(RSTART,varname,sizeof(varname))){
 			rstart = atoi(varvalue);
 		}else if(!strncmp(REMOTE_CHECKPOINT_ENABLE,varname,sizeof(varname))){
-			remote_checkpoint = 1;		
+			if(atoi(varvalue) == 1){		
+				remote_checkpoint = 1;		
+			}
 		}else {
 			printf("unknown varibale. please check the config\n");
 			exit(1);
@@ -132,52 +134,63 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
     n->version = 0;
 
 	//if checkpoint data present, then read from the the checkpoint
-	if(is_chkpoint_present(&chlog)){
+	if(remote_checkpoint){
+
+		if(isDebugEnabled()){
+			printf("retrieving from the remote checkpointed memory : %s\n", var_name);
+		}
+		switch(copy_strategy){
+		   	case REMOTE_COPY:	
+				remote_copy_read(&chlog, var_name,get_mypeer(process_id),n);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : remote naive copy read\n");
+				}
+				break;
+			case REMOTE_FAULT_COPY:	
+				remote_chunk_read(&chlog, var_name,get_mypeer(process_id),n);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : remote fault copy read\n");
+				}
+				break;
+			case REMOTE_PRE_COPY:	
+				remote_pc_read(&chlog, var_name,get_mypeer(process_id),n);
+				if(isDebugEnabled()){
+					printf("copy strategy set to : remote pre copy read\n");
+				}
+				break;
+			default:
+				printf("wrong copy strategy specified. please check the configuration\n");
+				exit(1);
+		}
+
+	}else if(is_chkpoint_present(&chlog)){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
 	/*Different copy methods*/
 		switch(copy_strategy){
-			case 1:
+			case NAIVE_COPY:
 				n->ptr = copy_read(&chlog, var_name,process_id);
 				if(isDebugEnabled()){
 					printf("copy strategy set to : naive read\n");
 				}
 				break;
-			case 2:
+			case FAULT_COPY:
 				n->ptr = chunk_read(&chlog, var_name,process_id);
 				if(isDebugEnabled()){
 					printf("copy strategy set to : fault read\n");
 				}
 				break;	
-			case 3:
+			case PRE_COPY:
 				n->ptr = pc_read(&chlog, var_name,process_id);
 				if(isDebugEnabled()){
 					printf("copy strategy set to : precopy read\n");
 				}
 				break;
-			case 4:	
+			case PAGE_ALIGNED_COPY:	
 				n->ptr = page_aligned_copy_read(&chlog, var_name,process_id);
 				if(isDebugEnabled()){
 					printf("copy strategy set to : page aligned copy read\n");
-				}
-				break;
-			case 5:	
-				n->ptr = remote_copy_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : remote naive copy read\n");
-				}
-				break;
-			case 6:	
-				n->ptr = remote_chunk_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : remote fault copy read\n");
-				}
-				break;
-			case 7:	
-				n->ptr = remote_pc_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : remote pre copy read\n");
 				}
 				break;
 			default:
@@ -237,4 +250,7 @@ void afree(void* ptr) {
 
 void chkpt_all_(int *process_id){
 	chkpt_all(*process_id);
+}
+int init_(int *proc_id, int *nproc){
+	return init(*proc_id,*nproc);
 }
