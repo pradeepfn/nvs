@@ -115,7 +115,7 @@ int init(int proc_id, int nproc){
 	}
 	
 	status = remote_init(proc_id,nproc);
-	if(!status){printf("Error: initializing remote copy procedures..\n");}
+	if(status){printf("Error: initializing remote copy procedures..\n");}
 	log_init(&chlog,log_size,proc_id);
 	LIST_INIT(&head);
 	return 0;	

@@ -72,7 +72,6 @@ void *page_aligned_copy_read(log_t *log, char *var_name,int process_id){
 }
 
 void remote_copy_read(log_t *log, char *var_name,int process_id, entry_t *entry){
-	void *buffer=NULL;
     void *data_addr = NULL;
 	checkpoint_t *cbptr = log->current->meta;
     checkpoint_t *checkpoint = log_read(log,var_name,process_id);
@@ -87,7 +86,7 @@ void remote_copy_read(log_t *log, char *var_name,int process_id, entry_t *entry)
 	//copy the data to local armci memory
 	memcpy(entry->local_ptr,data_addr,checkpoint->data_size);
 	//get the remote data to localy allocated memory
-	remote_read(entry->rmt_ptr, buffer, checkpoint->data_size);
+	remote_read(entry->ptr,entry->rmt_ptr, checkpoint->data_size);
 }
 
 

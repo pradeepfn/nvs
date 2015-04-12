@@ -85,6 +85,10 @@ int remote_free(void *ptr){
 
 int remote_write(void *src,void ** memory_grid, size_t size){
 	int peer = get_mypeer_group(grp_my_rank);
+	if(isDebugEnabled()){
+		printf("Writing data local_rank: %d  remote_rank : %d remote addr : %p "  
+					"local src addr : %p \n",myrank, mypeer, memory_grid[peer],src);
+	}
 	int status = ARMCI_Put(src,memory_grid[peer],size,mypeer);
 	if(status){
 		printf("Error: copying data to remote node.\n");
@@ -95,6 +99,10 @@ int remote_write(void *src,void ** memory_grid, size_t size){
 
 int remote_read(void *dest, void **memory_grid, size_t size){
 	int peer = get_mypeer_group(grp_my_rank);
+	if(isDebugEnabled()){
+		printf("Reading data local_rank:%d remote_rank : %d remote addr : %p " 
+					 "local dest addr : %p \n", myrank, mypeer, memory_grid[peer],dest);
+	}
 	int status = ARMCI_Get(memory_grid[peer],dest,size,mypeer);
 	if(status){
 		printf("Error: copying data from remote node.\n");
