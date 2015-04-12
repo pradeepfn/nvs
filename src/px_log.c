@@ -41,6 +41,27 @@ void log_init(log_t *log , long log_size, int process_id){
     init_mmap_files(log);
 }
 
+int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
+	entry_t *np;
+	//same size, no issue
+	if(!is_remaining_space_enough(log, lhead)){
+		if(isDebugEnabled()){ 
+			printf("remaining space is not enough. Switching to other file....\n");
+		}
+		log->current = (log->current == &(log->m[0]))?&(log->m[1]):&(log->m[0]);	
+		log->current->head->offset = -1; // invalidate the data
+		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
+	}
+    for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
+			if(isDebugEnabled()){
+				printf("checkpointing remote data: varname : %s , process_id :  %d , version : %d , size : %ld , pointer : %p \n", np->var_name, process_id, np->version, np->size, np->local_ptr);
+			}
+		
+            checkpoint(log, np->var_name,process_id, np->version, np->size, np->local_ptr);
+    }	
+
+	return 1;
+}
 
 /* writing to the data to persistent storage*/
 int log_write(log_t *log, listhead_t *lhead, int process_id){

@@ -18,6 +18,7 @@ struct entry {
 
     /*Remote checkpoint specific members*/
     void **rmt_ptr;
+	void *local_ptr;
 };
 
 LIST_HEAD(tlisthead, thread_t_);

@@ -71,17 +71,17 @@ void *page_aligned_copy_read(log_t *log, char *var_name,int process_id){
 }
 
 void *remote_copy_read(log_t *log, char *var_name,int process_id){
-	retrun NULL;
+	return (void *)0;
 }
 
 
 void *remote_chunk_read(log_t *log, char *var_name,int process_id){
-	retrun NULL;
+	return (void *)0;
 }
 
 
 void *remote_pc_read(log_t *log, char *var_name,int process_id){
-	retrun NULL;
+	return (void *)0;
 }
 
 /*

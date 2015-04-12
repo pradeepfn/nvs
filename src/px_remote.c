@@ -79,6 +79,7 @@ int remote_free(void *ptr){
 		printf("Error : freeing memory");
 		assert(0);
 	}
+	return 0;
 }
 
 
@@ -88,11 +89,6 @@ int remote_write(void *src,void ** memory_grid, size_t size){
 	return 0;
 }
 
-/* TODO : not working like this */
-int remote_read(int myrank, void** remote_ptr, size_t size){
-	armci_remote_memcpy(mypeer, myrank,remote_ptr, size);
-	return 0;
-}
 
 /* free up resources */
 int remote_finalize(void){

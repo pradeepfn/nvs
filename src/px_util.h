@@ -19,7 +19,7 @@ void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
 void enable_protection(void *ptr, size_t size);
 void copy_chunks(pagemap_t **page_map_ptr);
 void call_oldhandler(int signo);
-
+int get_mypeer(int myrank);
 
 
 #endif

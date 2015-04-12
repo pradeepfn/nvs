@@ -193,3 +193,10 @@ void copy_chunks(pagemap_t **page_map_ptr){
 		}	
 	}
 }
+
+int get_mypeer(int myrank){
+	if(myrank%2){
+		return myrank-1;
+	}
+	return myrank+1;
+}

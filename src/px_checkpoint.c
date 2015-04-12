@@ -9,6 +9,7 @@
 #include "px_read.h"
 #include "px_remote.h"
 #include "px_debug.h"
+#include "px_util.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -48,6 +49,8 @@ int nvram_wbw = -1;
 int rstart = 0;
 int remote_checkpoint = 0;
 char pfile_location[32];
+
+int status; // error status register
 
 log_t chlog;
 listhead_t head;
@@ -109,10 +112,8 @@ int init(int proc_id, int nproc){
 		printf("NVRAM write bandwidth : %d Mb\n", nvram_wbw);
 	}
 	
-	if(remote_checkpoint){
-		int status = remote_init(proc_id,nproc);
-		if(!status){printf("Error: initializing remote copy procedures..\n");}
-	}
+	status = remote_init(proc_id,nproc);
+	if(!status){printf("Error: initializing remote copy procedures..\n");}
 	log_init(&chlog,log_size,proc_id);
 	LIST_INIT(&head);
 	return 0;	
@@ -188,6 +189,7 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 			printf("allocating from the heap space\n");
 		}
         n->ptr = malloc(size);
+		n->local_ptr = remote_alloc(&n->rmt_ptr,size);
 	}
     LIST_INSERT_HEAD(&head, n, entries);
     return n->ptr;
@@ -195,16 +197,27 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 
 
 void chkpt_all(int process_id){
-        if(rstart == 1){
+	entry_t *np;
+    if(rstart == 1){
 		printf("skipping checkpointing data of process : %d \n",process_id);
 		return;
 	}
+	//copy each local variable to remote peer..
+	for(np = head.lh_first; np != NULL; np = np->entries.le_next){
+		status = remote_write(np->ptr,np->rmt_ptr,np->size);	
+		if(status){
+			printf("Error: failed variable copy to peer node\n");
+		}
+	}
+	remote_barrier();
+
 	printf("checkpointing data of process : %d \n",process_id);
 	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
 		printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
 		checkpoint_size_printed = 1;
 	}
 	log_write(&chlog,&head,process_id);
+	remote_data_log_write(&chlog,&head,get_mypeer(process_id));
     return;
 }
 

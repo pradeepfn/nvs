@@ -39,4 +39,5 @@ int log_write(log_t *,listhead_t *,int);
 checkpoint_t *log_read(log_t *, char *, int);
 int is_chkpoint_present(log_t *log);
 
+int remote_data_log_write(log_t *,listhead_t *,int);
 #endif
