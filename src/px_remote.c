@@ -83,7 +83,7 @@ int remote_free(void *ptr){
 }
 
 
-int remote_write(void *src,void ** memory_grid, size_t size){
+int remote_write(void *src,void **memory_grid, size_t size){
 	int peer = get_mypeer_group(grp_my_rank);
 	if(isDebugEnabled()){
 		printf("Writing data local_rank: %d  remote_rank : %d remote addr : %p "  

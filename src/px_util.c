@@ -5,6 +5,7 @@
 #include <sys/mman.h>
 
 #include "px_util.h"
+#include "px_remote.h"
 #include "px_debug.h"
 
 // read bandwidth to constant maching
@@ -138,7 +139,7 @@ long disable_protection(void *page_start_addr,size_t aligned_size){
 /*
 * put an element to pagemap.wrapper method
 */
-void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_t size, offset_t asize){
+void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_t size, offset_t asize,void **memory_grid){
 	pagemap_t *s;
 	HASH_FIND_INT(*pagemapptr, &pageptr, s);
     if (s==NULL) {
@@ -148,6 +149,7 @@ void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_
 		s->size = size;
 		s->paligned_size = asize;
 		s->copied = 0;
+		s->remote_ptr = memory_grid;
 		HASH_ADD_INT( *pagemapptr, pageptr, s );
 	}
 }
@@ -193,6 +195,24 @@ void copy_chunks(pagemap_t **page_map_ptr){
 		}	
 	}
 }
+
+void copy_remote_chunks(pagemap_t **page_map_ptr){
+	pagemap_t *s, *tmp;
+	//1. iterate and copy all the not copied chunks.
+	//2. disable the protection
+	//3. copy them to DRAM location
+	HASH_ITER(hh, *page_map_ptr, s, tmp) {
+		if(!s->copied){
+			if(isDebugEnabled()){
+				printf("*****copying data using pre-fetcher******\n");
+			}
+			disable_protection(s->pageptr,s->paligned_size);
+			remote_read(s->pageptr,s->remote_ptr,s->size);	
+			s->copied = 1;
+		}	
+	}
+}
+
 
 int get_mypeer(int myrank){
 	if(myrank%2){
