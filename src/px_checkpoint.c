@@ -22,6 +22,7 @@
 #define NVRAM_WBW "nvram.wbw"
 #define RSTART "rstart"
 #define REMOTE_CHECKPOINT_ENABLE "rmt.chkpt.enable"
+#define REMOTE_RESTART_ENABLE "rmt.rstart.enable"
 
 
 //copy stategies
@@ -48,6 +49,7 @@ long checkpoint_size = 0;
 int nvram_wbw = -1;
 int rstart = 0;
 int remote_checkpoint = 0;
+int remote_restart = 0;
 char pfile_location[32];
 
 int status; // error status register
@@ -100,6 +102,10 @@ int init(int proc_id, int nproc){
 			if(atoi(varvalue) == 1){		
 				remote_checkpoint = 1;		
 			}
+		}else if(!strncmp(REMOTE_RESTART_ENABLE,varname,sizeof(varname))){
+			if(atoi(varvalue) == 1){		
+				remote_restart = 1;		
+			}
 		}else {
 			printf("unknown varibale. please check the config\n");
 			exit(1);
@@ -113,9 +119,10 @@ int init(int proc_id, int nproc){
 		printf("persistant file location : %s\n", pfile_location);
 		printf("NVRAM write bandwidth : %d Mb\n", nvram_wbw);
 	}
-	
-	status = remote_init(proc_id,nproc);
-	if(status){printf("Error: initializing remote copy procedures..\n");}
+    if(remote_checkpoint || remote_restart){	
+		status = remote_init(proc_id,nproc);
+		if(status){printf("Error: initializing remote copy procedures..\n");}
+	}
 	log_init(&chlog,log_size,proc_id);
 	LIST_INIT(&head);
 	return 0;	
@@ -134,7 +141,7 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
     n->version = 0;
 
 	//if checkpoint data present, then read from the the checkpoint
-	if(remote_checkpoint){
+	if(remote_restart){
 
 		if(isDebugEnabled()){
 			printf("retrieving from the remote checkpointed memory : %s\n", var_name);
@@ -202,7 +209,9 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 			printf("allocating from the heap space\n");
 		}
         n->ptr = malloc(size);
-		n->local_ptr = remote_alloc(&n->rmt_ptr,size);
+		if(remote_checkpoint){
+			n->local_ptr = remote_alloc(&n->rmt_ptr,size);
+		}
 	}
     LIST_INSERT_HEAD(&head, n, entries);
     return n->ptr;
@@ -215,14 +224,17 @@ void chkpt_all(int process_id){
 		printf("skipping checkpointing data of process : %d \n",process_id);
 		return;
 	}
+
+	if(remote_checkpoint){
 	//copy each local variable to remote peer..
-	for(np = head.lh_first; np != NULL; np = np->entries.le_next){
-		status = remote_write(np->ptr,np->rmt_ptr,np->size);	
-		if(status){
-			printf("Error: failed variable copy to peer node\n");
+		for(np = head.lh_first; np != NULL; np = np->entries.le_next){
+			status = remote_write(np->ptr,np->rmt_ptr,np->size);	
+			if(status){
+				printf("Error: failed variable copy to peer node\n");
+			}
 		}
+		remote_barrier();
 	}
-	remote_barrier();
 
 	printf("checkpointing data of process : %d \n",process_id);
 	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
@@ -230,7 +242,10 @@ void chkpt_all(int process_id){
 		checkpoint_size_printed = 1;
 	}
 	log_write(&chlog,&head,process_id);
-	remote_data_log_write(&chlog,&head,get_mypeer(process_id));
+
+	if(remote_checkpoint){
+		remote_data_log_write(&chlog,&head,get_mypeer(process_id));
+	}
     return;
 }
 
@@ -253,4 +268,8 @@ void chkpt_all_(int *process_id){
 }
 int init_(int *proc_id, int *nproc){
 	return init(*proc_id,*nproc);
+}
+
+int finalize_(){
+	remote_finalize();
 }
