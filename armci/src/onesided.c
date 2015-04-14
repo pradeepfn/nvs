@@ -12,6 +12,14 @@
 #include <debug.h>
 #include <gmr.h>
 
+#include <math.h>
+#include <time.h>
+
+/*these are defined in px_util.c in phoenix lib*/
+unsigned long calc_delay_ns(size_t datasize,int bandwidth);
+int __nsleep(const struct timespec *req, struct timespec *rem);
+int msleep(unsigned long nanosec);
+extern int nvram_wbw;
 
 /** Declare the start of a local access epoch.  This allows direct access to
   * data in local memory.
@@ -94,6 +102,40 @@ int ARMCIX_Mode_get(void *ptr) {
   return mreg->access_mode;
 }
 
+//64 Mb/s -> 19
+/*
+int nvram_wbw = 19;
+
+unsigned long calc_delay_ns(size_t datasize,int bandwidth){
+        unsigned long delay;
+        double data_MB, sec;
+
+        data_MB = (double)((double)datasize/(double)pow(10,6));
+        sec =(double)((double)data_MB/(double)bandwidth);
+        delay = sec * pow(10,9);
+        return delay;
+}
+
+int __nsleep(const struct timespec *req, struct timespec *rem)
+{
+    struct timespec temp_rem;
+    if(nanosleep(req,rem)==-1){
+        __nsleep(rem,&temp_rem);
+    }   
+        return 1;
+}
+
+int msleep(unsigned long nanosec)
+{
+    struct timespec req={0},rem={0};
+    time_t sec=(int)(nanosec/1000000000);
+    req.tv_sec=sec;
+    req.tv_nsec=nanosec%1000000000;
+    __nsleep(&req,&rem);
+    return 1;
+}
+*/
+
 
 /** One-sided get operation.
   *
@@ -117,6 +159,14 @@ int ARMCI_Get(void *src, void *dst, int size, int target) {
       if (dst_mreg) gmr_dla_lock(dst_mreg);  /* FIXME: Is this a hold-while wait?  Probably need an extra copy to be safe.. */
       gmr_dla_lock(src_mreg);
     }
+
+    if(nvram_wbw > 0){
+        unsigned long lat_ns;
+        //read bandwidth is taken as the two times, write bandwidth
+        lat_ns = calc_delay_ns(size,nvram_wbw*2);
+        msleep(lat_ns);
+    }  
+
 
     ARMCI_Copy(src, dst, size);
     
