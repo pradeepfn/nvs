@@ -19,6 +19,7 @@
 //global variables
 int first_run=0;
 extern char pfile_location[32];
+extern int lib_process_id;
 
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
@@ -54,7 +55,8 @@ int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
 	}
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
 			if(isDebugEnabled()){
-				printf("checkpointing remote data: varname : %s , process_id :  %d , version : %d , size : %ld , pointer : %p \n", np->var_name, process_id, np->version, np->size, np->local_ptr);
+				printf("[%d] checkpointing remote data: varname : %s , process_id :  %d , version : %d ," 
+							"size : %ld , pointer : %p \n",lib_process_id, np->var_name, process_id, np->version, np->size, np->local_ptr);
 			}
 		
             checkpoint(log, np->var_name,process_id, np->version, np->size, np->local_ptr);
@@ -77,7 +79,8 @@ int log_write(log_t *log, listhead_t *lhead, int process_id){
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
         if(np->process_id == process_id){ 
 			if(isDebugEnabled()){
-				printf("checkpointing  varname : %s , process_id :  %d , version : %d , size : %ld , pointer : %p \n", np->var_name, np->process_id, np->version, np->size, np->ptr);
+				printf("[%d] checkpointing  varname : %s , process_id :  %d , version : %d , size : %ld ," 
+							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, np->version, np->size, np->ptr);
 			}
 		
             checkpoint(log, np->var_name, np->process_id, np->version, np->size, np->ptr);
@@ -97,9 +100,10 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id){
 		gettimeofday(&t1,NULL);
         checkpoint_t *ptr = get_meta(cptr,temp_offset);
 		gettimeofday(&t2,NULL);
-		if(isDebugEnabled()){
-			printf("comparing values  process ids (%d, %d) - (%s, %s)\n",ptr->process_id, process_id,ptr->var_name,var_name);
-		}
+	//	if(isDebugEnabled()){
+	//		printf("[%d] comparing values  process ids (%d, %d) - (%s, %s)\n",lib_process_id ,ptr->process_id,
+	//																		 process_id,ptr->var_name,var_name);
+	//	}
 		if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0){ // last char is null terminator
 			return ptr;
 		}
@@ -184,7 +188,9 @@ static memmap_t *get_latest_mapfile(log_t *log){
 			headmeta_t *h1 = log->m[0].head;
 			headmeta_t *h2 = log->m[1].head;
 			printf("init_map_files:timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
+			printf("offset of log[0] %ld\n", h1->offset);
 			printf("init_map_files:timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
+			printf("log offset of log[1] %ld\n", h2->offset);
 
 		}
     if(timercmp(&(h1->timestamp),&(h2->timestamp),<) && (h1->offset !=-1)){
@@ -252,19 +258,20 @@ static checkpoint_t *get_meta(void *base_addr,size_t offset){
 }
 
 static int is_remaining_space_enough(log_t *log, listhead_t *lhead){
-	size_t tot_size=0;
+	long tot_size=0;
 	struct entry *np;
 	for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
-			tot_size+=(sizeof(checkpoint_t)+np->size);	
+				tot_size += (sizeof(checkpoint_t)+np->size);	
 	}	
 	if(tot_size > (log->log_size - sizeof(headmeta_t))){
 		printf("allocated buffer is not sufficient for program exec\n");
 		assert(0);
 	}
-	size_t remain_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1); //adding 1 since offset can be -1
+	checkpoint_t *cp = get_meta(log->current->meta, log->current->head->offset);
+	size_t remaing_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1 + sizeof(checkpoint_t) + cp->data_size ); //adding 1 since offset can be -1
 	if(isDebugEnabled()){
-		printf("log size details, remaining size and total checkpoint size - %ld , %ld \n",remain_size,tot_size);
+		printf("[%d] offset : remaining : checkpoint  sizes - %ld : %ld : %ld \n",lib_process_id,log->current->head->offset,remaing_size,tot_size);
 	}
-	return (remain_size > tot_size); 
+	return (remaing_size > tot_size); 
 }
 

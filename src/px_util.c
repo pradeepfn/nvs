@@ -23,6 +23,7 @@
 
 extern int chunk_size;
 extern int nvram_wbw;
+extern int lib_process_id;
 struct sigaction old_sa; 
 
 unsigned long calc_delay_ns(size_t datasize,int bandwidth){
@@ -139,7 +140,7 @@ long disable_protection(void *page_start_addr,size_t aligned_size){
 /*
 * put an element to pagemap.wrapper method
 */
-void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_t size, offset_t asize,void **memory_grid){
+void put_pagemap(pagemap_t **pagemapptr ,char *varname, void *pageptr, void *nvpageptr, offset_t size, offset_t asize,void **memory_grid){
 	pagemap_t *s;
 	HASH_FIND_INT(*pagemapptr, &pageptr, s);
     if (s==NULL) {
@@ -150,6 +151,7 @@ void put_pagemap(pagemap_t **pagemapptr ,void *pageptr, void *nvpageptr, offset_
 		s->paligned_size = asize;
 		s->copied = 0;
 		s->remote_ptr = memory_grid;
+		memcpy(s->varname,varname,sizeof(char)*20);
 		HASH_ADD_INT( *pagemapptr, pageptr, s );
 	}
 }
@@ -187,9 +189,10 @@ void copy_chunks(pagemap_t **page_map_ptr){
 	HASH_ITER(hh, *page_map_ptr, s, tmp) {
 		if(!s->copied){
 			if(isDebugEnabled()){
-				printf("*****copying data using pre-fetcher******\n");
+				printf("pre fetching variable : %s \n",s->varname);
 			}
 			disable_protection(s->pageptr,s->paligned_size);
+			
 			nvmmemcpy_read(s->pageptr,s->nvpageptr,s->size);	
 			s->copied = 1;
 		}	
@@ -204,7 +207,7 @@ void copy_remote_chunks(pagemap_t **page_map_ptr){
 	HASH_ITER(hh, *page_map_ptr, s, tmp) {
 		if(!s->copied){
 			if(isDebugEnabled()){
-				printf("*****copying data using pre-fetcher******\n");
+				printf("[%d] remote pre-fetch name : %s , size : %ld alignedsize : %ld \n",lib_process_id, s->varname,s->size, s->paligned_size);
 			}
 			disable_protection(s->pageptr,s->paligned_size);
 			remote_read(s->pageptr,s->remote_ptr,s->size);	

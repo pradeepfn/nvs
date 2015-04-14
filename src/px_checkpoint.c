@@ -143,27 +143,18 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 	//if checkpoint data present, then read from the the checkpoint
 	if(remote_restart){
 
-		if(isDebugEnabled()){
-			printf("retrieving from the remote checkpointed memory : %s\n", var_name);
-		}
+		//if(isDebugEnabled()){
+		//	printf("retrieving from the remote checkpointed memory : %s\n", var_name);
+		//}
 		switch(copy_strategy){
 		   	case REMOTE_COPY:	
 				remote_copy_read(&chlog, var_name,get_mypeer(process_id),n);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : remote naive copy read\n");
-				}
 				break;
 			case REMOTE_FAULT_COPY:	
 				remote_chunk_read(&chlog, var_name,get_mypeer(process_id),n);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : remote fault copy read\n");
-				}
 				break;
 			case REMOTE_PRE_COPY:	
 				remote_pc_read(&chlog, var_name,get_mypeer(process_id),n);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : remote pre copy read\n");
-				}
 				break;
 			default:
 				printf("wrong copy strategy specified. please check the configuration\n");
@@ -178,27 +169,15 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 		switch(copy_strategy){
 			case NAIVE_COPY:
 				n->ptr = copy_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : naive read\n");
-				}
 				break;
 			case FAULT_COPY:
 				n->ptr = chunk_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : fault read\n");
-				}
 				break;	
 			case PRE_COPY:
 				n->ptr = pc_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : precopy read\n");
-				}
 				break;
 			case PAGE_ALIGNED_COPY:	
 				n->ptr = page_aligned_copy_read(&chlog, var_name,process_id);
-				if(isDebugEnabled()){
-					printf("copy strategy set to : page aligned copy read\n");
-				}
 				break;
 			default:
 				printf("wrong copy strategy specified. please check the configuration\n");
@@ -236,7 +215,6 @@ void chkpt_all(int process_id){
 		remote_barrier();
 	}
 
-	printf("checkpointing data of process : %d \n",process_id);
 	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
 		printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
 		checkpoint_size_printed = 1;

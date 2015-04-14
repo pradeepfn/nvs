@@ -15,6 +15,7 @@ typedef struct pagemap_t_ {
 	offset_t paligned_size;
     UT_hash_handle hh;         /* makes this structure hashable */
 	int copied;
+	char varname[20];
 } pagemap_t;
 
 

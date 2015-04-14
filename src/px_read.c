@@ -29,6 +29,7 @@ pagemap_t *pagemap = NULL;
 int thread_flag = 0;
 extern int chunk_size;
 extern thread_t thread;
+extern int lib_process_id;
 
 
 /*
@@ -134,7 +135,7 @@ void *fault_read(log_t *log, char *var_name, int process_id,void (*sighandler)(i
 	}
 	install_sighandler(sighandler);
 	enable_protection(ddata_ptr, page_aligned_size);
-	put_pagemap(&pagemap,ddata_ptr, nvdata_ptr, checkpoint->data_size, page_aligned_size,NULL);
+	put_pagemap(&pagemap,checkpoint->var_name,ddata_ptr, nvdata_ptr, checkpoint->data_size, page_aligned_size,NULL);
 	return ddata_ptr;
 }
 
@@ -150,7 +151,7 @@ void remote_fault_read(log_t *log, char *var_name, int process_id,void (*sighand
 	long page_size = sysconf(_SC_PAGESIZE);
 	long page_aligned_size = ((checkpoint->data_size+page_size-1)& ~(page_size-1));
 	if(isDebugEnabled()){
-		printf("remote fault_read: actual size and page aligned size %ld : %ld \n", checkpoint->data_size, page_aligned_size);
+		printf("[%d] remote fault_copy- name : %s size :  paligned size %ld : %ld \n",lib_process_id,var_name, checkpoint->data_size, page_aligned_size);
 	}
 	// create local DRAM portion
 	nvdata_ptr = get_data_addr(cbptr,checkpoint);
@@ -165,7 +166,7 @@ void remote_fault_read(log_t *log, char *var_name, int process_id,void (*sighand
 
 	install_sighandler(sighandler);
 	enable_protection(entry->ptr, page_aligned_size);
-	put_pagemap(&pagemap,entry->ptr, NULL, checkpoint->data_size, page_aligned_size,entry->rmt_ptr);
+	put_pagemap(&pagemap,checkpoint->var_name,entry->ptr, NULL, checkpoint->data_size, page_aligned_size,entry->rmt_ptr);
 }
 
 
@@ -186,7 +187,8 @@ static void bchandler(int sig, siginfo_t *si, void *unused){
 		pagenode->copied = 1;
 		size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
 		if(isDebugEnabled()){
-			printf("size of variable : %ld, pagenode->size : %ld  pagenode->alignedsize : %ld\n",size_of_variable,pagenode->size,pagenode->paligned_size);
+			printf("[%d] variable name: %s ,  size : %ld, pn->size : %ld  pn->alignedsize : %ld\n",
+								lib_process_id,pagenode->varname,size_of_variable,pagenode->size,pagenode->paligned_size);
 		}
 		nvmmemcpy_read(pagenode->pageptr,pagenode->nvpageptr,pagenode->size);
 		if(isDebugEnabled()){
@@ -200,27 +202,27 @@ static void bchandler(int sig, siginfo_t *si, void *unused){
 
 
 static void rbchandler(int sig, siginfo_t *si, void *unused){
-	long size_of_variable;
 
-	if(isDebugEnabled()){
-		printf("rbchandler:page fault handler begin\n");
-	}	
+	//if(isDebugEnabled()){
+	//	printf("rbchandler:page fault handler begin\n");
+	//}	
 
 	if(si != NULL && si->si_addr !=  NULL){
 		//the addres returned from the si->si_addr is a random adress
 		// within the allocated range
 		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
 		pagenode->copied = 1;
-		size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
+		disable_protection(pagenode->pageptr,pagenode->paligned_size);
 		if(isDebugEnabled()){
-			printf("size of variable : %ld, pagenode->size : %ld  pagenode->alignedsize : %ld\n",size_of_variable,pagenode->size,pagenode->paligned_size);
+			printf("[%d] remote fault read -  name : %s ,size : %ld  alignedsize : %ld\n",
+								lib_process_id,pagenode->varname,pagenode->size,pagenode->paligned_size);
 		}
 		//copying from the remote node
 		remote_read(pagenode->pageptr,pagenode->remote_ptr, pagenode->size);
 
-		if(isDebugEnabled()){
-			printf("rbchandler:page fault handler end\n");
-		}
+		//if(isDebugEnabled()){
+		//	printf("rbchandler:page fault handler end\n");
+		//}
 	}else{ 
 		// this is a Original SIGSEGV segfault signal it seems.
 		call_oldhandler(sig);
@@ -266,7 +268,7 @@ static void *rpc_func(void *arg){
 	//tcontext_t *tcontext = (tcontext_t *)arg;
 	pthread_detach(pthread_self()); // self cleanup after terminate
 	if(isDebugEnabled()){
-		printf("rpc_func: pre-fetch thread started\n");
+		printf("[%d] rpc_func: pre-fetch thread started\n", lib_process_id);
 	}
 	copy_remote_chunks(&pagemap);
 	return (void *)1;
@@ -287,9 +289,9 @@ static void *pc_func(void *arg){
   signal. This is the pre-copy thread. */
 static void spawn_pc_thread(void *(*func)(void*)){
 	int s;
-	if(isDebugEnabled()){
-		printf("spawning the pre-fetch thread. \n");
-	}
+	//if(isDebugEnabled()){
+	//	printf("spawning the pre-fetch thread. \n");
+	//}
 	tcontext_t *tcontext  = malloc(sizeof(tcontext_t));
 	//execute the pre-fetch thread
 	s = pthread_create(&thread.pthreadid,NULL, func, tcontext);	
