@@ -100,15 +100,29 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id){
 		gettimeofday(&t1,NULL);
         checkpoint_t *ptr = get_meta(cptr,temp_offset);
 		gettimeofday(&t2,NULL);
-	//	if(isDebugEnabled()){
-	//		printf("[%d] comparing values  process ids (%d, %d) - (%s, %s)\n",lib_process_id ,ptr->process_id,
-	//																		 process_id,ptr->var_name,var_name);
-	//	}
+		if(isDebugEnabled()){
+			printf("[%d] comparing values  process ids (%d, %d) - (%s, %s)\n",lib_process_id ,ptr->process_id,
+										 process_id,ptr->var_name,var_name);
+		}
 		if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0){ // last char is null terminator
 			return ptr;
 		}
 		temp_offset = ptr->prv_offset;
 	}   
+    memmap_t *secondary  = (log->current == &(log->m[0]))?&(log->m[1]):&(log->m[0]);  
+    temp_offset = secondary->head->offset;
+    cptr = secondary->meta;
+    while(temp_offset >= 0){ 
+        checkpoint_t *ptr = get_meta(cptr,temp_offset);
+        if(isDebugEnabled()){
+            printf("[%d] [secondary log] comparing values  process ids (%d, %d) - (%s, %s)\n",lib_process_id ,ptr->process_id,
+                                                                             process_id,ptr->var_name,var_name);
+        }
+        if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0){ // last char is null terminator
+            return ptr;
+        }
+        temp_offset = ptr->prv_offset;
+   }
     return NULL;//to-do, handle exception cases
 }
 
