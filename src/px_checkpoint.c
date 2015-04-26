@@ -187,7 +187,10 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");
 		}
+
         n->ptr = malloc(size);
+		memset(n->ptr,0,size);
+
 		if(remote_checkpoint){
 			n->local_ptr = remote_alloc(&n->rmt_ptr,size);
 		}
@@ -249,5 +252,5 @@ int init_(int *proc_id, int *nproc){
 }
 
 int finalize_(){
-	remote_finalize();
+  return remote_finalize();
 }

@@ -87,12 +87,18 @@ void remote_copy_read(log_t *log, char *var_name,int process_id, entry_t *entry)
     }
 	data_addr = get_data_addr(cbptr,checkpoint);
 
-    entry->ptr = malloc(checkpoint->data_size);
 	entry->local_ptr = remote_alloc(&entry->rmt_ptr,checkpoint->data_size);
 	//copy the data to local armci memory
 	memcpy(entry->local_ptr,data_addr,checkpoint->data_size);
+	//make sure every remote process done copying...
+	remote_barrier();
 	//get the remote data to localy allocated memory
+    entry->ptr = malloc(checkpoint->data_size);
 	remote_read(entry->ptr,entry->rmt_ptr, checkpoint->data_size);
+    //sanity check	
+	//void *local_ptr = copy_read(log,var_name,get_mypeer(process_id));
+	//int ret = memcmp(local_ptr,entry->ptr,checkpoint->data_size);	
+	//assert(ret == 0);
 }
 
 
@@ -153,17 +159,17 @@ void remote_fault_read(log_t *log, char *var_name, int process_id,void (*sighand
 	if(isDebugEnabled()){
 		printf("[%d] remote fault_copy- name : %s size :  paligned size %ld : %ld \n",lib_process_id,var_name, checkpoint->data_size, page_aligned_size);
 	}
-	// create local DRAM portion
+
 	nvdata_ptr = get_data_addr(cbptr,checkpoint);
-    int s = posix_memalign(&entry->ptr,page_size, page_aligned_size);
+	entry->local_ptr = remote_alloc(&entry->rmt_ptr,checkpoint->data_size);
+	memcpy(entry->local_ptr,nvdata_ptr,checkpoint->data_size);
+	remote_barrier();
+
+	// create local DRAM portion
+	int s = posix_memalign(&entry->ptr,page_size, page_aligned_size);
 	if (s != 0){
         handle_error("posix memalign");
 	}
-	// create group memory portions and copy the checkpoint data to them
-	entry->local_ptr = remote_alloc(&entry->rmt_ptr,checkpoint->data_size);
-	//TODO: get rid of this copy
-	memcpy(entry->local_ptr,nvdata_ptr,checkpoint->data_size);
-
 	install_sighandler(sighandler);
 	enable_protection(entry->ptr, page_aligned_size);
 	put_pagemap(&pagemap,checkpoint->var_name,entry->ptr, NULL, checkpoint->data_size, page_aligned_size,entry->rmt_ptr);
