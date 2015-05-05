@@ -12,6 +12,7 @@
 #include "px_util.h"
 #include "px_read.h"
 #include "px_remote.h"
+#include "px_constants.h"
 
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -31,7 +32,8 @@ extern int chunk_size;
 extern thread_t thread;
 extern int lib_process_id;
 
-
+volatile pagemap_t *rpchandler_pagenode;
+volatile sig_atomic_t wait_flag = NO_WAIT;
 /*
 * naive copy read. copies the data from NVRAM to DRAM upon call
 */
@@ -237,10 +239,20 @@ static void rbchandler(int sig, siginfo_t *si, void *unused){
 }
 
 static void rpchandler(int sig, siginfo_t *si, void *unused){
-	rbchandler(sig,si,unused);
-	if(!thread_flag){
-		spawn_pc_thread(rpc_func);
-		thread_flag = 1;
+	if(si != NULL && si->si_addr !=  NULL){
+		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
+		rpchandler_pagenode = pagenode;
+		mb();
+		wait_flag = FAULT_COPY_WAIT;	
+		mb();
+		if(!thread_flag){
+			spawn_pc_thread(rpc_func);
+			thread_flag = 1;
+		}
+		while(wait_flag != NO_WAIT);
+	}else{ 
+		// this is a Original SIGSEGV segfault signal it seems.
+		call_oldhandler(sig);
 	}
 }
 
@@ -271,13 +283,42 @@ static void pchandler(int sig, siginfo_t *si, void *unused){
 
 
 static void *rpc_func(void *arg){
+	pagemap_t *s;
+	volatile pagemap_t *temp;
 	//tcontext_t *tcontext = (tcontext_t *)arg;
 	pthread_detach(pthread_self()); // self cleanup after terminate
 	if(isDebugEnabled()){
 		printf("[%d] rpc_func: pre-fetch thread started\n", lib_process_id);
 	}
-	copy_remote_chunks(&pagemap);
-	return (void *)1;
+	s=pagemap;
+	while(1){
+		if(wait_flag == FAULT_COPY_WAIT){
+				temp = rpchandler_pagenode;
+				if(isDebugEnabled()){
+					printf("[%d] copy on behalf of fault copy name : %s , size : %ld"
+						 "alignedsize : %ld \n",lib_process_id, temp->varname,
+													temp->size,temp->paligned_size);
+				}
+				disable_protection(temp->pageptr,temp->paligned_size);
+				remote_read(temp->pageptr,temp->remote_ptr,temp->size);	
+				temp->copied = 1;
+				wait_flag = NO_WAIT;
+		}else if(s != NULL){
+			if(!s->copied){
+				if(isDebugEnabled()){
+					printf("[%d] remote pre-fetch name : %s , size : %ld"
+						 "alignedsize : %ld \n",lib_process_id, s->varname,
+													s->size, s->paligned_size);
+				}
+				disable_protection(s->pageptr,s->paligned_size);
+				remote_read(s->pageptr,s->remote_ptr,s->size);	
+				s->copied = 1;
+			}
+			s=s->hh.next;
+	
+		}	
+	}
+	return (void *)1; //compiler happy
 }
 
 
