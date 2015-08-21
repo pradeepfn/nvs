@@ -189,14 +189,14 @@ static void bchandler(int sig, siginfo_t *si, void *unused){
 	}	
 
 	if(si != NULL && si->si_addr !=  NULL){
-		//the addres returned from the si->si_addr is a random adress
-		// within the allocated range
+		//the addres returned from the si->si_addr is a random adress within the allocated range
 		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
 		pagenode->copied = 1;
 		size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
 		if(isDebugEnabled()){
 			printf("[%d] variable name: %s ,  size : %ld, pn->size : %ld  pn->alignedsize : %ld\n",
-								lib_process_id,pagenode->varname,size_of_variable,pagenode->size,pagenode->paligned_size);
+								lib_process_id,pagenode->varname,size_of_variable,
+													pagenode->size,pagenode->paligned_size);
 		}
 		nvmmemcpy_read(pagenode->pageptr,pagenode->nvpageptr,pagenode->size);
 		if(isDebugEnabled()){
