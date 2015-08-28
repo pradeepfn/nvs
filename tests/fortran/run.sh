@@ -1,2 +1,2 @@
 make restartclean
-mpirun -n 2 ./addition
+ibrun -np 2 ./addition

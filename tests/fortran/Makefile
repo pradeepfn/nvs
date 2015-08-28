@@ -1,5 +1,5 @@
-CFLAGS = -g -fbacktrace -I../../include -std=legacy 
-LDFLAGS = -g -L../../lib -lphoenix  -larmci
+CFLAGS = -g -I../../include -I/home1/03528/pradeepf/armci_install/include 
+LDFLAGS = -g -L../../lib -L/home1/03528/pradeepf/armci_install/lib -lphoenix  -larmci
 
 CC = mpif90
 
@@ -22,4 +22,4 @@ clean:
 	rm -rf addition
 
 restartclean:
-	rm -rf /mnt/ramdisk/addition/mmap*
+	rm -rf /home1/03528/pradeepf/mmaptest/mmap*

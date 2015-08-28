@@ -1,6 +1,6 @@
 IDIR =include
 CC=mpicc
-CFLAGS= -g -Wall -I$(IDIR)
+CFLAGS= -g -Wall -I$(IDIR) -I/home1/03528/pradeepf/armci_install/include
 LDFLAGS=
 
 _DEPS = phoenix.h
