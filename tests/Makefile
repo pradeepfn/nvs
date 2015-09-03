@@ -1,6 +1,6 @@
-CC=gcc
-CFLAGS= -g -Wall -pthread -iquote ../ -I../include  
-LDFLAGS= -L../lib -lphoenix 
+CC=mpicc
+CFLAGS= -g -Wall -pthread -iquote ../ -I../include -I/home1/03528/pradeepf/armci_install/include 
+LDFLAGS= -L../lib -L/home1/03528/pradeepf/armci_install/lib -lphoenix -larmci
 
 
 all:
@@ -14,4 +14,4 @@ clean:
 	rm -f test_read
 
 restartclean:
-	rm -rf /mnt/ramdisk/mmap.file.*
+	rm -rf /home1/03528/pradeepf/mmaptest
