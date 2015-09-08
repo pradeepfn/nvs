@@ -60,7 +60,7 @@ tlisthead_t thead;
 
 thread_t thread;
 
-int init(int proc_id, int nproc){
+int init_c(int proc_id, int nproc){
 	char varname[30];
 	char varvalue[32];// we are reading integers in to this
 	if(lib_initialized){
@@ -129,7 +129,7 @@ int init(int proc_id, int nproc){
 }
 
 
-void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
+void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 
 	//counting the total checkpoint data size per core
 	checkpoint_size+= size;
@@ -200,7 +200,7 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 }
 
 
-void chkpt_all(int process_id){
+void chkpt_all_c(int process_id){
 	entry_t *np;
     if(rstart == 1){
 		printf("skipping checkpointing data of process : %d \n",process_id);
@@ -231,24 +231,24 @@ void chkpt_all(int process_id){
 }
 
 
-void* alloc_(unsigned int* n, char *s, int *iid, int *cmtsize) {
-	return alloc(s,*n,*cmtsize,*iid); 
+void* alloc(unsigned int* n, char *s, int *iid, int *cmtsize) {
+	return alloc_c(s,*n,*cmtsize,*iid); 
 }
+
+/*void afree_(void* ptr) {
+	free(ptr);
+}*/
+
 
 void afree_(void* ptr) {
 	free(ptr);
 }
 
-
-void afree(void* ptr) {
-	free(ptr);
-}
-
 void chkpt_all_(int *process_id){
-	chkpt_all(*process_id);
+	chkpt_all_c(*process_id);
 }
 int init_(int *proc_id, int *nproc){
-	return init(*proc_id,*nproc);
+	return init_c(*proc_id,*nproc);
 }
 
 int finalize_(){
