@@ -1,0 +1,3 @@
+armc - test written for remote checkpoint
+fortran - fortran based checkpoint restart test
+simple - pure c based checkpoint/restart, good for gdb based debug
