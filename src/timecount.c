@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
-
+#include <sys/types.h>
+#include <dirent.h>
+#include <assert.h>
 #include "timecount.h"
 
 #define MICROSEC 1000000
@@ -19,13 +21,21 @@ unsigned long get_elapsed_time(struct timeval *end, struct timeval *start){
 	return diff;
 }
 
+
+
 void start_time_(int *mype){
 	process_id = *mype;
 	char file_name[50];
-	snprintf(file_name,sizeof(file_name),"stats/nvram_p%d.log",*mype);
-	fp=fopen(file_name,"w");
-	gettimeofday(&t_start,NULL);
-	tot_etime=0;
+    DIR* dir = opendir("stats");
+    if(dir){
+		snprintf(file_name,sizeof(file_name),"stats/nvram_p%d.log",*mype);
+		fp=fopen(file_name,"w");
+		gettimeofday(&t_start,NULL);
+		tot_etime=0;
+    }else{ // directory does not exist
+        printf("Error: no stats directory found.\n\n");
+		assert(0); 
+    }
 }
 
 void pause_time_(){
@@ -54,12 +64,19 @@ void end_time_(){
 
 void start_timestamp_(int *mype){
 	char file_name[50];
-	snprintf(file_name,sizeof(file_name),"stats/time_p%d.log",*mype);
-	fp2=fopen(file_name,"w");
-	struct timeval current_time;
-	gettimeofday(&current_time,NULL);
-	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
-	fflush(fp2);
+    DIR* dir = opendir("stats");
+    if(dir){
+		snprintf(file_name,sizeof(file_name),"stats/time_p%d.log",*mype);
+		fp2=fopen(file_name,"w");
+		struct timeval current_time;
+		gettimeofday(&current_time,NULL);
+		fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
+		fflush(fp2);	
+    }else{ // directory does not exist
+        printf("Error: no stats directory found.\n\n");
+		assert(0); 
+    }
+
 }
 
 void make_timestamp_(){
