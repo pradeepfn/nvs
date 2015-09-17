@@ -6,6 +6,12 @@
 
 #define VAR_SIZE 20
 
+typedef enum
+{
+    REMOTE,
+    LOCAL
+}checkpoint_type;
+
 LIST_HEAD(listhead, entry);
 struct entry {
     void *ptr;
@@ -14,6 +20,7 @@ struct entry {
     char var_name[VAR_SIZE];
     int process_id;
     int version;
+    checkpoint_type type;
     LIST_ENTRY(entry) entries;
 
     /*Remote checkpoint specific members*/

@@ -223,3 +223,17 @@ int get_mypeer(int myrank){
 	}
 	return myrank+1;
 }
+
+
+void split_checkpoint_data(listhead_t *head,int process_id) {
+    entry_t *np;
+    int i;
+    int split_ratio = 5;
+    for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
+        if(i<5){
+            np->type = LOCAL;
+        } else{
+            np->type = REMOTE;
+        }
+    }
+}

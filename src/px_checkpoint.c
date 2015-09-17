@@ -10,6 +10,7 @@
 #include "px_remote.h"
 #include "px_debug.h"
 #include "px_util.h"
+#include "px_dlog.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -37,6 +38,7 @@
 
 int is_remaining_space_enough(int);
 
+
 /*default config params*/
 long log_size = 2*1024*1024;
 int chunk_size = 4096;
@@ -55,6 +57,7 @@ char pfile_location[32];
 int status; // error status register
 
 log_t chlog;
+dlog_t chdlog;
 listhead_t head;
 tlisthead_t thead;
 
@@ -199,40 +202,52 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
     return n->ptr;
 }
 
-
+/*
+ * The procedure is responsible for hybrid checkpoints. The phoenix version of local checkpoitns.
+ * 1. First we mark what to checkpoint to local NVRAM/what goes to remote DRAM
+ * 2. Parallelly starts;
+ * 			- local NVRAM checkpoint - X portions of the Total checkpoint
+ * 			- local DRAM checkpoint - (Total -X) portion of data
+ * 			- remote DRAM checkpoint - (Total-X) portion of data
+ * 	3. We are done with
+ */
 void chkpt_all(int process_id){
 	entry_t *np;
     if(rstart == 1){
 		printf("skipping checkpointing data of process : %d \n",process_id);
 		return;
 	}
+	split_checkpoint_data(&head,process_id); // decide on what variable go where
 
-	if(remote_checkpoint){
-	//copy each local variable to remote peer..
-		for(np = head.lh_first; np != NULL; np = np->entries.le_next){
-			status = remote_write(np->ptr,np->rmt_ptr,np->size);	
-			if(status){
-				printf("Error: failed variable copy to peer node\n");
-			}
-		}
-		remote_barrier();
-	}
+    //local NVRAM write
+    log_write(&chlog,&head,process_id);
 
-	if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
-		printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
-		checkpoint_size_printed = 1;
-	}
-	log_write(&chlog,&head,process_id);
+    //remote DRAM write
+    //copy each local variable to remote peer..
+    for(np = head.lh_first; np != NULL; np = np->entries.le_next){
+        status = remote_write(np->ptr,np->rmt_ptr,np->size);
+        if(status){
+            printf("Error: failed variable copy to peer node\n");
+        }
+    }
+    remote_barrier();
+    //dlog_remote_write(&chdlog,&head);
 
-	if(remote_checkpoint){
-		remote_data_log_write(&chlog,&head,get_mypeer(process_id));
-	}
+    //local DRAM write
+    dlog_write(&chdlog,&head,REMOTE);
+
+    if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
+        printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
+        checkpoint_size_printed = 1;
+    }
     return;
 }
 
 
-void* alloc_(unsigned int* n, char *s, int *iid, int *cmtsize) {
-	return alloc(s,*n,*cmtsize,*iid); 
+
+
+void *alloc_(unsigned int *n, char *s, int *iid, int *cmtsize) {
+	return alloc(s, *n, *cmtsize, *iid);
 }
 
 void afree_(void* ptr) {

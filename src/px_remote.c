@@ -161,3 +161,4 @@ int get_mypeer_group(int my_grp_rank){
 	gpeer_rank = my_grp_rank - 1;
 	return gpeer_rank;	
 }
+

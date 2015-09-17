@@ -77,7 +77,7 @@ int log_write(log_t *log, listhead_t *lhead, int process_id){
 		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
 	}
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
-        if(np->process_id == process_id){ 
+        if(np->process_id == process_id && np->type == LOCAL){
 			if(isDebugEnabled()){
 				printf("[%d] checkpointing  varname : %s , process_id :  %d , version : %d , size : %ld ," 
 							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, np->version, np->size, np->ptr);
@@ -272,6 +272,7 @@ static checkpoint_t *get_meta(void *base_addr,size_t offset){
 }
 
 static int is_remaining_space_enough(log_t *log, listhead_t *lhead){
+    //TODO: This does not take checkpoint location in to account
 	long tot_size=0;
 	struct entry *np;
 	for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
