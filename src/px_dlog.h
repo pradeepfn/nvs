@@ -5,17 +5,17 @@
 #ifndef PHOENIX_PX_DLOG_H
 #define PHOENIX_PX_DLOG_H
 
-typedef struct dcheckpoint_t_{
-    char var_name[20];
+typedef struct dcheckpoint_map_entry_t_{
+    char var_name[20];    /* key */
     int process_id;
     int version;
     void *data_ptr;
+    UT_hash_handle hh;        /* makes this structure hashtable */
 
-}dcheckpoint_t;
+}dcheckpoint_map_entry_t;
 
 typedef struct dlog_t_{
-    dcheckpoint_t *local_log;
-    dcheckpoint_t *remote_log;
+    dcheckpoint_map_entry_t *map[2];
 }dlog_t;
 
 
