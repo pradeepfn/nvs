@@ -127,6 +127,7 @@ int init(int proc_id, int nproc){
 		if(status){printf("Error: initializing remote copy procedures..\n");}
 	}
 	log_init(&chlog,log_size,proc_id);
+    dlog_init(&chdlog);
 	LIST_INIT(&head);
 	return 0;	
 }
@@ -231,10 +232,10 @@ void chkpt_all(int process_id){
         }
     }
     remote_barrier();
-    //dlog_remote_write(&chdlog,&head);
+    dlog_write(&chdlog,&head,REMOTE);
 
     //local DRAM write
-    dlog_write(&chdlog,&head,REMOTE);
+    dlog_write(&chdlog,&head,LOCAL);
 
     if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
         printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);

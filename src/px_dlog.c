@@ -6,8 +6,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+
 #include "px_dlog.h"
 #include "px_checkpoint.h"
+#include "px_debug.h"
 
 
 
@@ -61,7 +63,7 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead, checkpoint_type type) {
  * map. Else NULL will be return.
  */
 dcheckpoint_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, checkpoint_type type) {
-    
+
     dcheckpoint_map_entry_t *tmap = NULL;
     dcheckpoint_map_entry_t *s;
     /*select the remote/local map to traverse*/
