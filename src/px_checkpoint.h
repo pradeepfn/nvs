@@ -22,10 +22,9 @@ struct entry {
     int version;
     checkpoint_type type;
     LIST_ENTRY(entry) entries;
-
     /*Remote checkpoint specific members*/
-    void **rmt_ptr;
-	void *local_ptr;
+    void **rmt_ptr;   /*pointer grid of memory group */
+	void *local_ptr;  /* local pointer out of memory grid */
 };
 
 LIST_HEAD(tlisthead, thread_t_);

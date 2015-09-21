@@ -22,4 +22,4 @@ clean:
 	rm -rf addition
 
 restartclean:
-	rm -rf /mnt/ramdisk/addition/mmap*
+	rm -rf /home/pradeep/testmmap/mmap*

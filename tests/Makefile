@@ -1,6 +1,6 @@
-CC=gcc
+CC=mpicc
 CFLAGS= -g -Wall -pthread -iquote ../ -I../include  
-LDFLAGS= -L../lib -lphoenix 
+LDFLAGS= -L../lib -lphoenix -larmci
 
 
 all:

@@ -1,11 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <mpi.h>
 #include <assert.h>
 #include <armci.h>
-#include <sys/time.h>
 #include "px_remote.h"
-#include "px_checkpoint.h"
 #include "px_debug.h"
 
 
@@ -44,6 +41,15 @@ int remote_init(int my_rank, int n_rank) {
 	}else {
 		mypeer = myrank -1;
 	}
+    /*
+     * Here we are making sure that both me and my peer create a group with the same rank assignments.
+     * Eg: my rank = 5, then my peer rank = 4
+     *
+     * members array in me;  members[1] = 5, members[0] = 4
+     * members array in my peer; members[0] = 4, members[1] = 5
+     *
+     * my peer and me agrres on a identical group ranks. :)
+     */
 	members[myrank % no_members] = myrank;
 	members[mypeer % no_members] = mypeer;
 //	if(isDebugEnabled()){
@@ -57,9 +63,8 @@ int remote_init(int my_rank, int n_rank) {
 
 
 /*
-	allocate remote memory.
-	returns rmtptrs
-		rmtprtrs[myrank] - 
+	allocate memory grid in the armci group.
+	returns rmtprtrs[myrank] - the local pointer in memory grid
 */
 void* remote_alloc(void ***memory_grid, size_t size){
 

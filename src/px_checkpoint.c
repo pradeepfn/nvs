@@ -129,6 +129,9 @@ int init(int proc_id, int nproc){
 	log_init(&chlog,log_size,proc_id);
     dlog_init(&chdlog);
 	LIST_INIT(&head);
+    if(isDebugEnabled()){
+        printf("phoenix initializing completed\n");
+    }
 	return 0;	
 }
 
@@ -191,13 +194,12 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("allocating from the heap space\n");
 		}
-
+        //local memory space allocatoin
         n->ptr = malloc(size);
 		memset(n->ptr,0,size);
-
-		if(remote_checkpoint){
-			n->local_ptr = remote_alloc(&n->rmt_ptr,size);
-		}
+        //remote memory group allocation of memory
+        //TODO: FIXME: we dont allocation for all the variables
+        n->local_ptr = remote_alloc(&n->rmt_ptr,size);
 	}
     LIST_INSERT_HEAD(&head, n, entries);
     return n->ptr;
@@ -219,23 +221,9 @@ void chkpt_all(int process_id){
 		return;
 	}
 	split_checkpoint_data(&head,process_id); // decide on what variable go where
-
-    //local NVRAM write
-    log_write(&chlog,&head,process_id);
-
-    //remote DRAM write
-    //copy each local variable to remote peer..
-    for(np = head.lh_first; np != NULL; np = np->entries.le_next){
-        status = remote_write(np->ptr,np->rmt_ptr,np->size);
-        if(status){
-            printf("Error: failed variable copy to peer node\n");
-        }
-    }
-    remote_barrier();
-    dlog_write(&chdlog,&head,REMOTE);
-
-    //local DRAM write
-    dlog_write(&chdlog,&head,LOCAL);
+    log_write(&chlog,&head,process_id);//local NVRAM write
+    dlog_remote_write(&chdlog, &head,get_mypeer(process_id));//remote DRAM write
+    dlog_local_write(&chdlog, &head,process_id);//local DRAM write
 
     if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
         printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);

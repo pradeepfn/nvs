@@ -37,6 +37,8 @@ set(SOURCE_FILES
     src/px_debug.h
     src/px_log.c
     src/px_log.h
+    src/px_dlog.h
+    src/px_dlog.c
     src/px_read.c
     src/px_read.h
     src/px_remote.c
