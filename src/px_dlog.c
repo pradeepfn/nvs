@@ -12,6 +12,7 @@
 #include "px_debug.h"
 #include "px_remote.h"
 
+extern int lib_process_id;
 
 int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type);
 
@@ -66,23 +67,48 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
         }
         //first we check wether this entry already in our hash table
         HASH_FIND_STR(dlog->map[type], np->var_name, s);
-        if (s == NULL) {
-            //create a new entry
+        if (s == NULL) { //create a new entry
             s = (dcheckpoint_map_entry_t *) malloc(sizeof(dcheckpoint_map_entry_t));
             strncpy(s->var_name, np->var_name, 20);
             s->process_id = np->process_id;
+            s->size = np->size;
+
             if (type == DOUBLE_IN_MEMORY_LOCAL) {
                 void *data_ptr = malloc(np->size);// allocate local DRAM memory
                 s->data_ptr = data_ptr;
-                memcpy(s->data_ptr, np->ptr, np->size);
+                if(isDebugEnabled()){
+                    printf("[%d] new DRAM memory location for : %s \n",lib_process_id, s->var_name);
+                }
+
             } else if (type == DOUBLE_IN_MEMORY_DIM_REMOTE) {
                 s->data_ptr = np->local_ptr;// we use the group allocated memory directly
+                if(isDebugEnabled()){
+                    printf("[%d] remote variable mapped to ARMCI group allocated pointer for : %s \n",lib_process_id, s->var_name);
+                }
             }
             HASH_ADD_STR(dlog->map[type], var_name, s); //now we have a complete data entry for a variable.add it!
+        }
+        // we either created a s or, found older version from our hash map
+        s->version = np->version;
+
+        if(type == DOUBLE_IN_MEMORY_LOCAL){
+            memcpy(s->data_ptr, np->ptr, np->size);
+            if(isDebugEnabled()){
+                printf("[%d] checkpointing to local DRAM : varname : %s , process_id :  %d , version : %d ,"
+                               "size : %ld , pointer : %p \n",lib_process_id, s->var_name, process_id, s->version, s->size, s->data_ptr);
+            }
+        }
+        if(type == DOUBLE_IN_MEMORY_DIM_REMOTE){ // nothing to do. we have already set the group pointer
+
         }
         // sanity check
         assert(strncmp(s->var_name, np->var_name,np->size) == 0);
         assert(s->process_id == np->process_id);
+
+        /*if(type == DOUBLE_IN_MEMORY_DIM_REMOTE){
+
+            printf("[%d] data vlaue ******************  : %f \n",lib_process_id, ((float *)s->data_ptr)[0]);
+        }*/
     }
     return 0;
 }

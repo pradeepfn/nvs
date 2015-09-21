@@ -19,6 +19,7 @@ typedef struct dcheckpoint_map_entry_t_{
     int process_id;
     int version;
     void *data_ptr;
+    size_t size;
     UT_hash_handle hh;        /* makes this structure hashtable */
 
 }dcheckpoint_map_entry_t;

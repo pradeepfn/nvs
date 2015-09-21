@@ -216,12 +216,24 @@ void copy_remote_chunks(pagemap_t **page_map_ptr){
 	}
 }
 
+extern int n_processes;
+extern int buddy_offset;
 
 int get_mypeer(int myrank){
-	if(myrank%2){
-		return myrank-1;
-	}
-	return myrank+1;
+    int mypeer;
+
+    if(myrank % 2 == 0) {
+        mypeer = (myrank + buddy_offset) % n_processes;
+        return mypeer;
+    }else {
+        if(myrank >= buddy_offset){
+            mypeer = myrank - buddy_offset;
+            return mypeer;
+        } else{
+            mypeer = buddy_offset - myrank;
+            return mypeer;
+        }
+    }
 }
 
 
@@ -230,7 +242,7 @@ void split_checkpoint_data(listhead_t *head,int process_id) {
     int i;
     int split_ratio = 5;
     for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
-        if(i<5){
+        if(i<split_ratio){
             np->type = LOCAL;
         } else{
             np->type = REMOTE;

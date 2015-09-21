@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <pthread.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -24,6 +25,7 @@
 #define RSTART "rstart"
 #define REMOTE_CHECKPOINT_ENABLE "rmt.chkpt.enable"
 #define REMOTE_RESTART_ENABLE "rmt.rstart.enable"
+#define BUDDY_OFFSET "buddy.offset"
 
 
 //copy stategies
@@ -53,6 +55,8 @@ int rstart = 0;
 int remote_checkpoint = 0;
 int remote_restart = 0;
 char pfile_location[32];
+int n_processes = -1;  // number of processes assigned for this MPI job
+int buddy_offset = 1;  // offset used during buddy checkpointing.
 
 int status; // error status register
 
@@ -72,6 +76,8 @@ int init(int proc_id, int nproc){
 	}
 
 	lib_process_id = proc_id;
+    n_processes = nproc;
+
 	
 	//naive way of reading the config file
 	FILE *fp = fopen(CONFIG_FILE_NAME,"r");
@@ -79,7 +85,7 @@ int init(int proc_id, int nproc){
 		printf("error while opening the file\n");
 		exit(1);
 	}
-	while (fscanf(fp, "%s =  %s", varname, varvalue) != EOF) {
+	while (fscanf(fp, "%s =  %s", varname, varvalue) != EOF) { // TODO: space truncate
 		if(varname[0] == '#'){
 			// consuming the input line starting with '#'
 			fscanf(fp,"%*[^\n]");  
@@ -109,7 +115,9 @@ int init(int proc_id, int nproc){
 			if(atoi(varvalue) == 1){		
 				remote_restart = 1;		
 			}
-		}else {
+		}else if(!strncmp(BUDDY_OFFSET,varname,sizeof(varname))){
+            buddy_offset =  atoi(varvalue);
+        } else {
 			printf("unknown varibale. please check the config\n");
 			exit(1);
 		}
@@ -122,10 +130,9 @@ int init(int proc_id, int nproc){
 		printf("persistant file location : %s\n", pfile_location);
 		printf("NVRAM write bandwidth : %d Mb\n", nvram_wbw);
 	}
-    if(remote_checkpoint || remote_restart){	
-		status = remote_init(proc_id,nproc);
-		if(status){printf("Error: initializing remote copy procedures..\n");}
-	}
+    status = remote_init(proc_id,nproc);
+    if(status){printf("Error: initializing remote copy procedures..\n");}
+
 	log_init(&chlog,log_size,proc_id);
     dlog_init(&chdlog);
 	LIST_INIT(&head);
@@ -136,7 +143,7 @@ int init(int proc_id, int nproc){
 }
 
 
-void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
+void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 
 	//counting the total checkpoint data size per core
 	checkpoint_size+= size;
@@ -205,6 +212,41 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
     return n->ptr;
 }
 
+typedef enum {
+    LOCAL_NVRAM_WRITE,
+    LOCAL_DRAM_WRITE,
+    REMOTE_DRAM_WRITE
+}func_type;
+
+typedef struct thread_data_t_{
+    log_t *chlog;
+    dlog_t *chdlog;
+    int process_id;
+    listhead_t *head;
+    func_type type;
+} thread_data_t;
+
+void *thread_work(void *ptr){
+    thread_data_t *t_data = (thread_data_t *)ptr;
+    if(t_data -> type == LOCAL_NVRAM_WRITE){
+        if(isDebugEnabled()){printf("[%d] executing nvram checkpoint\n",lib_process_id);}
+        log_write(t_data->chlog,t_data->head,t_data->process_id);//local NVRAM write
+    }else if(t_data->type == LOCAL_DRAM_WRITE){
+        if(isDebugEnabled()){printf("[%d] executing local DRAM checkpoint\n",lib_process_id);}
+        dlog_local_write(t_data->chdlog,t_data->head,t_data->process_id);//local DRAM write
+    }
+
+    /*else if(t_data->type == REMOTE_DRAM_WRITE){
+        if(isDebugEnabled()){printf("[%d] executing remote DRAM checkpoint\n",lib_process_id);}
+        dlog_remote_write(t_data->chdlog,t_data->head,get_mypeer(t_data->process_id));//remote DRAM write
+    }*/
+
+    else{
+        assert( 0 && "wrong exection path");
+    }
+    pthread_exit((void*)t_data->type);
+}
+
 /*
  * The procedure is responsible for hybrid checkpoints. The phoenix version of local checkpoitns.
  * 1. First we mark what to checkpoint to local NVRAM/what goes to remote DRAM
@@ -215,15 +257,55 @@ void *alloc(char *var_name, size_t size, size_t commit_size,int process_id){
  * 	3. We are done with
  */
 void chkpt_all(int process_id){
-	entry_t *np;
+    // TODO: FIXME: fix this with a thread pool
+    int NUM_THREADS = 2;
+    pthread_t thread[NUM_THREADS];
+    pthread_attr_t attr;
+    int t,rc;
+    void * sts;
+
     if(rstart == 1){
 		printf("skipping checkpointing data of process : %d \n",process_id);
 		return;
 	}
 	split_checkpoint_data(&head,process_id); // decide on what variable go where
-    log_write(&chlog,&head,process_id);//local NVRAM write
-    dlog_remote_write(&chdlog, &head,get_mypeer(process_id));//remote DRAM write
-    dlog_local_write(&chdlog, &head,process_id);//local DRAM write
+
+    /* Initialize and set thread detached attribute */
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
+    for(t=0; t < NUM_THREADS; t++) {
+        thread_data_t thread_data;
+        thread_data.chlog = &chlog;
+        thread_data.chdlog = &chdlog;
+        thread_data.head = &head;
+        thread_data.process_id = process_id;
+        thread_data.type = t; // using integer for enum type
+
+        if(isDebugEnabled()){
+            printf("Main: creating thread %d\n", t);
+        }
+        rc = pthread_create(&thread[t], &attr, thread_work, (void *)&thread_data);
+        if (rc) {
+            printf("ERROR; return code from pthread_create() is %d\n", rc);
+            exit(-1);
+        }
+    }
+
+    dlog_remote_write(&chdlog,&head,get_mypeer(process_id));//remote DRAM write
+
+    /* Free attribute and wait for the other threads */
+    pthread_attr_destroy(&attr);
+    for(t=0; t < NUM_THREADS; t++) {
+        rc = pthread_join(thread[t], &sts);
+        if (rc) {
+                printf("ERROR; return code from pthread_join() is %d\n", rc);
+            exit(-1);
+        }
+        if(isDebugEnabled()){
+            printf("Main: completed join with thread %d having a status of %ld\n",t,(long)sts);
+        }
+    }
 
     if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
         printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
@@ -235,8 +317,8 @@ void chkpt_all(int process_id){
 
 
 
-void *alloc_(unsigned int *n, char *s, int *iid, int *cmtsize) {
-	return alloc(s, *n, *cmtsize, *iid);
+void *alloc(unsigned int *n, char *s, int *iid, int *cmtsize) {
+	return alloc_c(s, *n, *cmtsize, *iid);
 }
 
 void afree_(void* ptr) {

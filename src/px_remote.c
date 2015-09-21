@@ -16,12 +16,14 @@ int create_group ( int *members, int nmembers, int myrank,  int numrank);
 void** group_create_memory(int nranks, size_t size);
 int armci_remote_memcpy(void *src, int mypeer_rank,
 				void **rmt_armci_ptr, size_t size);
-int get_mypeer_group(int my_grp_rank);
+int get_mypeer_group(int grp_my_rank);
 
 int remote_barrier() {
 	ARMCI_Barrier();
 	return 0;
 }
+
+extern int buddy_offset;
 
 /*We assume MPI_Init has already been invoked
  * If not, just add this line MPI_Init*/
@@ -31,15 +33,21 @@ int remote_init(int my_rank, int n_rank) {
 	int no_members=2;
 	int members[2];
 	int errors=0;
-	
+
 	myrank = my_rank;
 	nranks = n_rank;
 	errors = ARMCI_Init();
 
+    assert( buddy_offset < n_rank && "n_offset should be smaller than the total rank\n");
+
 	if(myrank % 2 == 0) {
-		mypeer = myrank +1;
+		mypeer = (myrank + buddy_offset) % n_rank;
 	}else {
-		mypeer = myrank -1;
+        if(my_rank >= buddy_offset){
+            mypeer = my_rank - buddy_offset;
+        } else{
+            mypeer = buddy_offset - my_rank;
+        }
 	}
     /*
      * Here we are making sure that both me and my peer create a group with the same rank assignments.
@@ -90,10 +98,10 @@ int remote_free(void *ptr){
 
 int remote_write(void *src,void **memory_grid, size_t size){
 	int peer = get_mypeer_group(grp_my_rank);
-	//if(isDebugEnabled()){
-	//	printf("Writing data local_rank: %d  remote_rank : %d remote addr : %p "  
-	//				"local src addr : %p \n",myrank, mypeer, memory_grid[peer],src);
-	//}
+	if(isDebugEnabled()){
+		printf("[%d] writing data to remote node,  remote_rank : %d remote addr : %p "
+					"local src addr : %p \n",myrank, mypeer, memory_grid[peer],src);
+	}
 	int status = ARMCI_Put(src,memory_grid[peer],size,mypeer);
 	if(status){
 		printf("Error: copying data to remote node.\n");
@@ -157,13 +165,13 @@ void** group_create_memory(int nranks, size_t size) {
 	return rmt_armci_ptr;
 }
 
-int get_mypeer_group(int my_grp_rank){
+int get_mypeer_group(int grp_my_rank){
 	int gpeer_rank = 0;
-	if(my_grp_rank == 0){
-		gpeer_rank = my_grp_rank + 1;
+	if(grp_my_rank == 0){
+		gpeer_rank = grp_my_rank + 1;
 		return gpeer_rank;
 	}
-	gpeer_rank = my_grp_rank - 1;
+	gpeer_rank = grp_my_rank - 1;
 	return gpeer_rank;	
 }
 
