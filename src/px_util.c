@@ -236,16 +236,17 @@ int get_mypeer(int myrank){
     }
 }
 
+extern int split_ratio;
 
-void split_checkpoint_data(listhead_t *head,int process_id) {
+void split_checkpoint_data(listhead_t *head) {
     entry_t *np;
     int i;
-    int split_ratio = 5;
+
     for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
         if(i<split_ratio){
-            np->type = LOCAL;
+            np->type = DRAM_CHECKPOINT;
         } else{
-            np->type = REMOTE;
+            np->type = NVRAM_CHECKPOINT;
         }
     }
 }

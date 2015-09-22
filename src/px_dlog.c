@@ -22,8 +22,8 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type);
  */
 
 void dlog_init(dlog_t *dlog){
-    dlog->map[LOCAL] = NULL;
-    dlog->map[REMOTE] = NULL;
+    dlog->map[NVRAM_CHECKPOINT] = NULL;
+    dlog->map[DRAM_CHECKPOINT] = NULL;
 }
 /*
  * writes the selected (marked as REMOTE) variables to remote buddy nodes
@@ -36,7 +36,7 @@ int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id) {
     //remote DRAM write
     //copy each local variable to remote peer..
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next) {
-        if (np->type == REMOTE) {
+        if (np->type == DRAM_CHECKPOINT) {
             status = remote_write(np->ptr, np->rmt_ptr, np->size);
             if (status) {
                 printf("Error: failed variable copy to peer node\n");
@@ -62,7 +62,7 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
     dcheckpoint_map_entry_t *s;
     //iterate the list
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next) {
-        if(np->type != REMOTE){
+        if(np->type != DRAM_CHECKPOINT){
             continue;
         }
         //first we check wether this entry already in our hash table
@@ -94,7 +94,7 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
         if(type == DOUBLE_IN_MEMORY_LOCAL){
             memcpy(s->data_ptr, np->ptr, np->size);
             if(isDebugEnabled()){
-                printf("[%d] checkpointing to local DRAM : varname : %s , process_id :  %d , version : %d ,"
+                printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %d ,"
                                "size : %ld , pointer : %p \n",lib_process_id, s->var_name, process_id, s->version, s->size, s->data_ptr);
             }
         }

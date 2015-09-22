@@ -8,8 +8,8 @@
 
 typedef enum
 {
-    REMOTE,
-    LOCAL
+    DRAM_CHECKPOINT,
+    NVRAM_CHECKPOINT
 }checkpoint_type;
 
 LIST_HEAD(listhead, entry);

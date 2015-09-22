@@ -26,6 +26,7 @@
 #define REMOTE_CHECKPOINT_ENABLE "rmt.chkpt.enable"
 #define REMOTE_RESTART_ENABLE "rmt.rstart.enable"
 #define BUDDY_OFFSET "buddy.offset"
+#define SPLIT_RATIO "split.ratio"
 
 
 //copy stategies
@@ -57,6 +58,7 @@ int remote_restart = 0;
 char pfile_location[32];
 int n_processes = -1;  // number of processes assigned for this MPI job
 int buddy_offset = 1;  // offset used during buddy checkpointing.
+int split_ratio = 0;  // controls what portions of variables get checkpointed NVRAM vs DRAM
 
 int status; // error status register
 
@@ -117,6 +119,8 @@ int init(int proc_id, int nproc){
 			}
 		}else if(!strncmp(BUDDY_OFFSET,varname,sizeof(varname))){
             buddy_offset =  atoi(varvalue);
+        }else if(!strncmp(SPLIT_RATIO,varname,sizeof(varname))){
+            split_ratio =  atoi(varvalue);
         } else {
 			printf("unknown varibale. please check the config\n");
 			exit(1);
@@ -199,7 +203,7 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 		}
 	}else{
 		if(isDebugEnabled()){
-			printf("allocating from the heap space\n");
+			printf("[%d] allocating from the heap space : %s\n",lib_process_id,var_name);
 		}
         //local memory space allocatoin
         n->ptr = malloc(size);
@@ -215,7 +219,6 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 typedef enum {
     LOCAL_NVRAM_WRITE,
     LOCAL_DRAM_WRITE,
-    REMOTE_DRAM_WRITE
 }func_type;
 
 typedef struct thread_data_t_{
@@ -229,19 +232,10 @@ typedef struct thread_data_t_{
 void *thread_work(void *ptr){
     thread_data_t *t_data = (thread_data_t *)ptr;
     if(t_data -> type == LOCAL_NVRAM_WRITE){
-        if(isDebugEnabled()){printf("[%d] executing nvram checkpoint\n",lib_process_id);}
         log_write(t_data->chlog,t_data->head,t_data->process_id);//local NVRAM write
     }else if(t_data->type == LOCAL_DRAM_WRITE){
-        if(isDebugEnabled()){printf("[%d] executing local DRAM checkpoint\n",lib_process_id);}
         dlog_local_write(t_data->chdlog,t_data->head,t_data->process_id);//local DRAM write
-    }
-
-    /*else if(t_data->type == REMOTE_DRAM_WRITE){
-        if(isDebugEnabled()){printf("[%d] executing remote DRAM checkpoint\n",lib_process_id);}
-        dlog_remote_write(t_data->chdlog,t_data->head,get_mypeer(t_data->process_id));//remote DRAM write
-    }*/
-
-    else{
+    } else{
         assert( 0 && "wrong exection path");
     }
     pthread_exit((void*)t_data->type);
@@ -268,24 +262,25 @@ void chkpt_all(int process_id){
 		printf("skipping checkpointing data of process : %d \n",process_id);
 		return;
 	}
-	split_checkpoint_data(&head,process_id); // decide on what variable go where
+	split_checkpoint_data(&head); // decide on what variable go where TODO: why do this over and over again
 
     /* Initialize and set thread detached attribute */
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
+    thread_data_t *thread_data[2];
     for(t=0; t < NUM_THREADS; t++) {
-        thread_data_t thread_data;
-        thread_data.chlog = &chlog;
-        thread_data.chdlog = &chdlog;
-        thread_data.head = &head;
-        thread_data.process_id = process_id;
-        thread_data.type = t; // using integer for enum type
+        thread_data[t] = (thread_data_t *)malloc(sizeof(thread_data_t)) ;
+        thread_data[t]->chlog = &chlog;
+        thread_data[t]->chdlog = &chdlog;
+        thread_data[t]->head = &head;
+        thread_data[t]->process_id = process_id;
+        thread_data[t]->type = t; // using integer for enum type
 
         if(isDebugEnabled()){
             printf("Main: creating thread %d\n", t);
         }
-        rc = pthread_create(&thread[t], &attr, thread_work, (void *)&thread_data);
+        rc = pthread_create(&thread[t], &attr, thread_work, (void *)thread_data[t]);
         if (rc) {
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
@@ -302,6 +297,7 @@ void chkpt_all(int process_id){
                 printf("ERROR; return code from pthread_join() is %d\n", rc);
             exit(-1);
         }
+        free(thread_data[t]); // free the data structure passed to thread
         if(isDebugEnabled()){
             printf("Main: completed join with thread %d having a status of %ld\n",t,(long)sts);
         }

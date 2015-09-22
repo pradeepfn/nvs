@@ -77,9 +77,9 @@ int log_write(log_t *log, listhead_t *lhead, int process_id){
 		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
 	}
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
-        if(np->process_id == process_id && np->type == LOCAL){
+        if(np->process_id == process_id && np->type == NVRAM_CHECKPOINT){
 			if(isDebugEnabled()){
-				printf("[%d] checkpointing  varname : %s , process_id :  %d , version : %d , size : %ld ," 
+				printf("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %d , size : %ld ,"
 							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, np->version, np->size, np->ptr);
 			}
 		
