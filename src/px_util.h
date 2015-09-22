@@ -21,6 +21,7 @@ void copy_chunks(pagemap_t **page_map_ptr);
 void copy_remote_chunks(pagemap_t **page_map_ptr);
 void call_oldhandler(int signo);
 int get_mypeer(int myrank);
+void split_checkpoint_data(listhead_t *head);
 
 
 #endif
