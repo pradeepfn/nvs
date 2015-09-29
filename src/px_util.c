@@ -222,7 +222,7 @@ extern int buddy_offset;
 int get_mypeer(int myrank){
     int mypeer;
 
-    if(myrank % 2 == 0) {
+    if(myrank % 2 == 0) { //FIXME: This logic fails when offset is a even number
         mypeer = (myrank + buddy_offset) % n_processes;
         return mypeer;
     }else {
@@ -230,7 +230,7 @@ int get_mypeer(int myrank){
             mypeer = myrank - buddy_offset;
             return mypeer;
         } else{
-            mypeer = buddy_offset - myrank;
+            mypeer = n_processes + myrank - buddy_offset;
             return mypeer;
         }
     }

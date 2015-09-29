@@ -46,7 +46,7 @@ int remote_init(int my_rank, int n_rank) {
         if(my_rank >= buddy_offset){
             mypeer = my_rank - buddy_offset;
         } else{
-            mypeer = buddy_offset - my_rank;
+            mypeer = n_rank + my_rank - buddy_offset;
         }
 	}
     /*
