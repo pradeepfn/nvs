@@ -26,6 +26,7 @@ include_directories("include")
 find_package(MPI REQUIRED)
 
 include_directories(${MPI_INCLUDE_PATH})
+include_directories("/home1/03528/pradeepf/armci_install/include")
 
 set(CMAKE_C_FLAGS "-Wall -g")
 
