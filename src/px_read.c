@@ -143,7 +143,7 @@ void *fault_read(log_t *log, char *var_name, int process_id,void (*sighandler)(i
 	}
 	install_sighandler(sighandler);
 	enable_protection(ddata_ptr, page_aligned_size);
-	put_pagemap(&pagemap,checkpoint->var_name,ddata_ptr, nvdata_ptr, checkpoint->data_size, page_aligned_size,NULL);
+    pagemap_put(&pagemap, checkpoint->var_name, ddata_ptr, nvdata_ptr, checkpoint->data_size, page_aligned_size, NULL);
 	return ddata_ptr;
 }
 
@@ -174,7 +174,8 @@ void remote_fault_read(log_t *log, char *var_name, int process_id,void (*sighand
 	}
 	install_sighandler(sighandler);
 	enable_protection(entry->ptr, page_aligned_size);
-	put_pagemap(&pagemap,checkpoint->var_name,entry->ptr, NULL, checkpoint->data_size, page_aligned_size,entry->rmt_ptr);
+    pagemap_put(&pagemap, checkpoint->var_name, entry->ptr, NULL, checkpoint->data_size, page_aligned_size,
+                entry->rmt_ptr);
 }
 
 
@@ -190,7 +191,7 @@ static void bchandler(int sig, siginfo_t *si, void *unused){
 
 	if(si != NULL && si->si_addr !=  NULL){
 		//the addres returned from the si->si_addr is a random adress within the allocated range
-		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
+		pagemap_t *pagenode = pagemap_get(&pagemap, si->si_addr);
 		pagenode->copied = 1;
 		size_of_variable = disable_protection(pagenode->pageptr,pagenode->paligned_size);
 		if(isDebugEnabled()){
@@ -218,7 +219,7 @@ static void rbchandler(int sig, siginfo_t *si, void *unused){
 	if(si != NULL && si->si_addr !=  NULL){
 		//the addres returned from the si->si_addr is a random adress
 		// within the allocated range
-		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
+		pagemap_t *pagenode = pagemap_get(&pagemap, si->si_addr);
 		pagenode->copied = 1;
 		disable_protection(pagenode->pageptr,pagenode->paligned_size);
 		if(isDebugEnabled()){
@@ -240,7 +241,7 @@ static void rbchandler(int sig, siginfo_t *si, void *unused){
 
 static void rpchandler(int sig, siginfo_t *si, void *unused){
 	if(si != NULL && si->si_addr !=  NULL){
-		pagemap_t *pagenode = get_pagemap(&pagemap, si->si_addr);
+		pagemap_t *pagenode = pagemap_get(&pagemap, si->si_addr);
 		rpchandler_pagenode = pagenode;
 		mb();
 		wait_flag = FAULT_COPY_WAIT;	

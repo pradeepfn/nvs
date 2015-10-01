@@ -48,7 +48,9 @@ set(SOURCE_FILES
     src/rmtchkpt.c
     src/rmtchkpt.h
     src/timecount.c
-    src/uthash.h)
+    src/uthash.h
+    src/px_allocate.c
+    src/px_allocate.h)
 
 SET(MY_OWN_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}" CACHE PATH "Prefix prepended to
 install directories")

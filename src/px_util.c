@@ -16,7 +16,7 @@
 // 128Mb/s -> 38
 // 64Mb/s ->19
 // -1 relates to DRAM -> no delay
-#define MICROSEC 1000000
+
 
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -140,9 +140,10 @@ long disable_protection(void *page_start_addr,size_t aligned_size){
 /*
 * put an element to pagemap.wrapper method
 */
-void put_pagemap(pagemap_t **pagemapptr ,char *varname, void *pageptr, void *nvpageptr, offset_t size, offset_t asize,void **memory_grid){
+void pagemap_put(pagemap_t **pagemapptr, char *varname, void *pageptr, void *nvpageptr, offset_t size, offset_t asize,
+                 void **memory_grid){
 	pagemap_t *s;
-	HASH_FIND_INT(*pagemapptr, &pageptr, s);
+	HASH_FIND_PTR(*pagemapptr, &pageptr, s);
     if (s==NULL) {
 		s = (pagemap_t *)malloc(sizeof(pagemap_t));
 		s->pageptr = pageptr;
@@ -151,6 +152,7 @@ void put_pagemap(pagemap_t **pagemapptr ,char *varname, void *pageptr, void *nvp
 		s->paligned_size = asize;
 		s->copied = 0;
 		s->remote_ptr = memory_grid;
+        s->started_tracking = 0;
 		memcpy(s->varname,varname,sizeof(char)*20);
 		HASH_ADD_INT( *pagemapptr, pageptr, s );
 	}
@@ -159,7 +161,7 @@ void put_pagemap(pagemap_t **pagemapptr ,char *varname, void *pageptr, void *nvp
 /*
 * get an element to pagemap.wrapper method
 */
-pagemap_t *get_pagemap(pagemap_t **pagemapptr, void *pageptr){
+pagemap_t *pagemap_get(pagemap_t **pagemapptr, void *pageptr){
 	pagemap_t *s, *tmp;
 	long offset = 0;
 	if(isDebugEnabled()){

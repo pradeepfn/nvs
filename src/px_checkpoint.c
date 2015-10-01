@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <pthread.h>
+#include <sys/time.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -12,6 +13,7 @@
 #include "px_debug.h"
 #include "px_util.h"
 #include "px_dlog.h"
+#include "px_allocate.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -59,6 +61,7 @@ char pfile_location[32];
 int n_processes = -1;  // number of processes assigned for this MPI job
 int buddy_offset = 1;  // offset used during buddy checkpointing.
 int split_ratio = 0;  // controls what portions of variables get checkpointed NVRAM vs DRAM
+struct timeval px_start_time;
 
 int status; // error status register
 
@@ -70,6 +73,7 @@ tlisthead_t thead;
 thread_t thread;
 
 int init(int proc_id, int nproc){
+    gettimeofday(&px_start_time,NULL);
 	char varname[30];
 	char varvalue[32];// we are reading integers in to this
 	if(lib_initialized){
@@ -206,11 +210,12 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 			printf("[%d] allocating from the heap space : %s\n",lib_process_id,var_name);
 		}
         //local memory space allocatoin
-        n->ptr = malloc(size);
-		memset(n->ptr,0,size);
+        //n->ptr = malloc(size);
+        //memset(n->ptr,0,size);
+        n->ptr = px_alighned_allocate(size,var_name);
         //remote memory group allocation of memory
         //TODO: FIXME: we dont allocation for all the variables
-        n->local_ptr = remote_alloc(&n->rmt_ptr,size);
+        //n->local_ptr = remote_alloc(&n->rmt_ptr,size);
 	}
     LIST_INSERT_HEAD(&head, n, entries);
     return n->ptr;
@@ -327,6 +332,9 @@ void afree(void* ptr) {
 }
 
 void chkpt_all_(int *process_id){
+    if(*process_id == 0){
+        flush_access_times();
+    }
 	chkpt_all(*process_id);
 }
 int init_(int *proc_id, int *nproc){
@@ -336,3 +344,4 @@ int init_(int *proc_id, int *nproc){
 int finalize_(){
   return remote_finalize();
 }
+

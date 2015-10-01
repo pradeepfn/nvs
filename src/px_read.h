@@ -15,7 +15,11 @@ typedef struct pagemap_t_ {
 	offset_t paligned_size;
     UT_hash_handle hh;         /* makes this structure hashable */
 	int copied;
+    int started_tracking;
+    struct timeval start_timestamp; /* start and end time stamp to monitor access patterns */
+    struct timeval end_timestamp;
 	char varname[20];
+
 } pagemap_t;
 
 
