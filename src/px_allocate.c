@@ -116,12 +116,7 @@ void flush_access_times(){
         snprintf(file_name,sizeof(file_name),"stats/variable_access.log");
         fp=fopen(file_name,"a+");
         for(s=pagemap;s!=NULL;s=s->hh.next){
-            //getting time gap
-            long etime = (s->end_timestamp.tv_sec - s->start_timestamp.tv_sec)*MICROSEC +
-                    s->end_timestamp.tv_usec -s->start_timestamp.tv_usec;
-            long stime = (s->start_timestamp.tv_sec - px_start_time.tv_sec)*MICROSEC +
-                         s->start_timestamp.tv_usec - px_start_time.tv_usec;
-            fprintf(fp,"%s ,%lu ,%lu\n",s->varname, stime,etime);
+            fprintf(fp,"%s ,%lu ,%lu\n",s->varname,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
             enable_write_protection(s->pageptr,s->paligned_size);
             s->started_tracking = 0;
         }

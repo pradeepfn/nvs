@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 2.8)
 project(phoenix)
 
 #versin number
@@ -15,6 +15,7 @@ configure_file (
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
+#include_directories("/home1/03528/pradeepf/armci_install/include")
 
 set(HEADERS 
     include/phoenix.h

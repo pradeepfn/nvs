@@ -153,6 +153,8 @@ void pagemap_put(pagemap_t **pagemapptr, char *varname, void *pageptr, void *nvp
 		s->copied = 0;
 		s->remote_ptr = memory_grid;
         s->started_tracking = 0;
+        s->start_timestamp = (struct timeval) {0,0};
+        s->end_timestamp = (struct timeval) {0,0};
 		memcpy(s->varname,varname,sizeof(char)*20);
 		HASH_ADD_INT( *pagemapptr, pageptr, s );
 	}
