@@ -14,6 +14,9 @@
 #include "px_util.h"
 #include "px_dlog.h"
 #include "px_allocate.h"
+#include "px_constants.h"
+#include "px_sampler.h"
+#include "px_earlyreadwrite.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -62,6 +65,8 @@ int n_processes = -1;  // number of processes assigned for this MPI job
 int buddy_offset = 1;  // offset used during buddy checkpointing.
 int split_ratio = 0;  // controls what portions of variables get checkpointed NVRAM vs DRAM
 struct timeval px_start_time;
+int cr_type = TRADITIONAL_CR;  // a flag for traditional checkpoint restart and online checkpoint restart usage
+long checkpoint_iteration = 1; // keeping track of iterations, for running sampling
 
 int status; // error status register
 
@@ -144,6 +149,11 @@ int init(int proc_id, int nproc){
 	log_init(&chlog,log_size,proc_id);
     dlog_init(&chdlog);
 	LIST_INIT(&head);
+
+    if(proc_id == 0){
+        start_memory_sampling_thread(); // sampling free DRAM memory during first checkpoint cycle
+    }
+
     if(isDebugEnabled()){
         printf("phoenix initializing completed\n");
     }
@@ -263,6 +273,11 @@ void chkpt_all(int process_id){
     int t,rc;
     void * sts;
 
+    if(lib_process_id == 0 && checkpoint_iteration == 1){
+        stop_memory_sampling_thread();
+    }
+
+
     if(rstart == 1){
 		printf("skipping checkpointing data of process : %d \n",process_id);
 		return;
@@ -341,7 +356,13 @@ int init_(int *proc_id, int *nproc){
 	return init(*proc_id,*nproc);
 }
 
+
+int finalize(){
+    stop_write_thread();
+    return remote_finalize();
+}
+
 int finalize_(){
-  return remote_finalize();
+    return finalize();
 }
 

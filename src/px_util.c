@@ -3,10 +3,12 @@
 #include <math.h>
 #include <time.h>
 #include <sys/mman.h>
+#include <sys/time.h>
 
 #include "px_util.h"
 #include "px_remote.h"
 #include "px_debug.h"
+#include "px_constants.h"
 
 // read bandwidth to constant maching
 // 2048Mb/s -> 600
@@ -253,4 +255,56 @@ void split_checkpoint_data(listhead_t *head) {
             np->type = NVRAM_CHECKPOINT;
         }
     }
+}
+/* compare a to b (cast a and b appropriately)
+   * return (int) -1 if (a < b)
+   * return (int)  0 if (a == b)
+   * return (int)  1 if (a > b)
+   */
+int end_time_sort(pagemap_t * a, pagemap_t *b){
+    if(timercmp(&(a->end_timestamp),&(b->end_timestamp),>)){ // if a timestamp greater than b
+        return -1;
+    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
+        return 0;
+    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),<)){
+        return 1;
+    }else{
+        assert("wrong execution path");
+        exit(1);
+    }
+
+}
+
+/*
+ * 1. sort the variables decending order on last access time - we need variables in the critical
+ * path to be in DRAM
+ * 2. select the maximum number of variables that fits in as per the free mem region
+ * 3. if online C/R - each DRAM variable needs 2X space , same space if traditional C/R
+ */
+extern int cr_type;
+void decide_checkpoint_split(listhead_t *head,pagemap_t *pagemap,long long freemem){
+    pagemap_t *s;
+    entry_t *np;
+    int i;
+
+    if(cr_type == ONLINE_CR){
+        freemem = freemem/2; // double in memory checkpointing
+    }
+    //lets sort the hashmap
+    HASH_SORT(pagemap,end_time_sort);
+    //map after sorting
+    for(s=pagemap;s!=NULL;s=s->hh.next){
+
+        if(s->paligned_size < freemem){ // it fits in
+            for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
+                if(!strncmp(s->varname,np->var_name,20)){
+                    np->type = DRAM_CHECKPOINT;
+                    debug("variable : %s  chosen for DRAM checkpoint\n",s->varname);
+                }
+            }
+        }
+
+    }
+
+
 }

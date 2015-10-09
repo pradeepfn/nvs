@@ -1,6 +1,6 @@
-//
-// Created by pradeep on 9/29/15.
-//
+/*
+ * The class allocates and monitors
+ */
 
 #include <unistd.h>
 #include <sys/time.h>
@@ -16,6 +16,7 @@
 
 
 
+
 void protect_all_other_pages(char *varname);
 
 void enable_write_protection(void *ptr, size_t size);
@@ -24,13 +25,14 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused);
 
 
 pagemap_t *pagemap;
+long page_size;
 
 /* This function allocates a page aligned memory location and write protect it so we can track the
  * accesses of its chunks
  */
 
 void *px_alighned_allocate(size_t size , char *varname){
-    long page_size,page_aligned_size;
+    long page_aligned_size;
     int s;
     void *ptr;
 
@@ -49,7 +51,7 @@ void *px_alighned_allocate(size_t size , char *varname){
     memset(ptr,0,page_aligned_size);
 
     install_sighandler(access_monitor_handler);
-    enable_write_protection(ptr,page_aligned_size);
+    enable_write_protection(ptr,page_size); // only protect one page
     pagemap_put(&pagemap,varname,ptr,NULL,size,page_aligned_size,NULL);
     return ptr;
 
@@ -74,11 +76,29 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
             gettimeofday(&(pagenode->end_timestamp),NULL);
 
         }
-        disable_protection(pagenode->pageptr,pagenode->paligned_size);
+        disable_protection(pagenode->pageptr,page_size);
         protect_all_other_pages(pagenode->varname);
     }
 }
 
+/*
+ * remove page protection on monitored chunks and
+ * restore original SIGSEGV signal handler
+ */
+void stop_monitoring(){
+    pagemap_t *s;
+    for(s=pagemap;s!=NULL;s=s->hh.next){
+        disable_protection(s->pageptr,page_size);
+    }
+    //TODO: set original SIGSEGV handler
+    return;
+}
+
+
+/*
+ * we are piggy backing the enabling page protection on memory chunks
+ * within page fault itself.
+ */
 void protect_all_other_pages(char *varname) {
     pagemap_t *s;
 
@@ -86,7 +106,7 @@ void protect_all_other_pages(char *varname) {
         if(!strncmp(s->varname,varname,20)){
             continue;
         }
-        enable_write_protection(s->pageptr,s->paligned_size);
+        enable_write_protection(s->pageptr,page_size);
         //debug("enabling page protection except for variable %s\n",s->varname);
     }
 
@@ -117,7 +137,7 @@ void flush_access_times(){
         fp=fopen(file_name,"a+");
         for(s=pagemap;s!=NULL;s=s->hh.next){
             fprintf(fp,"%s ,%lu ,%lu\n",s->varname,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
-            enable_write_protection(s->pageptr,s->paligned_size);
+            enable_write_protection(s->pageptr,page_size);
             s->started_tracking = 0;
         }
         fflush(fp);
@@ -126,3 +146,6 @@ void flush_access_times(){
         assert(0);
     }
 }
+
+
+
