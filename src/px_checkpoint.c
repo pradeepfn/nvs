@@ -32,6 +32,7 @@
 #define REMOTE_RESTART_ENABLE "rmt.rstart.enable"
 #define BUDDY_OFFSET "buddy.offset"
 #define SPLIT_RATIO "split.ratio"
+#define CR_TYPE "cr.type"
 
 
 //copy stategies
@@ -130,6 +131,14 @@ int init(int proc_id, int nproc){
             buddy_offset =  atoi(varvalue);
         }else if(!strncmp(SPLIT_RATIO,varname,sizeof(varname))){
             split_ratio =  atoi(varvalue);
+        }else if(!strncmp(CR_TYPE,varname,sizeof(varname))){
+            if(atoi(varvalue) == 0){
+                cr_type = TRADITIONAL_CR;
+                log_info("traditional C/R mode. Single DRAM checkpoints\n");
+            }else if(atoi(varvalue) == 1){
+                cr_type = ONLINE_CR;
+                log_info("Online C/R mode. Double checkpointing enabled\n");
+            }
         } else {
 			printf("unknown varibale. please check the config\n");
 			exit(1);
@@ -152,6 +161,7 @@ int init(int proc_id, int nproc){
 
     if(proc_id == 0){
         start_memory_sampling_thread(); // sampling free DRAM memory during first checkpoint cycle
+        debug("start memory sampling thread\n");
     }
 
     if(isDebugEnabled()){
@@ -219,13 +229,8 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("[%d] allocating from the heap space : %s\n",lib_process_id,var_name);
 		}
-        //local memory space allocatoin
-        //n->ptr = malloc(size);
-        //memset(n->ptr,0,size);
         n->ptr = px_alighned_allocate(size,var_name);
-        //remote memory group allocation of memory
-        //TODO: FIXME: we dont allocation for all the variables
-        //n->local_ptr = remote_alloc(&n->rmt_ptr,size);
+        n->type = NVRAM_CHECKPOINT; // default checkpoint location is NVRAM
 	}
     LIST_INSERT_HEAD(&head, n, entries);
     return n->ptr;
@@ -266,6 +271,7 @@ void *thread_work(void *ptr){
  * 	3. We are done with
  */
 void chkpt_all(int process_id){
+
     // TODO: FIXME: fix this with a thread pool
     int NUM_THREADS = 2;
     pthread_t thread[NUM_THREADS];
@@ -273,16 +279,28 @@ void chkpt_all(int process_id){
     int t,rc;
     void * sts;
 
-    if(lib_process_id == 0 && checkpoint_iteration == 1){
-        stop_memory_sampling_thread();
+    if(rstart == 1){
+        printf("skipping checkpointing data of process : %d \n",process_id);
+        return;
     }
 
 
-    if(rstart == 1){
-		printf("skipping checkpointing data of process : %d \n",process_id);
-		return;
-	}
-	split_checkpoint_data(&head); // decide on what variable go where TODO: why do this over and over again
+    //stop memory sampling thread and stop page tracking
+    if(process_id == 0 && checkpoint_iteration == 1){
+        flush_access_times();
+        stop_memory_sampling_thread();
+        stop_page_tracking(); //tracking started during alloc() calls
+    }
+
+    if(checkpoint_iteration == 1){ // if this is first checkpoint of the app
+        if(split_ratio >= 0){ //ratio based split
+            split_checkpoint_data(&head);
+        }else { // memory usage based split
+            long long free_mem = get_free_memory();
+            log_info("free memory limit per process : %lld", free_mem);
+            decide_checkpoint_split(&head,free_mem);
+        }
+    }
 
     /* Initialize and set thread detached attribute */
     pthread_attr_init(&attr);
@@ -327,6 +345,8 @@ void chkpt_all(int process_id){
         printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
         checkpoint_size_printed = 1;
     }
+    debug("checkpointed data - iteration : %ld",checkpoint_iteration);
+    checkpoint_iteration++;
     return;
 }
 
@@ -347,9 +367,7 @@ void afree(void* ptr) {
 }
 
 void chkpt_all_(int *process_id){
-    if(*process_id == 0){
-        flush_access_times();
-    }
+
 	chkpt_all(*process_id);
 }
 int init_(int *proc_id, int *nproc){

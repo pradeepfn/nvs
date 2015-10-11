@@ -15,7 +15,7 @@ int stopIssued = 0; // less than cache line size. Atomic update
 pthread_mutex_t stopMutex; // instead of memory barrier we are using a mutex here
 
 
-void thread_function(void *tdata);
+void* thread_function(void *tdata);
 
 struct pthread_data{
     int dummy;
@@ -51,7 +51,7 @@ void start_memory_sampling_thread(){
 
 void stop_memory_sampling_thread(){
     set_stop_issued();
-    debug("issuing command to stop memory sampling thread.\n");
+    debug("issuing command to stop memory sampling thread.");
 }
 
 long long get_free_memory(){
@@ -69,7 +69,7 @@ long long get_free_ram(){
 
 }
 
-void thread_function(void *tdata){
+void* thread_function(void *tdata){
     struct pthread_data *data = (struct pthread_data *) tdata;
     while(1) {
         long long free_mem = get_free_ram();
@@ -79,8 +79,8 @@ void thread_function(void *tdata){
         if(is_stop_issued()){
             break;
         }
-        usleep(2000); // TODO : use nanosleep
+        usleep(20); // TODO : use nanosleep
     }
-    debug("memory monitor thread exiting..\n");
+    debug("memory sampling thread exiting..\n");
     pthread_exit(NULL);
 }

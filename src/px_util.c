@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <unistd.h>
 
 #include "px_util.h"
 #include "px_remote.h"
@@ -109,7 +110,7 @@ int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval 
 
 
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
-    struct sigaction sa; 
+    struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = sighandler;
@@ -118,7 +119,17 @@ void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
 	}
 }
 
+
+void install_old_handler(){
+    struct sigaction temp;
+    debug("old signal handler installed");
+    if (sigaction(SIGSEGV, &old_sa, &temp) == -1){
+        handle_error("sigaction");
+    }
+}
+
 void call_oldhandler(int signo){
+    debug("old signal handler called");
     (*old_sa.sa_handler)(signo);
 }
 
@@ -133,7 +144,7 @@ void enable_protection(void *ptr, size_t size) {
 * return : size of memory
 */
 long disable_protection(void *page_start_addr,size_t aligned_size){
-	if (mprotect(page_start_addr,aligned_size,PROT_READ|PROT_WRITE) == -1){
+	if (mprotect(page_start_addr,aligned_size,PROT_WRITE) == -1){
         handle_error("mprotect");
 	}
     return aligned_size;
@@ -157,6 +168,7 @@ void pagemap_put(pagemap_t **pagemapptr, char *varname, void *pageptr, void *nvp
         s->started_tracking = 0;
         s->start_timestamp = (struct timeval) {0,0};
         s->end_timestamp = (struct timeval) {0,0};
+
 		memcpy(s->varname,varname,sizeof(char)*20);
 		HASH_ADD_INT( *pagemapptr, pageptr, s );
 	}
@@ -174,9 +186,9 @@ pagemap_t *pagemap_get(pagemap_t **pagemapptr, void *pageptr){
 	HASH_ITER(hh, *pagemapptr, s, tmp) {
 		offset = pageptr - s->pageptr;
 		if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
-			if(isDebugEnabled()){
+			/*if(isDebugEnabled()){
 				printf("starting address of the matching chunk %p\n",s->pageptr);
-			}
+			}*/
 			return s;
 		}
 	}
@@ -243,68 +255,26 @@ int get_mypeer(int myrank){
 }
 
 extern int split_ratio;
+extern int cr_type;
 
 void split_checkpoint_data(listhead_t *head) {
     entry_t *np;
     int i;
+    long page_aligned_size;
+    long page_size = sysconf(_SC_PAGESIZE);
 
     for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
         if(i<split_ratio){
             np->type = DRAM_CHECKPOINT;
-        } else{
-            np->type = NVRAM_CHECKPOINT;
-        }
-    }
-}
-/* compare a to b (cast a and b appropriately)
-   * return (int) -1 if (a < b)
-   * return (int)  0 if (a == b)
-   * return (int)  1 if (a > b)
-   */
-int end_time_sort(pagemap_t * a, pagemap_t *b){
-    if(timercmp(&(a->end_timestamp),&(b->end_timestamp),>)){ // if a timestamp greater than b
-        return -1;
-    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
-        return 0;
-    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),<)){
-        return 1;
-    }else{
-        assert("wrong execution path");
-        exit(1);
-    }
-
-}
-
-/*
- * 1. sort the variables decending order on last access time - we need variables in the critical
- * path to be in DRAM
- * 2. select the maximum number of variables that fits in as per the free mem region
- * 3. if online C/R - each DRAM variable needs 2X space , same space if traditional C/R
- */
-extern int cr_type;
-void decide_checkpoint_split(listhead_t *head,pagemap_t *pagemap,long long freemem){
-    pagemap_t *s;
-    entry_t *np;
-    int i;
-
-    if(cr_type == ONLINE_CR){
-        freemem = freemem/2; // double in memory checkpointing
-    }
-    //lets sort the hashmap
-    HASH_SORT(pagemap,end_time_sort);
-    //map after sorting
-    for(s=pagemap;s!=NULL;s=s->hh.next){
-
-        if(s->paligned_size < freemem){ // it fits in
-            for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
-                if(!strncmp(s->varname,np->var_name,20)){
-                    np->type = DRAM_CHECKPOINT;
-                    debug("variable : %s  chosen for DRAM checkpoint\n",s->varname);
-                }
+            page_aligned_size = ((np->size+page_size-1)& ~(page_size-1));
+            if(cr_type == ONLINE_CR){
+                debug("allocated remote DRAM pointers for variable %s",np->var_name);
+                np->local_ptr = remote_alloc(&np->rmt_ptr,page_aligned_size);
+            }else if(cr_type == TRADITIONAL_CR){
+                //TODO
             }
         }
-
     }
-
-
 }
+
+

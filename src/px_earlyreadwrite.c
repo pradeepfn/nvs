@@ -2,8 +2,8 @@
 // Created by pradeep on 10/9/15.
 //
 
+#include <pthread.h>
 #include "px_earlyreadwrite.h"
-#include "px_read.h"
 #include "px_debug.h"
 
 
@@ -11,7 +11,7 @@
 pthread_t early_copy_thread;
 int cancel_thread=0;
 
-int data_write(pagemap_t *stat_map);
+void * data_write(void *stat_map);
 
 /*
  * Writes NVM bound checkpoint data, to NVRAM. It gets the tracked data as input from the sampler
@@ -30,11 +30,11 @@ int start_write_thread(pagemap_t *stat_map){
         log_err("erro while creating early copy thread\n");
         exit(1);
     }
-
+    return 0;
 }
 
 void * early_read(){
-
+    return NULL;
 }
 
 /*
@@ -43,20 +43,19 @@ void * early_read(){
  * 3. sleep till next variable
  * 4. If the application
  */
-int data_write(pagemap_t *stat_map){
-
+void* data_write(void *stat_map){
+    return NULL;
 }
-
 /*
  * setting thread cancel flag.
  * and wait the thread to finish
  */
 void stop_write_thread(){
-    int *ret;
+    void *ret;
 
     cancel_thread = 1;
     pthread_join(early_copy_thread,&ret);
-    if(*ret != 0){
+    if((long)ret != 0){
         log_err("error shutting down early copy thread\n");
     }
     return;
