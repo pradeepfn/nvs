@@ -268,13 +268,26 @@ void split_checkpoint_data(listhead_t *head) {
             np->type = DRAM_CHECKPOINT;
             page_aligned_size = ((np->size+page_size-1)& ~(page_size-1));
             if(cr_type == ONLINE_CR){
-                debug("allocated remote DRAM pointers for variable %s",np->var_name);
+                debug("[%d] allocated remote DRAM pointers for variable %s",
+                      lib_process_id ,np->var_name);
                 np->local_ptr = remote_alloc(&np->rmt_ptr,page_aligned_size);
-            }else if(cr_type == TRADITIONAL_CR){
-                //TODO
             }
         }
     }
 }
 
-
+/*
+ * input char array is size of 20
+ * we null terminate it at the first space
+ */
+char* null_terminate(char *c_string){
+    int i;
+    for(i=0;i<19;i++){
+        if(c_string[i] == ' '){
+            c_string[i] = '\0';
+            return c_string;
+        }
+    }
+    c_string[i] = '\0';
+    return c_string;
+}

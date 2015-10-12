@@ -25,6 +25,7 @@ void call_oldhandler(int signo);
 int get_mypeer(int myrank);
 void split_checkpoint_data(listhead_t *head);
 void install_old_handler();
+char* null_terminate(char *c_string);
 
 
 #endif

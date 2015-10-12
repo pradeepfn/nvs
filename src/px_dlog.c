@@ -44,7 +44,7 @@ int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id) {
         }
     }
     remote_barrier();
-    return dlog_write(dlog, lhead,process_id, DOUBLE_IN_MEMORY_DIM_REMOTE);
+    return dlog_write(dlog, lhead,process_id, DOUBLE_IN_MEMORY_REMOTE);
 }
 
 /*
@@ -80,7 +80,7 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
                     printf("[%d] new DRAM memory location for : %s \n",lib_process_id, s->var_name);
                 }
 
-            } else if (type == DOUBLE_IN_MEMORY_DIM_REMOTE) {
+            } else if (type == DOUBLE_IN_MEMORY_REMOTE) {
                 s->data_ptr = np->local_ptr;// we use the group allocated memory directly
                 if(isDebugEnabled()){
                     printf("[%d] remote variable mapped to ARMCI group allocated pointer for : %s \n",lib_process_id, s->var_name);
@@ -98,14 +98,14 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
                                "size : %ld , pointer : %p \n",lib_process_id, s->var_name, process_id, s->version, s->size, s->data_ptr);
             }
         }
-        if(type == DOUBLE_IN_MEMORY_DIM_REMOTE){ // nothing to do. we have already set the group pointer
+        if(type == DOUBLE_IN_MEMORY_REMOTE){ // nothing to do. we have already set the group pointer
 
         }
         // sanity check
         assert(strncmp(s->var_name, np->var_name,np->size) == 0);
         assert(s->process_id == np->process_id);
 
-        /*if(type == DOUBLE_IN_MEMORY_DIM_REMOTE){
+        /*if(type == DOUBLE_IN_MEMORY_REMOTE){
 
             printf("[%d] data vlaue ******************  : %f \n",lib_process_id, ((float *)s->data_ptr)[0]);
         }*/

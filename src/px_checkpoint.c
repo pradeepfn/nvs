@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <sys/time.h>
+#include <math.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -33,6 +34,7 @@
 #define BUDDY_OFFSET "buddy.offset"
 #define SPLIT_RATIO "split.ratio"
 #define CR_TYPE "cr.type"
+#define FREE_MEMORY "free.memory"
 
 
 //copy stategies
@@ -68,6 +70,7 @@ int split_ratio = 0;  // controls what portions of variables get checkpointed NV
 struct timeval px_start_time;
 int cr_type = TRADITIONAL_CR;  // a flag for traditional checkpoint restart and online checkpoint restart usage
 long checkpoint_iteration = 1; // keeping track of iterations, for running sampling
+long free_memory = -1;
 
 int status; // error status register
 
@@ -134,13 +137,19 @@ int init(int proc_id, int nproc){
         }else if(!strncmp(CR_TYPE,varname,sizeof(varname))){
             if(atoi(varvalue) == 0){
                 cr_type = TRADITIONAL_CR;
-                log_info("traditional C/R mode. Single DRAM checkpoints\n");
+                if(lib_process_id ==0){
+                    log_info("traditional C/R mode. Single DRAM checkpoints\n");
+                }
             }else if(atoi(varvalue) == 1){
                 cr_type = ONLINE_CR;
-                log_info("Online C/R mode. Double checkpointing enabled\n");
+                if(lib_process_id == 0){
+                    log_info("Online C/R mode. Double checkpointing enabled\n");
+                }
             }
-        } else {
-			printf("unknown varibale. please check the config\n");
+        } else if(!strncmp(FREE_MEMORY,varname,sizeof(varname))){
+            free_memory = atol(varvalue) * 1024 * 1024;
+        }else{
+			log_err("unknown varibale : %s  please check the config",varname);
 			exit(1);
 		}
 	}
@@ -177,6 +186,7 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 	checkpoint_size+= size;
 
     entry_t *n = malloc(sizeof(struct entry)); // new node in list
+    var_name = null_terminate(var_name);
     memcpy(n->var_name,var_name,VAR_SIZE);
     n->size = size;
     n->process_id = process_id;
@@ -296,9 +306,14 @@ void chkpt_all(int process_id){
         if(split_ratio >= 0){ //ratio based split
             split_checkpoint_data(&head);
         }else { // memory usage based split
-            long long free_mem = get_free_memory();
-            log_info("free memory limit per process : %lld", free_mem);
-            decide_checkpoint_split(&head,free_mem);
+            long long fmem = get_free_memory();
+            if(free_memory != -1){
+                fmem = free_memory ; // if there is a config value accept that
+            }
+            if(lib_process_id == 0){
+                log_info("[%d] free memory limit per process : %lld",lib_process_id, fmem);
+            }
+            decide_checkpoint_split(&head, fmem);
         }
     }
 
@@ -324,8 +339,9 @@ void chkpt_all(int process_id){
             exit(-1);
         }
     }
-
-    dlog_remote_write(&chdlog,&head,get_mypeer(process_id));//remote DRAM write
+    if(cr_type == ONLINE_CR){
+        dlog_remote_write(&chdlog,&head,get_mypeer(process_id));//remote DRAM write
+    }
 
     /* Free attribute and wait for the other threads */
     pthread_attr_destroy(&attr);
@@ -345,7 +361,6 @@ void chkpt_all(int process_id){
         printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
         checkpoint_size_printed = 1;
     }
-    debug("checkpointed data - iteration : %ld",checkpoint_iteration);
     checkpoint_iteration++;
     return;
 }

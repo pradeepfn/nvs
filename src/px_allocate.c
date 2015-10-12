@@ -5,10 +5,10 @@
 #include <unistd.h>
 #include <sys/time.h>
 #include <dirent.h>
+#include <mpi.h>
 #include "px_allocate.h"
 #include "px_debug.h"
 #include "px_util.h"
-#include "signal.h"
 #include "sys/mman.h"
 #include "px_constants.h"
 #include "px_remote.h"
@@ -115,37 +115,6 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
     }
 }
 
-
-static void temp_handler(int sig, siginfo_t *si, void *unused){
-    if(si != NULL && si->si_addr != NULL){
-        pagemap_t *pagenode, *tmp;
-        void *pageptr;
-        long offset =0;
-        pageptr = si->si_addr;
-
-
-        HASH_ITER(hh, pagemap, pagenode, tmp) {
-            offset = pageptr - pagenode->pageptr;
-            if(offset >=0 && offset <= pagenode->size){ // the adress belong to this chunk.
-                if(isDebugEnabled()){
-                    printf("[%d] starting address of the matching chunk %p variable name %s\n",
-                           lib_process_id,pagenode->pageptr,pagenode->varname);
-                }
-                if(pagenode != NULL) {
-                    if (mprotect(pagenode->pageptr,page_size,PROT_WRITE) == -1){
-                        handle_error("mprotect");
-                    }
-                }
-                return;
-            }
-        }
-        debug("[%d] offending memory access : %p ",lib_process_id,pageptr);
-        call_oldhandler(sig);
-    }
-}
-
-
-
 /*
  * remove page protection on monitored chunks and
  * restore original SIGSEGV signal handler
@@ -153,7 +122,6 @@ static void temp_handler(int sig, siginfo_t *si, void *unused){
 void stop_page_tracking(){
     pagemap_t *s;
     for(s=pagemap;s!=NULL;s=s->hh.next){
-        debug("disabling protection of %s , page size : %d ",s->varname,page_size);
         disable_protection(s->pageptr,page_size);
     }
     debug("memory tracking disabled\n");
@@ -242,40 +210,61 @@ int end_time_sort(pagemap_t * a, pagemap_t *b){
  * 3. if online C/R - each DRAM variable needs 2X space , same space if traditional C/R
  */
 extern int cr_type;
+extern int n_processes;
 
-
-
-void decide_checkpoint_split(listhead_t *head,long long freemem) {
+void decide_checkpoint_split(listhead_t *head, long long freemem) {
+    char carray[100][20]; //contiguous memory : over provisioned
     pagemap_t *s;
     entry_t *np;
-    int i;
+    int j, i = 0;
+    int n_vars = 0;
     long page_aligned_size;
 
-    if(cr_type == ONLINE_CR){
-        freemem = freemem/2; // double in memory checkpointing
-    }
-    //lets sort the hashmap
-    HASH_SORT(pagemap,end_time_sort);
-    //map after sorting
-    for(s=pagemap;s!=NULL;s=s->hh.next){
 
-        if(s->paligned_size < freemem){ // it fits in
-            for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
-                if(!strncmp(s->varname,np->var_name,20)){
-                    np->type = DRAM_CHECKPOINT;
-                    page_aligned_size = ((np->size+page_size-1)& ~(page_size-1));
-                    if(cr_type == ONLINE_CR){
-                        debug("allocated remote DRAM pointers for variable %s",np->var_name);
-                        np->local_ptr = remote_alloc(&np->rmt_ptr,page_aligned_size);
-                    }else if(cr_type == TRADITIONAL_CR){
-                        //TODO
+    if (lib_process_id == 0) { // root process does the split
+        if (cr_type == ONLINE_CR) {
+            freemem = freemem / 2; // double in memory checkpointing
+        }
+        //lets sort the hashmap
+        HASH_SORT(pagemap, end_time_sort);
+
+        //map after sorting
+        for (s = pagemap; s != NULL; s = s->hh.next) {
+            if (s->paligned_size < freemem) { // it fits in
+                freemem -= s->paligned_size; // TODO : restart needs aligned size
+                assert(i < 100); // we are working with a overprovisioned array
+                strncpy(carray[i], s->varname, 20);
+                n_vars++;
+                i++;
+                log_info("variable : %s  chosen for DRAM checkpoint\n", s->varname);
+            }
+
+        }
+    }
+
+
+    // 1. broadcast number of elements
+    // 2. broadcast array
+    MPI_Bcast((void *)&n_vars,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast((void *)carray,n_vars*20,MPI_CHAR,0,MPI_COMM_WORLD);
+
+    //transfer the learned splits in to internal data structures
+    for(j=0;j< n_vars;j++){
+        //debug("[%d] variable to match : %s ",lib_process_id, carray[j]);
+        for (np = head->lh_first; np != NULL; np = np->entries.le_next) {
+            if(!strncmp(carray[j],np->var_name,20)){
+                //debug("[%d] matched variable : %s , %s",lib_process_id, carray[j],np->var_name);
+                np->type = DRAM_CHECKPOINT;
+                if(cr_type == ONLINE_CR) {
+                    if (lib_process_id == 0) {
+                        debug("[%d] allocated remote DRAM pointers for variable %s",
+                              lib_process_id, np->var_name);
                     }
-                    debug("variable : %s  chosen for DRAM checkpoint\n",s->varname);
+                    page_aligned_size = ((np->size + page_size - 1) & ~(page_size - 1));
+                    np->local_ptr = remote_alloc(&np->rmt_ptr, page_aligned_size);
                 }
             }
         }
-
     }
-
 
 }

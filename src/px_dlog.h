@@ -11,7 +11,7 @@
 
 typedef enum { // type we used for seperating double in memory remote and local checkpoint versions
     DOUBLE_IN_MEMORY_LOCAL,
-    DOUBLE_IN_MEMORY_DIM_REMOTE
+    DOUBLE_IN_MEMORY_REMOTE
 } dim_type;
 
 typedef struct dcheckpoint_map_entry_t_{
