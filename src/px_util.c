@@ -267,6 +267,10 @@ void split_checkpoint_data(listhead_t *head) {
         if(i<split_ratio){
             np->type = DRAM_CHECKPOINT;
             page_aligned_size = ((np->size+page_size-1)& ~(page_size-1));
+            if(lib_process_id == 0) {
+                log_info("[%d] variable : %s  chosen for DRAM checkpoint\n",
+                         lib_process_id,np->var_name);
+            }
             if(cr_type == ONLINE_CR){
                 debug("[%d] allocated remote DRAM pointers for variable %s",
                       lib_process_id ,np->var_name);

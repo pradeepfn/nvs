@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <sys/time.h>
 #include <math.h>
+#include <mpi.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -18,6 +19,7 @@
 #include "px_constants.h"
 #include "px_sampler.h"
 #include "px_earlyreadwrite.h"
+#include "timecount.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -35,6 +37,8 @@
 #define SPLIT_RATIO "split.ratio"
 #define CR_TYPE "cr.type"
 #define FREE_MEMORY "free.memory"
+#define THRESHOLD_SIZE "threshold.size"
+#define MAX_CHECKPOINTS "max.checkpoints"
 
 
 //copy stategies
@@ -58,7 +62,9 @@ int lib_initialized = 0;
 
 int lib_process_id = -1;
 int  checkpoint_size_printed = 0; // flag variable
-long checkpoint_size = 0;
+long nvram_checkpoint_size = 0;
+long local_dram_checkpoint_size =0;
+long remote_dram_checkpoint_size=0;
 int nvram_wbw = -1;
 int rstart = 0;
 int remote_checkpoint = 0;
@@ -70,7 +76,9 @@ int split_ratio = 0;  // controls what portions of variables get checkpointed NV
 struct timeval px_start_time;
 int cr_type = TRADITIONAL_CR;  // a flag for traditional checkpoint restart and online checkpoint restart usage
 long checkpoint_iteration = 1; // keeping track of iterations, for running sampling
-long free_memory = -1;
+long free_memory = -1; // the memory budget passed as program config for derived from runtime
+int threshold_size = 4096; // threshold size when deciding on moving to DRAM
+long max_checkpoints = -1; // termination checkpoint iteration.
 
 int status; // error status register
 
@@ -101,53 +109,57 @@ int init(int proc_id, int nproc){
 		exit(1);
 	}
 	while (fscanf(fp, "%s =  %s", varname, varvalue) != EOF) { // TODO: space truncate
-		if(varname[0] == '#'){
-			// consuming the input line starting with '#'
-			fscanf(fp,"%*[^\n]");  
-			fscanf(fp,"%*1[\n]"); 
-			continue;
-		}else if(!strncmp(NVM_SIZE,varname,sizeof(varname))){
-			log_size = atoi(varvalue)*1024*1024;		
-		}else if(!strncmp(CHUNK_SIZE,varname,sizeof(varname))){
-			chunk_size = atoi(varvalue);	
-		}else if(!strncmp(COPY_STRATEGY,varname,sizeof(varname))){
-			copy_strategy = atoi(varvalue);	
-		}else if(!strncmp(DEBUG_ENABLE,varname,sizeof(varname))){
-			if(atoi(varvalue) == 1){		
-				enable_debug();		
-			}
-		}else if(!strncmp(PFILE_LOCATION,varname,sizeof(varname))){
-			strncpy(pfile_location,varvalue,sizeof(pfile_location));
-		}else if(!strncmp(NVRAM_WBW,varname,sizeof(varname))){
-			nvram_wbw = atoi(varvalue);
-		}else if(!strncmp(RSTART,varname,sizeof(varname))){
-			rstart = atoi(varvalue);
-		}else if(!strncmp(REMOTE_CHECKPOINT_ENABLE,varname,sizeof(varname))){
-			if(atoi(varvalue) == 1){		
-				remote_checkpoint = 1;		
-			}
-		}else if(!strncmp(REMOTE_RESTART_ENABLE,varname,sizeof(varname))){
-			if(atoi(varvalue) == 1){		
-				remote_restart = 1;		
-			}
-		}else if(!strncmp(BUDDY_OFFSET,varname,sizeof(varname))){
-            buddy_offset =  atoi(varvalue);
-        }else if(!strncmp(SPLIT_RATIO,varname,sizeof(varname))){
-            split_ratio =  atoi(varvalue);
-        }else if(!strncmp(CR_TYPE,varname,sizeof(varname))){
-            if(atoi(varvalue) == 0){
+        if (varname[0] == '#') {
+            // consuming the input line starting with '#'
+            fscanf(fp, "%*[^\n]");
+            fscanf(fp, "%*1[\n]");
+            continue;
+        } else if (!strncmp(NVM_SIZE, varname, sizeof(varname))) {
+            log_size = atoi(varvalue) * 1024 * 1024;
+        } else if (!strncmp(CHUNK_SIZE, varname, sizeof(varname))) {
+            chunk_size = atoi(varvalue);
+        } else if (!strncmp(COPY_STRATEGY, varname, sizeof(varname))) {
+            copy_strategy = atoi(varvalue);
+        } else if (!strncmp(DEBUG_ENABLE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 1) {
+                enable_debug();
+            }
+        } else if (!strncmp(PFILE_LOCATION, varname, sizeof(varname))) {
+            strncpy(pfile_location, varvalue, sizeof(pfile_location));
+        } else if (!strncmp(NVRAM_WBW, varname, sizeof(varname))) {
+            nvram_wbw = atoi(varvalue);
+        } else if (!strncmp(RSTART, varname, sizeof(varname))) {
+            rstart = atoi(varvalue);
+        } else if (!strncmp(REMOTE_CHECKPOINT_ENABLE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 1) {
+                remote_checkpoint = 1;
+            }
+        } else if (!strncmp(REMOTE_RESTART_ENABLE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 1) {
+                remote_restart = 1;
+            }
+        } else if (!strncmp(BUDDY_OFFSET, varname, sizeof(varname))) {
+            buddy_offset = atoi(varvalue);
+        } else if (!strncmp(SPLIT_RATIO, varname, sizeof(varname))) {
+            split_ratio = atoi(varvalue);
+        } else if (!strncmp(CR_TYPE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 0) {
                 cr_type = TRADITIONAL_CR;
-                if(lib_process_id ==0){
+                if (lib_process_id == 0) {
                     log_info("traditional C/R mode. Single DRAM checkpoints\n");
                 }
-            }else if(atoi(varvalue) == 1){
+            } else if (atoi(varvalue) == 1) {
                 cr_type = ONLINE_CR;
-                if(lib_process_id == 0){
+                if (lib_process_id == 0) {
                     log_info("Online C/R mode. Double checkpointing enabled\n");
                 }
             }
-        } else if(!strncmp(FREE_MEMORY,varname,sizeof(varname))){
+        } else if (!strncmp(FREE_MEMORY, varname, sizeof(varname))) {
             free_memory = atol(varvalue) * 1024 * 1024;
+        } else if (!strncmp(THRESHOLD_SIZE, varname, sizeof(varname))) {
+            threshold_size = atoi(varvalue);
+        } else if (!strncmp(MAX_CHECKPOINTS, varname, sizeof(varname))){
+            max_checkpoints = atol(varvalue);
         }else{
 			log_err("unknown varibale : %s  please check the config",varname);
 			exit(1);
@@ -181,9 +193,6 @@ int init(int proc_id, int nproc){
 
 
 void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
-
-	//counting the total checkpoint data size per core
-	checkpoint_size+= size;
 
     entry_t *n = malloc(sizeof(struct entry)); // new node in list
     var_name = null_terminate(var_name);
@@ -289,6 +298,17 @@ void chkpt_all(int process_id){
     int t,rc;
     void * sts;
 
+    // if this is the max checkpoints, flush the timers and exit
+    if(checkpoint_iteration == max_checkpoints){
+        if(lib_process_id == 0){
+            log_info("terminating after %ld checkpoints",checkpoint_iteration);
+        }
+        end_timestamp();
+        MPI_Barrier(MPI_COMM_WORLD);
+        exit(0);
+        return;
+    }
+
     if(rstart == 1){
         printf("skipping checkpointing data of process : %d \n",process_id);
         return;
@@ -304,6 +324,9 @@ void chkpt_all(int process_id){
 
     if(checkpoint_iteration == 1){ // if this is first checkpoint of the app
         if(split_ratio >= 0){ //ratio based split
+            if(lib_process_id == 0) {
+                log_info("using config split ratio on choosing DRAM variables");
+            }
             split_checkpoint_data(&head);
         }else { // memory usage based split
             long long fmem = get_free_memory();
@@ -311,6 +334,7 @@ void chkpt_all(int process_id){
                 fmem = free_memory ; // if there is a config value accept that
             }
             if(lib_process_id == 0){
+                log_info("[%d] using memory access info to decide on DRAM variables",lib_process_id);
                 log_info("[%d] free memory limit per process : %lld",lib_process_id, fmem);
             }
             decide_checkpoint_split(&head, fmem);
@@ -358,7 +382,9 @@ void chkpt_all(int process_id){
     }
 
     if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
-        printf("checkpoint size : %.2f \n", (double)checkpoint_size/1000000);
+        printf("NVRAM checkpoint size : %.2f \n", (double)nvram_checkpoint_size/1000000);
+        printf("local DRAM checkpoint size : %.2f \n", (double)local_dram_checkpoint_size/1000000);
+        printf("remote DRAM checkpoint size : %.2f \n", (double)remote_dram_checkpoint_size/1000000);
         checkpoint_size_printed = 1;
     }
     checkpoint_iteration++;

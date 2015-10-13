@@ -66,6 +66,7 @@ int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
 }
 
 /* writing to the data to persistent storage*/
+extern long nvram_checkpoint_size;
 int log_write(log_t *log, listhead_t *lhead, int process_id){
 	entry_t *np;
 	if(!is_remaining_space_enough(log, lhead)){
@@ -82,7 +83,7 @@ int log_write(log_t *log, listhead_t *lhead, int process_id){
 				printf("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %d , size : %ld ,"
 							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, np->version, np->size, np->ptr);
 			}
-		
+		    nvram_checkpoint_size+= np->size;
             checkpoint(log, np->var_name, np->process_id, np->version, np->size, np->ptr);
         }
     }	
@@ -219,6 +220,7 @@ static memmap_t *get_latest_mapfile(log_t *log){
 		printf("log offset of log[1] %ld\n", h2->offset);
         assert(0);
     }
+    return NULL;
 }
 
 static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data){

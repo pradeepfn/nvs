@@ -171,7 +171,7 @@ void flush_access_times(){
         snprintf(file_name,sizeof(file_name),"stats/variable_access.log");
         fp=fopen(file_name,"a+");
         for(s=pagemap;s!=NULL;s=s->hh.next){
-            fprintf(fp,"%s ,%lu ,%lu\n",s->varname,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
+            fprintf(fp,"%s ,%lu,%lu ,%lu\n",s->varname,s->size,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
             //enable_write_protection(s->pageptr,page_size);
             //s->started_tracking = 0;
         }
@@ -211,6 +211,7 @@ int end_time_sort(pagemap_t * a, pagemap_t *b){
  */
 extern int cr_type;
 extern int n_processes;
+extern int threshold_size;
 
 void decide_checkpoint_split(listhead_t *head, long long freemem) {
     char carray[100][20]; //contiguous memory : over provisioned
@@ -230,7 +231,7 @@ void decide_checkpoint_split(listhead_t *head, long long freemem) {
 
         //map after sorting
         for (s = pagemap; s != NULL; s = s->hh.next) {
-            if (s->paligned_size < freemem) { // it fits in
+            if (s->paligned_size < freemem && s->size >= threshold_size) { // it fits in
                 freemem -= s->paligned_size; // TODO : restart needs aligned size
                 assert(i < 100); // we are working with a overprovisioned array
                 strncpy(carray[i], s->varname, 20);

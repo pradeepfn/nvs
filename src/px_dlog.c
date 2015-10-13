@@ -56,6 +56,8 @@ int dlog_local_write(dlog_t *dlog, listhead_t *lhead,int process_id){
     return dlog_write(dlog,lhead,process_id, DOUBLE_IN_MEMORY_LOCAL);
 }
 
+extern long local_dram_checkpoint_size;
+extern long remote_dram_checkpoint_size;
 
 int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
     entry_t *np;
@@ -79,12 +81,14 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
                 if(isDebugEnabled()){
                     printf("[%d] new DRAM memory location for : %s \n",lib_process_id, s->var_name);
                 }
+                local_dram_checkpoint_size+=s->size;
 
             } else if (type == DOUBLE_IN_MEMORY_REMOTE) {
                 s->data_ptr = np->local_ptr;// we use the group allocated memory directly
                 if(isDebugEnabled()){
                     printf("[%d] remote variable mapped to ARMCI group allocated pointer for : %s \n",lib_process_id, s->var_name);
                 }
+                remote_dram_checkpoint_size+=s->size;
             }
             HASH_ADD_STR(dlog->map[type], var_name, s); //now we have a complete data entry for a variable.add it!
         }
