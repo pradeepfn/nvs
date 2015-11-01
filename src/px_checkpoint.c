@@ -1,11 +1,14 @@
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <pthread.h>
 #include <sys/time.h>
-#include <math.h>
 #include <mpi.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <sched.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -14,12 +17,13 @@
 #include "px_remote.h"
 #include "px_debug.h"
 #include "px_util.h"
-#include "px_dlog.h"
 #include "px_allocate.h"
 #include "px_constants.h"
 #include "px_sampler.h"
-#include "px_earlyreadwrite.h"
 #include "timecount.h"
+#include "px_threadpool.h"
+#include "px_destager.h"
+#include "px_earlycopy.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -79,6 +83,7 @@ long checkpoint_iteration = 1; // keeping track of iterations, for running sampl
 long free_memory = -1; // the memory budget passed as program config for derived from runtime
 int threshold_size = 4096; // threshold size when deciding on moving to DRAM
 long max_checkpoints = -1; // termination checkpoint iteration.
+threadpool_t *thread_pool;
 
 int status; // error status register
 
@@ -88,6 +93,11 @@ listhead_t head;
 tlisthead_t thead;
 
 thread_t thread;
+
+//semaphores used for synchronization between main thread and the early copy thread
+static sem_t sem1;
+static sem_t sem2;
+
 
 int init(int proc_id, int nproc){
     gettimeofday(&px_start_time,NULL);
@@ -185,6 +195,22 @@ int init(int proc_id, int nproc){
         debug("start memory sampling thread\n");
     }
 
+    //creating threadpool for earlycopy and destage
+    //all the threads should run in a single dedicated core/ or two.
+    int THREAD_COUNT = 2;
+    int QUEUE_SIZE = 2;
+    thread_pool = threadpool_create(THREAD_COUNT,QUEUE_SIZE,0);
+
+
+    //initializaing signaling semaphores. share with threads, init to '0'
+    if(sem_init(&sem1,0,0) == -1){
+        log_err("[%d] init semaphore one",lib_process_id);
+    }
+    if(sem_init(&sem2,0,0) == -1){
+        log_err("[%d] init semaphore two",lib_process_id);
+    }
+
+
     if(isDebugEnabled()){
         printf("phoenix initializing completed\n");
     }
@@ -260,15 +286,15 @@ typedef enum {
     LOCAL_DRAM_WRITE,
 }func_type;
 
-typedef struct thread_data_t_{
+/*typedef struct thread_data_t_{
     log_t *chlog;
     dlog_t *chdlog;
     int process_id;
     listhead_t *head;
     func_type type;
-} thread_data_t;
+} thread_data_t;*/
 
-void *thread_work(void *ptr){
+/*void *thread_work(void *ptr){
     thread_data_t *t_data = (thread_data_t *)ptr;
     if(t_data -> type == LOCAL_NVRAM_WRITE){
         log_write(t_data->chlog,t_data->head,t_data->process_id);//local NVRAM write
@@ -278,7 +304,7 @@ void *thread_work(void *ptr){
         assert( 0 && "wrong exection path");
     }
     pthread_exit((void*)t_data->type);
-}
+}*/
 
 /*
  * The procedure is responsible for hybrid checkpoints. The phoenix version of local checkpoitns.
@@ -289,14 +315,27 @@ void *thread_work(void *ptr){
  * 			- remote DRAM checkpoint - (Total-X) portion of data
  * 	3. We are done with
  */
+
+
+
 void chkpt_all(int process_id){
 
-    // TODO: FIXME: fix this with a thread pool
+    //signal we are about to checkpoint
+    if(sem_post(&sem1) == -1){
+        log_err("semaphore one increment");
+        exit(-1);
+    }
+    //wait for the signal from early copy thread
+    if (sem_wait(&sem2) == -1){
+        log_err("semaphore two wait");
+    }
+
+    /*// TODO: FIXME: fix this with a thread pool
     int NUM_THREADS = 2;
     pthread_t thread[NUM_THREADS];
     pthread_attr_t attr;
     int t,rc;
-    void * sts;
+    void * sts;*/
 
     // if this is the max checkpoints, flush the timers and exit
     if(checkpoint_iteration == max_checkpoints){
@@ -341,7 +380,7 @@ void chkpt_all(int process_id){
         }
     }
 
-    /* Initialize and set thread detached attribute */
+    /* Initialize and set thread detached attribute *//*
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
@@ -362,23 +401,16 @@ void chkpt_all(int process_id){
             printf("ERROR; return code from pthread_create() is %d\n", rc);
             exit(-1);
         }
-    }
+    }*/
+
+    /*checkpoint to local NVRAM, local DRAM and remote DRAM
+     * we cannot do this parallely, no cores to run*/
+
+    log_write(&chlog,&head,process_id);//local NVRAM write
+    dlog_local_write(&chdlog,&head,process_id);//local DRAM write
+
     if(cr_type == ONLINE_CR){
         dlog_remote_write(&chdlog,&head,get_mypeer(process_id));//remote DRAM write
-    }
-
-    /* Free attribute and wait for the other threads */
-    pthread_attr_destroy(&attr);
-    for(t=0; t < NUM_THREADS; t++) {
-        rc = pthread_join(thread[t], &sts);
-        if (rc) {
-                printf("ERROR; return code from pthread_join() is %d\n", rc);
-            exit(-1);
-        }
-        free(thread_data[t]); // free the data structure passed to thread
-        if(isDebugEnabled()){
-            printf("Main: completed join with thread %d having a status of %ld\n",t,(long)sts);
-        }
     }
 
     if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
@@ -388,6 +420,17 @@ void chkpt_all(int process_id){
         checkpoint_size_printed = 1;
     }
     checkpoint_iteration++;
+
+    //add destage task
+    destage_t targ;
+    targ.nvlog = &chlog;
+    targ.dlog = &chdlog;
+    targ.process_id = process_id;
+
+    threadpool_add(thread_pool,&destage_data,(void *) &targ,0);
+    //add the precopy task
+    threadpool_add(thread_pool,&start_copy,NULL,0);
+
     return;
 }
 
@@ -417,11 +460,60 @@ int init_(int *proc_id, int *nproc){
 
 
 int finalize(){
-    stop_write_thread();
+    //remove semaphores
+    if(sem_destroy(&sem1) == -1){
+        goto err;
+    }
+    if(sem_destroy(&sem2)== -1){
+        goto err;
+    }
+
+    threadpool_destroy(thread_pool,threadpool_graceful);
     return remote_finalize();
+
+    err:
+        log_err("[%d] program error",lib_process_id);
+        return -1;
+
 }
 
 int finalize_(){
     return finalize();
 }
 
+
+
+
+
+
+/*copy the data from local DRAM log to NVRAM log*/
+void destage_data(void *args){
+    destage_t *ds = (destage_t *)args;
+    destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
+    return;
+}
+
+
+
+void start_copy(void *args){
+    earlycopy_t *ec = (earlycopy_t *)args;
+    int sem_ret;
+    //check the signaling semaphore
+    while ((sem_ret = sem_trywait(&sem1)) == -1){
+        //main MPI process still hasnt reached the checkpoint!
+        if(errno == EAGAIN){ // only when asynchronous wait fail
+            int c = sched_getcpu();
+            log_err("[%d] early copying variables, running on CPU - %d",lib_process_id,c);
+
+            sleep(1);
+        }else{
+            assert(0); // wrong execution path
+        }
+    }
+
+    if(sem_ret == 0 && sem_post(&sem2) == -1){
+        log_err("semaphore two increment");
+        exit(-1);
+    }
+    return;
+}

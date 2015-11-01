@@ -60,7 +60,11 @@ set(SOURCE_FILES
     src/px_sampler.c
     src/px_sampler.h
     src/px_earlyreadwrite.h
-    src/px_earlyreadwrite.c)
+    src/px_earlyreadwrite.c
+    src/px_threadpool.h
+    src/px_threadpool.c
+    src/px_destager.h
+    src/px_earlycopy.h)
 
 SET(MY_OWN_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}" CACHE PATH "Prefix prepended to
 install directories")

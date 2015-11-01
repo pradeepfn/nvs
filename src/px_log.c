@@ -12,6 +12,7 @@
 #include "px_debug.h"
 #include "px_checkpoint.h"
 #include "px_util.h"
+#include "px_dlog.h"
 
 #define FILE_PATH_ONE "/mmap.file.one"
 #define FILE_PATH_TWO "/mmap.file.two"
@@ -29,6 +30,7 @@ static void checkpoint1(log_t *log,void *start_addr, checkpoint_t *chkpt, void *
 static checkpoint_t *get_meta(void *base_addr,size_t offset);
 static void *get_start_addr(void *base_addr,checkpoint_t *last_meta);
 static int is_remaining_space_enough(log_t *log, listhead_t *lhead);
+static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map);
 
 
 
@@ -64,6 +66,23 @@ int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
 
 	return 1;
 }
+
+
+int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_id){
+    dcheckpoint_map_entry_t *s;
+    if(is_remaining_space_enough2(log,map)){
+        //go ahead and append to log
+        for(s=map;s!=NULL;s=s->hh.next){
+            checkpoint(log,s->var_name,process_id,s->version,s->size,s->data_ptr);
+        }
+    }else{
+        //allocate more space
+        log_err("not enough space for data destaging..");
+        assert(0);
+    }
+    return 1;
+}
+
 
 /* writing to the data to persistent storage*/
 extern long nvram_checkpoint_size;
@@ -292,3 +311,22 @@ static int is_remaining_space_enough(log_t *log, listhead_t *lhead){
 	return (remaing_size > tot_size); 
 }
 
+
+/*
+ * find out the current log has enough space to accomadate the
+ * destage data.
+ */
+static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map){
+    long tot_size=0;
+
+    dcheckpoint_map_entry_t *s;
+    for(s=map;s!=NULL;s=s->hh.next){
+        tot_size += (sizeof(checkpoint_t) + s->size);
+    }
+    checkpoint_t *cp = get_meta(log->current->meta, log->current->head->offset);
+    size_t remaing_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1 + sizeof(checkpoint_t) + cp->data_size ); //adding 1 since offset can be -1
+    if(isDebugEnabled()){
+        printf("[%d] offset : remaining : checkpoint  sizes - %ld : %ld : %ld \n",lib_process_id,log->current->head->offset,remaing_size,tot_size);
+    }
+    return (remaing_size > tot_size);
+}

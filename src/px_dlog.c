@@ -22,8 +22,8 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type);
  */
 
 void dlog_init(dlog_t *dlog){
-    dlog->map[NVRAM_CHECKPOINT] = NULL;
-    dlog->map[DRAM_CHECKPOINT] = NULL;
+    dlog->map[NVRAM_CHECKPOINT] = NULL; // data destined to NVRAM
+    dlog->map[DRAM_CHECKPOINT] = NULL;   // data destined to remote DRAM
 }
 /*
  * writes the selected (marked as REMOTE) variables to remote buddy nodes
@@ -135,3 +135,4 @@ dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id,
     }
     return s; // s can be NULL or found value
 }
+

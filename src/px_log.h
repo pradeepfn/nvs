@@ -2,6 +2,7 @@
 #define __PX_LOG_H
 
 #include "px_checkpoint.h"
+#include "px_dlog.h"
 
 typedef long offset_t;
 
@@ -40,4 +41,5 @@ checkpoint_t *log_read(log_t *, char *, int);
 int is_chkpoint_present(log_t *log);
 
 int remote_data_log_write(log_t *,listhead_t *,int);
+int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_id);
 #endif
