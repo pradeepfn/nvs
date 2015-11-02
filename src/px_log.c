@@ -44,7 +44,7 @@ void log_init(log_t *log , long log_size, int process_id){
     init_mmap_files(log);
 }
 
-int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
+/*int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
 	entry_t *np;
 	//same size, no issue
 	if(!is_remaining_space_enough(log, lhead)){
@@ -65,15 +65,26 @@ int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
     }	
 
 	return 1;
-}
+}*/
 
+
+/* writing to the data to persistent storage*/
+extern long nvram_checkpoint_size;
 
 int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_id){
     dcheckpoint_map_entry_t *s;
     if(is_remaining_space_enough2(log,map)){
         //go ahead and append to log
         for(s=map;s!=NULL;s=s->hh.next){
-            checkpoint(log,s->var_name,process_id,s->version,s->size,s->data_ptr);
+            if(s->process_id == process_id) {
+                if (isDebugEnabled()) {
+                    printf("[%d] nvram destage checkpoint  varname : %s , process_id :  %d , version : %d , size : %ld ,"
+                                   "pointer : %p \n", lib_process_id, s->var_name, s->process_id, s->version, s->size,
+                           s->data_ptr);
+                }
+                nvram_checkpoint_size+= s->size;
+                checkpoint(log, s->var_name, process_id, s->version, s->size, s->data_ptr);
+            }
         }
     }else{
         //allocate more space
@@ -84,8 +95,7 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
 }
 
 
-/* writing to the data to persistent storage*/
-extern long nvram_checkpoint_size;
+
 int log_write(log_t *log, listhead_t *lhead, int process_id){
 	entry_t *np;
 	if(!is_remaining_space_enough(log, lhead)){

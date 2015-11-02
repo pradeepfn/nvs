@@ -199,7 +199,7 @@ int init(int proc_id, int nproc){
     //all the threads should run in a single dedicated core/ or two.
     int THREAD_COUNT = 2;
     int QUEUE_SIZE = 2;
-    thread_pool = threadpool_create(THREAD_COUNT,QUEUE_SIZE,0);
+    thread_pool = threadpool_create(THREAD_COUNT,QUEUE_SIZE,3);
 
 
     //initializaing signaling semaphores. share with threads, init to '0'
@@ -281,53 +281,20 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
     return n->ptr;
 }
 
-typedef enum {
-    LOCAL_NVRAM_WRITE,
-    LOCAL_DRAM_WRITE,
-}func_type;
 
-/*typedef struct thread_data_t_{
-    log_t *chlog;
-    dlog_t *chdlog;
-    int process_id;
-    listhead_t *head;
-    func_type type;
-} thread_data_t;*/
+void chkpt_all(int process_id) {
 
-/*void *thread_work(void *ptr){
-    thread_data_t *t_data = (thread_data_t *)ptr;
-    if(t_data -> type == LOCAL_NVRAM_WRITE){
-        log_write(t_data->chlog,t_data->head,t_data->process_id);//local NVRAM write
-    }else if(t_data->type == LOCAL_DRAM_WRITE){
-        dlog_local_write(t_data->chdlog,t_data->head,t_data->process_id);//local DRAM write
-    } else{
-        assert( 0 && "wrong exection path");
-    }
-    pthread_exit((void*)t_data->type);
-}*/
-
-/*
- * The procedure is responsible for hybrid checkpoints. The phoenix version of local checkpoitns.
- * 1. First we mark what to checkpoint to local NVRAM/what goes to remote DRAM
- * 2. Parallelly starts;
- * 			- local NVRAM checkpoint - X portions of the Total checkpoint
- * 			- local DRAM checkpoint - (Total -X) portion of data
- * 			- remote DRAM checkpoint - (Total-X) portion of data
- * 	3. We are done with
- */
-
-
-
-void chkpt_all(int process_id){
-
-    //signal we are about to checkpoint
-    if(sem_post(&sem1) == -1){
-        log_err("semaphore one increment");
-        exit(-1);
-    }
-    //wait for the signal from early copy thread
-    if (sem_wait(&sem2) == -1){
-        log_err("semaphore two wait");
+    //starting from second iteration
+    if (checkpoint_iteration != 1) {
+        //signal we are about to checkpoint
+        if (sem_post(&sem1) == -1) {
+            log_err("semaphore one increment");
+            exit(-1);
+        }
+        //wait for the signal from early copy thread
+        if (sem_wait(&sem2) == -1) {
+            log_err("semaphore two wait");
+        }
     }
 
     /*// TODO: FIXME: fix this with a thread pool
@@ -380,28 +347,7 @@ void chkpt_all(int process_id){
         }
     }
 
-    /* Initialize and set thread detached attribute *//*
-    pthread_attr_init(&attr);
-    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    thread_data_t *thread_data[2];
-    for(t=0; t < NUM_THREADS; t++) {
-        thread_data[t] = (thread_data_t *)malloc(sizeof(thread_data_t)) ;
-        thread_data[t]->chlog = &chlog;
-        thread_data[t]->chdlog = &chdlog;
-        thread_data[t]->head = &head;
-        thread_data[t]->process_id = process_id;
-        thread_data[t]->type = t; // using integer for enum type
-
-        if(isDebugEnabled()){
-            printf("Main: creating thread %d\n", t);
-        }
-        rc = pthread_create(&thread[t], &attr, thread_work, (void *)thread_data[t]);
-        if (rc) {
-            printf("ERROR; return code from pthread_create() is %d\n", rc);
-            exit(-1);
-        }
-    }*/
 
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
@@ -490,6 +436,7 @@ int finalize_(){
 void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
     destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
+    debug("[%d] checkpoint data destaged.");
     return;
 }
 
@@ -498,12 +445,13 @@ void destage_data(void *args){
 void start_copy(void *args){
     earlycopy_t *ec = (earlycopy_t *)args;
     int sem_ret;
+    debug("early copy task started");
     //check the signaling semaphore
     while ((sem_ret = sem_trywait(&sem1)) == -1){
         //main MPI process still hasnt reached the checkpoint!
         if(errno == EAGAIN){ // only when asynchronous wait fail
             int c = sched_getcpu();
-            log_err("[%d] early copying variables, running on CPU - %d",lib_process_id,c);
+            log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);
 
             sleep(1);
         }else{
