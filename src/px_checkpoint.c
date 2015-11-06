@@ -83,14 +83,14 @@ long checkpoint_iteration = 1; // keeping track of iterations, for running sampl
 long free_memory = -1; // the memory budget passed as program config for derived from runtime
 int threshold_size = 4096; // threshold size when deciding on moving to DRAM
 long max_checkpoints = -1; // termination checkpoint iteration.
-threadpool_t *thread_pool;
+threadpool_t *thread_pool; // threadpool for destaging and earlycopy
+long checkpoint_version; // keeping track of the latest checkpoint version
 
 int status; // error status register
 
 log_t chlog;
 dlog_t chdlog;
 listhead_t head;
-tlisthead_t thead;
 
 thread_t thread;
 
@@ -195,6 +195,10 @@ int init(int proc_id, int nproc){
         debug("start memory sampling thread\n");
     }
 
+    //restoring latest stable checkpoint of the system
+    checkpoint_version = chlog.current->head->current_version;
+
+
     //creating threadpool for earlycopy and destage
     //all the threads should run in a single dedicated core/ or two.
     int THREAD_COUNT = 2;
@@ -227,44 +231,14 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
     n->process_id = process_id;
     n->version = 0;
 
-	//if checkpoint data present, then read from the the checkpoint
-	if(remote_restart){
-
-		//if(isDebugEnabled()){
-		//	printf("retrieving from the remote checkpointed memory : %s\n", var_name);
-		//}
-		switch(copy_strategy){
-		   	case REMOTE_COPY:	
-				remote_copy_read(&chlog, var_name,get_mypeer(process_id),n);
-				break;
-			case REMOTE_FAULT_COPY:	
-				remote_chunk_read(&chlog, var_name,get_mypeer(process_id),n);
-				break;
-			case REMOTE_PRE_COPY:	
-				remote_pc_read(&chlog, var_name,get_mypeer(process_id),n);
-				break;
-			default:
-				printf("wrong copy strategy specified. please check the configuration\n");
-				exit(1);
-		}
-
-	}else if(is_chkpoint_present(&chlog)){
+    if(is_chkpoint_present(&chlog)){
 		if(isDebugEnabled()){
 			printf("retrieving from the checkpointed memory : %s\n", var_name);
 		}
 	/*Different copy methods*/
 		switch(copy_strategy){
 			case NAIVE_COPY:
-				n->ptr = copy_read(&chlog, var_name,process_id);
-				break;
-			case FAULT_COPY:
-				n->ptr = chunk_read(&chlog, var_name,process_id);
-				break;	
-			case PRE_COPY:
-				n->ptr = pc_read(&chlog, var_name,process_id);
-				break;
-			case PAGE_ALIGNED_COPY:	
-				n->ptr = page_aligned_copy_read(&chlog, var_name,process_id);
+				n->ptr = copy_read(&chlog, var_name,process_id,checkpoint_version);
 				break;
 			default:
 				printf("wrong copy strategy specified. please check the configuration\n");
@@ -297,12 +271,7 @@ void chkpt_all(int process_id) {
         }
     }
 
-    /*// TODO: FIXME: fix this with a thread pool
-    int NUM_THREADS = 2;
-    pthread_t thread[NUM_THREADS];
-    pthread_attr_t attr;
-    int t,rc;
-    void * sts;*/
+
 
     // if this is the max checkpoints, flush the timers and exit
     if(checkpoint_iteration == max_checkpoints){
@@ -352,11 +321,21 @@ void chkpt_all(int process_id) {
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
 
-    log_write(&chlog,&head,process_id);//local NVRAM write
-    dlog_local_write(&chdlog,&head,process_id);//local DRAM write
+    log_write(&chlog,&head,process_id,checkpoint_version);//local NVRAM write
 
-    if(cr_type == ONLINE_CR){
-        dlog_remote_write(&chdlog,&head,get_mypeer(process_id));//remote DRAM write
+    int dlog_data=is_dlog_checkpoing_data_present(&head);
+    debug("[%d] dram checkpoint data present", process_id);
+    if(dlog_data) { // nvram checkpoint version updated by destaging thread
+        dlog_local_write(&chdlog, &head, process_id,checkpoint_version);//local DRAM write
+
+        if (cr_type == ONLINE_CR) {
+            dlog_remote_write(&chdlog, &head, get_mypeer(process_id),checkpoint_version);//remote DRAM write
+            //at this point we have a ONLINE_CR stable checkpoint
+            chlog.current->head->online_version = checkpoint_version;
+        }
+    }else{ // pure NVRAM checkpoint
+        chlog.current->head->current_version = checkpoint_version;
+        //TODO: msync
     }
 
     if(lib_process_id == 0 && !checkpoint_size_printed){ // if this is the MPI main process log the checkpoint size
@@ -365,17 +344,23 @@ void chkpt_all(int process_id) {
         printf("remote DRAM checkpoint size : %.2f \n", (double)remote_dram_checkpoint_size/1000000);
         checkpoint_size_printed = 1;
     }
-    checkpoint_iteration++;
 
-    //add destage task
-    destage_t targ;
-    targ.nvlog = &chlog;
-    targ.dlog = &chdlog;
-    targ.process_id = process_id;
 
-    threadpool_add(thread_pool,&destage_data,(void *) &targ,0);
+    if(dlog_data) {
+        //add destage task
+        destage_t targ;
+        targ.nvlog = &chlog;
+        targ.dlog = &chdlog;
+        targ.process_id = process_id;
+        targ.checkpoint_version = checkpoint_version;
+
+        threadpool_add(thread_pool, &destage_data, (void *) &targ, 0);
+    }
     //add the precopy task
     threadpool_add(thread_pool,&start_copy,NULL,0);
+
+    checkpoint_iteration++;
+    checkpoint_version ++;
 
     return;
 }
@@ -436,14 +421,17 @@ int finalize_(){
 void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
     destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
-    debug("[%d] checkpoint data destaged.");
+    ds->nvlog->current->head->current_version = ds->checkpoint_version;
+    //TODO:msync
+    assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
+    debug("[%d] checkpoint data destaged." , lib_process_id);
     return;
 }
 
 
 
 void start_copy(void *args){
-    earlycopy_t *ec = (earlycopy_t *)args;
+    //earlycopy_t *ec = (earlycopy_t *)args;
     int sem_ret;
     debug("early copy task started");
     //check the signaling semaphore

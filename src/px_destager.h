@@ -12,6 +12,7 @@ typedef struct destage_t_{
     dlog_t *dlog;
     log_t *nvlog;
     int process_id;
+    long checkpoint_version;
 }destage_t;
 
 void destage_data(void *args);

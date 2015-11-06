@@ -44,28 +44,6 @@ void log_init(log_t *log , long log_size, int process_id){
     init_mmap_files(log);
 }
 
-/*int remote_data_log_write(log_t *log, listhead_t *lhead, int process_id){
-	entry_t *np;
-	//same size, no issue
-	if(!is_remaining_space_enough(log, lhead)){
-		if(isDebugEnabled()){ 
-			printf("remaining space is not enough. Switching to other file....\n");
-		}
-		log->current = (log->current == &(log->m[0]))?&(log->m[1]):&(log->m[0]);	
-		log->current->head->offset = -1; // invalidate the data
-		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
-	}
-    for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
-			if(isDebugEnabled()){
-				printf("[%d] checkpointing remote data: varname : %s , process_id :  %d , version : %d ," 
-							"size : %ld , pointer : %p \n",lib_process_id, np->var_name, process_id, np->version, np->size, np->local_ptr);
-			}
-		
-            checkpoint(log, np->var_name,process_id, np->version, np->size, np->local_ptr);
-    }	
-
-	return 1;
-}*/
 
 
 /* writing to the data to persistent storage*/
@@ -78,7 +56,7 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
         for(s=map;s!=NULL;s=s->hh.next){
             if(s->process_id == process_id) {
                 if (isDebugEnabled()) {
-                    printf("[%d] nvram destage checkpoint  varname : %s , process_id :  %d , version : %d , size : %ld ,"
+                    printf("[%d] nvram destage checkpoint  varname : %s , process_id :  %d , version : %ld , size : %ld ,"
                                    "pointer : %p \n", lib_process_id, s->var_name, s->process_id, s->version, s->size,
                            s->data_ptr);
                 }
@@ -96,7 +74,7 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
 
 
 
-int log_write(log_t *log, listhead_t *lhead, int process_id){
+int log_write(log_t *log, listhead_t *lhead, int process_id,long version){
 	entry_t *np;
 	if(!is_remaining_space_enough(log, lhead)){
 		if(isDebugEnabled()){ 
@@ -113,14 +91,14 @@ int log_write(log_t *log, listhead_t *lhead, int process_id){
 							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, np->version, np->size, np->ptr);
 			}
 		    nvram_checkpoint_size+= np->size;
-            checkpoint(log, np->var_name, np->process_id, np->version, np->size, np->ptr);
+            checkpoint(log, np->var_name, np->process_id, version, np->size, np->ptr);
         }
     }	
 
 	return 1;
 }
 
-checkpoint_t *log_read(log_t *log, char *var_name, int process_id){
+checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
 	offset_t temp_offset = log->current->head->offset;
 	checkpoint_t *cptr = log->current->meta;
     int str_cmp;
@@ -134,7 +112,8 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id){
 			printf("[%d] comparing values  process ids (%d, %d) - (%s, %s)\n",lib_process_id ,ptr->process_id,
 										 process_id,ptr->var_name,var_name);
 		}
-		if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0){ // last char is null terminator
+		if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0
+                && version == ptr->version){ // last char is null terminator
 			return ptr;
 		}
 		temp_offset = ptr->prv_offset;
@@ -148,7 +127,8 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id){
             printf("[%d] [secondary log] comparing values  process ids (%d, %d) - (%s, %s)\n",lib_process_id ,ptr->process_id,
                                                                              process_id,ptr->var_name,var_name);
         }
-        if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0){ // last char is null terminator
+        if((ptr->process_id == process_id) && (str_cmp=strncmp(ptr->var_name,var_name,10))==0
+                && version == ptr->version){ // last char is null terminator
             return ptr;
         }
         temp_offset = ptr->prv_offset;
@@ -203,6 +183,7 @@ static void init_mmap_files(log_t *log){
 		for(i=0;i<2;i++){
 			headmeta_t head;
 			head.offset = -1;
+            head.current_version = -1;
 			gettimeofday(&(head.timestamp),NULL);
 			memcpy(log->m[i].head,&head,sizeof(headmeta_t));
 			//TODO: introduce a magic value to check atomicity
@@ -232,21 +213,22 @@ static memmap_t *get_latest_mapfile(log_t *log){
 			headmeta_t *h1 = log->m[0].head;
 			headmeta_t *h2 = log->m[1].head;
 			printf("init_map_files:timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
-			printf("offset of log[0] %ld\n", h1->offset);
+			printf("offset of log[0] %ld , version of log[0] %ld \n", h1->offset, h1->current_version);
 			printf("init_map_files:timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
-			printf("log offset of log[1] %ld\n", h2->offset);
+			printf("log offset of log[1] %ld , version of log[1] %ld\n", h2->offset , h2->current_version);
 
 		}
-    if(timercmp(&(h1->timestamp),&(h2->timestamp),<) && (h1->offset !=-1)){
+
+    if(timercmp(&(h1->timestamp),&(h2->timestamp),<) && (h1->current_version !=-1)){
         return &log->m[0];
-    }else if(h2->offset != -1){
+    }else if(h2->current_version != -1){
         return &log->m[1];
     }else{
         printf("Runtime Error: wrong program execution path...\n");
 		printf("timestamp of log[0] %ld.%06ld\n", h1->timestamp.tv_sec, h1->timestamp.tv_usec);
-		printf("log offset of log[0] %ld\n", h1->offset);
+        printf("offset of log[0] %ld , version of log[0] %ld \n", h1->offset, h1->current_version);
 		printf("timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
-		printf("log offset of log[1] %ld\n", h2->offset);
+        printf("log offset of log[1] %ld , version of log[1] %ld\n", h2->offset , h2->current_version);
         assert(0);
     }
     return NULL;

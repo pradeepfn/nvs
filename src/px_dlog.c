@@ -8,13 +8,13 @@
 #include <assert.h>
 
 #include "px_dlog.h"
-#include "px_checkpoint.h"
 #include "px_debug.h"
 #include "px_remote.h"
+#include "px_constants.h"
 
 extern int lib_process_id;
 
-int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type);
+int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version, dim_type type);
 
 /*
  * This is a dram based implementation of the volatile log. Responsible for keeping
@@ -30,9 +30,11 @@ void dlog_init(dlog_t *dlog){
  * DRAM memory and then index it in the hash map strucutre.
  * this is the remote checkpoint procedure of the double in memory checkpoint
  */
-int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id) {
+int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version) {
     entry_t *np = NULL;
     int status;
+
+    dlog->is_dlog_remote_valid = 0;
     //remote DRAM write
     //copy each local variable to remote peer..
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next) {
@@ -44,7 +46,10 @@ int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id) {
         }
     }
     remote_barrier();
-    return dlog_write(dlog, lhead,process_id, DOUBLE_IN_MEMORY_REMOTE);
+    status =  dlog_write(dlog, lhead,process_id,version, DOUBLE_IN_MEMORY_REMOTE);
+    dlog->dlog_remote_checkpoint_version = version;
+    dlog->is_dlog_remote_valid = 1;
+    return status;
 }
 
 /*
@@ -52,16 +57,25 @@ int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id) {
  * memory and indext it in a the hash map structure.
  * This is the local checkpoint procedure of the double in memory checkpoint
  */
-int dlog_local_write(dlog_t *dlog, listhead_t *lhead,int process_id){
-    return dlog_write(dlog,lhead,process_id, DOUBLE_IN_MEMORY_LOCAL);
+int dlog_local_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version){
+    //invalidate the current data. we assume ordered commits from the CPU
+    dlog->is_dlog_valid = 0;
+    int status = dlog_write(dlog,lhead,process_id, version, DOUBLE_IN_MEMORY_LOCAL);
+    dlog->dlog_checkpoint_version = version;
+    dlog->is_dlog_valid=1;
+    return status;
 }
 
 extern long local_dram_checkpoint_size;
 extern long remote_dram_checkpoint_size;
 
-int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
+int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version, dim_type type) {
     entry_t *np;
     dcheckpoint_map_entry_t *s;
+
+
+
+
     //iterate the list
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next) {
         if(np->type != DRAM_CHECKPOINT){
@@ -74,6 +88,7 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
             strncpy(s->var_name, np->var_name, 20);
             s->process_id = np->process_id;
             s->size = np->size;
+            s->version = version;
 
             if (type == DOUBLE_IN_MEMORY_LOCAL) {
                 void *data_ptr = malloc(np->size);// allocate local DRAM memory
@@ -93,12 +108,12 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
             HASH_ADD_STR(dlog->map[type], var_name, s); //now we have a complete data entry for a variable.add it!
         }
         // we either created a s or, found older version from our hash map
-        s->version = np->version;
+        s->version = version;
 
         if(type == DOUBLE_IN_MEMORY_LOCAL){
             memcpy(s->data_ptr, np->ptr, np->size);
             if(isDebugEnabled()){
-                printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %d ,"
+                printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %ld ,"
                                "size : %ld , pointer : %p \n",lib_process_id, s->var_name, process_id, s->version, s->size, s->data_ptr);
             }
         }
@@ -114,6 +129,7 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
             printf("[%d] data vlaue ******************  : %f \n",lib_process_id, ((float *)s->data_ptr)[0]);
         }*/
     }
+
     return 0;
 }
 
@@ -122,7 +138,11 @@ int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id, dim_type type) {
  * return a checkpoint_t structure if the variable found in the
  * map. Else NULL will be return.
  */
-dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, checkpoint_type type) {
+dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, long version, checkpoint_type type) {
+    if(!dlog->is_dlog_valid  || dlog->dlog_checkpoint_version != version){
+        return  NULL;
+    }
+
 
     dcheckpoint_map_entry_t *tmap = NULL;
     dcheckpoint_map_entry_t *s;
@@ -131,7 +151,7 @@ dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id,
 
     HASH_FIND_STR(tmap,var_name,s);
     if(s != NULL){
-        assert(s->process_id == process_id);
+        assert(s->process_id == process_id && s->version == version);
     }
     return s; // s can be NULL or found value
 }

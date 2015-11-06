@@ -26,6 +26,7 @@ int get_mypeer(int myrank);
 void split_checkpoint_data(listhead_t *head);
 void install_old_handler();
 char* null_terminate(char *c_string);
+int is_dlog_checkpoing_data_present(listhead_t *head);
 
 
 

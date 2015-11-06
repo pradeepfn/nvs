@@ -70,7 +70,7 @@ long long get_free_ram(){
 }
 
 void* thread_function(void *tdata){
-    struct pthread_data *data = (struct pthread_data *) tdata;
+    //struct pthread_data *data = (struct pthread_data *) tdata;
     while(1) {
         long long free_mem = get_free_ram();
         if (min_free_mem == -1 || free_mem < min_free_mem) {

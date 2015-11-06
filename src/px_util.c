@@ -295,3 +295,18 @@ char* null_terminate(char *c_string){
     c_string[i] = '\0';
     return c_string;
 }
+
+/*
+ * find whether we have dram destined data. we partition the variable space.
+ */
+int is_dlog_checkpoing_data_present(listhead_t *head){
+    entry_t *np;
+    int i;
+
+    for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
+        if(np->type == DRAM_CHECKPOINT){
+            return 1;
+        }
+    }
+    return 0;
+}

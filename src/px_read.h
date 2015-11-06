@@ -23,7 +23,7 @@ typedef struct pagemap_t_ {
 } pagemap_t;
 
 
-void *copy_read(log_t *, char *var_name,int process_id);
+void *copy_read(log_t *, char *var_name,int process_id,long version);
 void *chunk_read(log_t *, char *var_name,int process_id);
 void *pc_read(log_t *log, char *var_name, int process_id);
 void *page_aligned_copy_read(log_t *log, char *var_name,int process_id);
