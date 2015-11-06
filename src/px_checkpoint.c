@@ -9,6 +9,7 @@
 #include <semaphore.h>
 #include <unistd.h>
 #include <sched.h>
+#include <sys/mman.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -348,14 +349,19 @@ void chkpt_all(int process_id) {
 
     if(dlog_data) {
         //add destage task
-        destage_t targ;
-        targ.nvlog = &chlog;
-        targ.dlog = &chdlog;
-        targ.process_id = process_id;
-        targ.checkpoint_version = checkpoint_version;
+        destage_t targ1;
+        targ1.nvlog = &chlog;
+        targ1.dlog = &chdlog;
+        targ1.process_id = process_id;
+        targ1.checkpoint_version = checkpoint_version;
 
-        threadpool_add(thread_pool, &destage_data, (void *) &targ, 0);
+        threadpool_add(thread_pool, &destage_data, (void *) &targ1, 0);
     }
+
+    earlycopy_t targ2;
+
+
+
     //add the precopy task
     threadpool_add(thread_pool,&start_copy,NULL,0);
 
@@ -422,7 +428,10 @@ void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
     destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
     ds->nvlog->current->head->current_version = ds->checkpoint_version;
-    //TODO:msync
+    if(msync(&(ds->nvlog->current->head),sizeof(headmeta_t),MS_SYNC) == -1){
+        log_err("msync failed");
+        exit(-1);
+    }
     assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
     debug("[%d] checkpoint data destaged." , lib_process_id);
     return;
@@ -438,8 +447,8 @@ void start_copy(void *args){
     while ((sem_ret = sem_trywait(&sem1)) == -1){
         //main MPI process still hasnt reached the checkpoint!
         if(errno == EAGAIN){ // only when asynchronous wait fail
-            int c = sched_getcpu();
-            log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);
+            /*int c = sched_getcpu();
+            log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);*/
 
             sleep(1);
         }else{
