@@ -139,6 +139,13 @@ void enable_protection(void *ptr, size_t size) {
 	}
 }
 
+void enable_write_protection(void *ptr, size_t size) {
+    if (mprotect(ptr, size,PROT_READ) == -1){
+        handle_error("mprotect");
+    }
+}
+
+
 /*
 * Disable the protection of the whole aligned memory block related to each variable access
 * return : size of memory

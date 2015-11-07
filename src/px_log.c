@@ -72,7 +72,7 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
     return 1;
 }
 
-
+extern int early_copy_enabled;
 
 int log_write(log_t *log, listhead_t *lhead, int process_id,long version){
 	entry_t *np;
@@ -87,16 +87,29 @@ int log_write(log_t *log, listhead_t *lhead, int process_id,long version){
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
         if(np->process_id == process_id && np->type == NVRAM_CHECKPOINT){
 			if(isDebugEnabled()){
-				printf("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %d , size : %ld ,"
-							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, np->version, np->size, np->ptr);
+				printf("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %ld , size : %ld ,"
+							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, version, np->size, np->ptr);
 			}
 		    nvram_checkpoint_size+= np->size;
             checkpoint(log, np->var_name, np->process_id, version, np->size, np->ptr);
+            if(early_copy_enabled && np->early_copied){
+                disable_protection(np->ptr,np->size);
+            }
         }
     }	
 
 	return 1;
 }
+
+int log_write_var(log_t *log, entry_t *np, long version){
+    //TODO : check for remaining space
+    assert(np->type == NVRAM_CHECKPOINT);
+    nvram_checkpoint_size+= np->size;
+    checkpoint(log,np->var_name,np->process_id,version,np->size,np->ptr);
+
+}
+
+
 
 checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
 	offset_t temp_offset = log->current->head->offset;

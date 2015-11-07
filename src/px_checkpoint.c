@@ -44,6 +44,7 @@
 #define FREE_MEMORY "free.memory"
 #define THRESHOLD_SIZE "threshold.size"
 #define MAX_CHECKPOINTS "max.checkpoints"
+#define EARLY_COPY_ENABLED "early.copy.enabled"
 
 
 //copy stategies
@@ -86,6 +87,7 @@ int threshold_size = 4096; // threshold size when deciding on moving to DRAM
 long max_checkpoints = -1; // termination checkpoint iteration.
 threadpool_t *thread_pool; // threadpool for destaging and earlycopy
 long checkpoint_version; // keeping track of the latest checkpoint version
+int early_copy_enabled = 0; // enable disable early copy
 
 int status; // error status register
 
@@ -171,7 +173,9 @@ int init(int proc_id, int nproc){
             threshold_size = atoi(varvalue);
         } else if (!strncmp(MAX_CHECKPOINTS, varname, sizeof(varname))){
             max_checkpoints = atol(varvalue);
-        }else{
+        }else if (!strncmp(EARLY_COPY_ENABLED, varname, sizeof(varname))){
+            early_copy_enabled = atoi(varvalue);
+        } else{
 			log_err("unknown varibale : %s  please check the config",varname);
 			exit(1);
 		}
@@ -230,7 +234,7 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
     memcpy(n->var_name,var_name,VAR_SIZE);
     n->size = size;
     n->process_id = process_id;
-    n->version = 0;
+    n->early_copied = 0;
 
     if(is_chkpoint_present(&chlog)){
 		if(isDebugEnabled()){
@@ -255,6 +259,11 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
     LIST_INSERT_HEAD(&head, n, entries);
     return n->ptr;
 }
+
+
+
+
+extern pagemap_t *page_tracking_map;
 
 
 void chkpt_all(int process_id) {
@@ -358,12 +367,18 @@ void chkpt_all(int process_id) {
         threadpool_add(thread_pool, &destage_data, (void *) &targ1, 0);
     }
 
-    earlycopy_t targ2;
+    if(early_copy_enabled) {
+
+        earlycopy_t targ2;
+        targ2.nvlog = &chlog;
+        targ2.list = &head;
+        targ2.map = page_tracking_map;
 
 
-
-    //add the precopy task
-    threadpool_add(thread_pool,&start_copy,NULL,0);
+        //add the precopy task
+        threadpool_add(thread_pool, &start_copy, (void *) &targ2, 0);
+    }
+    //TODO : remove page protection done by early copy thread
 
     checkpoint_iteration++;
     checkpoint_version ++;
@@ -428,7 +443,7 @@ void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
     destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
     ds->nvlog->current->head->current_version = ds->checkpoint_version;
-    if(msync(&(ds->nvlog->current->head),sizeof(headmeta_t),MS_SYNC) == -1){
+    if(msync(ds->nvlog->current->head,sizeof(headmeta_t),MS_SYNC) == -1){
         log_err("msync failed");
         exit(-1);
     }
@@ -439,18 +454,100 @@ void destage_data(void *args){
 
 
 
+/*
+ * 1.store the new access time
+ * 2. invalidate the early copy variable
+ * 3. remove page-protection
+ *
+ */
+static void early_copy_handler(int sig, siginfo_t *si, void *unused){
+    if(si != NULL && si->si_addr != NULL){
+        pagemap_t *pagenode, *tmp;
+        void *pageptr;
+        long offset =0;
+        pageptr = si->si_addr;
+        entry_t *np;
+
+        HASH_ITER(hh, page_tracking_map, pagenode, tmp) {
+            offset = pageptr - pagenode->pageptr;
+            if (offset >= 0 && offset <= pagenode->size) { // the adress belong to this chunk.
+                if (pagenode != NULL) {
+                    for (np = head.lh_first; np != NULL; np = np->entries.le_next){
+                        if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
+                            break;
+                        }
+                    }
+                    assert(np != NULL);
+                    np->early_copied = 0;
+                    disable_protection(pagenode->pageptr,pagenode->paligned_size);
+                    return;
+                }
+            }
+        }
+        debug("[%d] offending memory access : %p ",lib_process_id,pageptr);
+        call_oldhandler(sig);
+    }
+
+}
+
+
+
+
+int ascending_time_sort(pagemap_t *a, pagemap_t *b){
+    if(timercmp(&(a->end_timestamp),&(b->end_timestamp),<)){ // if a timestamp greater than b
+        return -1;
+    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
+        return 0;
+    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),>)){
+        return 1;
+    }else{
+        assert("wrong execution path");
+        exit(1);
+    }
+}
+
 void start_copy(void *args){
-    //earlycopy_t *ec = (earlycopy_t *)args;
+    earlycopy_t *ecargs = (earlycopy_t *)args;
+    pagemap_t *pagenode;
+    entry_t *np;
     int sem_ret;
     debug("early copy task started");
+
+    //sort the access times
+    HASH_SORT(page_tracking_map,ascending_time_sort);
+    pagenode = page_tracking_map;
     //check the signaling semaphore
-    while ((sem_ret = sem_trywait(&sem1)) == -1){
+    while (((sem_ret = sem_trywait(&sem1)) == -1) && (pagenode != NULL)){
         //main MPI process still hasnt reached the checkpoint!
         if(errno == EAGAIN){ // only when asynchronous wait fail
             /*int c = sched_getcpu();
             log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);*/
 
-            sleep(1);
+            // if the time is greater than variable, start copy
+            if( 2>1){
+                //TODO: use  one structure
+                for (np = head.lh_first; np != NULL; np = np->entries.le_next){
+                    if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
+                        break;
+                    }
+                }
+                assert(np != NULL);
+                //mark it as copied
+                np->early_copied = 1;
+                //page protect it. We disable the protection in a subsequent write or during checkpoint
+                // see log_write method
+                enable_write_protection(np->ptr,np->size);
+                //copy the variable
+                log_write_var(ecargs->nvlog,np,checkpoint_version);
+                //move the iterator forward
+                pagenode = pagenode->hh.next;
+                continue;
+            }
+            else{
+                //calculate sleep time
+                //TODO
+
+            }
         }else{
             assert(0); // wrong execution path
         }

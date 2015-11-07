@@ -27,6 +27,7 @@ void split_checkpoint_data(listhead_t *head);
 void install_old_handler();
 char* null_terminate(char *c_string);
 int is_dlog_checkpoing_data_present(listhead_t *head);
+void enable_write_protection(void *ptr, size_t size);
 
 
 

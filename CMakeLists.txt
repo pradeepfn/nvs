@@ -59,8 +59,6 @@ set(SOURCE_FILES
     src/px_allocate.h
     src/px_sampler.c
     src/px_sampler.h
-    src/px_earlyreadwrite.h
-    src/px_earlyreadwrite.c
     src/px_threadpool.h
     src/px_threadpool.c
     src/px_destager.h

@@ -39,9 +39,11 @@ typedef struct log_t_{
 
 void log_init(log_t *, long, int);
 int log_write(log_t *,listhead_t *,int,long);
+int log_write_var(log_t *, entry_t *, long);
 checkpoint_t *log_read(log_t *, char *, int , long);
 int is_chkpoint_present(log_t *log);
 
 //int remote_data_log_write(log_t *,listhead_t *,int);
 int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_id);
 #endif
+

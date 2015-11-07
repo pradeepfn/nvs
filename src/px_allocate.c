@@ -27,7 +27,7 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused);
 
 allocate_t alloc_struct;
 
-pagemap_t *pagemap;
+pagemap_t *page_tracking_map = NULL;
 int page_size;
 int sig_handler_installed = 0;
 
@@ -66,7 +66,7 @@ void *px_alighned_allocate(size_t size , char *varname) {
             sig_handler_installed = 1;
         }
         enable_write_protection(ptr, page_size); // only protect one page
-        pagemap_put(&pagemap, varname, ptr, NULL, size, page_aligned_size, NULL);
+        pagemap_put(&page_tracking_map, varname, ptr, NULL, size, page_aligned_size, NULL);
     }
 
     return ptr;
@@ -89,7 +89,7 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
         pageptr = si->si_addr;
 
 
-        HASH_ITER(hh, pagemap, pagenode, tmp) {
+        HASH_ITER(hh, page_tracking_map, pagenode, tmp) {
             offset = pageptr - pagenode->pageptr;
             if(offset >=0 && offset <= pagenode->size){ // the adress belong to this chunk.
                 if(isDebugEnabled()){
@@ -121,7 +121,7 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
  */
 void stop_page_tracking(){
     pagemap_t *s;
-    for(s=pagemap;s!=NULL;s=s->hh.next){
+    for(s=page_tracking_map;s!=NULL;s=s->hh.next){
         disable_protection(s->pageptr,page_size);
     }
     debug("memory tracking disabled\n");
@@ -137,7 +137,7 @@ void stop_page_tracking(){
 void protect_all_other_pages(char *varname) {
     pagemap_t *s;
 
-    for(s=pagemap;s!=NULL;s=s->hh.next){
+    for(s=page_tracking_map;s!=NULL;s=s->hh.next){
         if(!strncmp(s->varname,varname,20)){
             continue;
         }
@@ -147,11 +147,7 @@ void protect_all_other_pages(char *varname) {
 
 }
 
-void enable_write_protection(void *ptr, size_t size) {
-    if (mprotect(ptr, size,PROT_READ) == -1){
-        handle_error("mprotect");
-    }
-}
+
 
 /*
  *  1. write the current values to a log file
@@ -170,7 +166,7 @@ void flush_access_times(){
     if(dir){
         snprintf(file_name,sizeof(file_name),"stats/variable_access.log");
         fp=fopen(file_name,"a+");
-        for(s=pagemap;s!=NULL;s=s->hh.next){
+        for(s=page_tracking_map;s!=NULL;s=s->hh.next){
             fprintf(fp,"%s ,%lu,%lu ,%lu\n",s->varname,s->size,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
             //enable_write_protection(s->pageptr,page_size);
             //s->started_tracking = 0;
@@ -189,7 +185,7 @@ void flush_access_times(){
    * return (int)  0 if (a == b)
    * return (int)  1 if (a > b)
    */
-int end_time_sort(pagemap_t * a, pagemap_t *b){
+int decending_time_sort(pagemap_t *a, pagemap_t *b){
     if(timercmp(&(a->end_timestamp),&(b->end_timestamp),>)){ // if a timestamp greater than b
         return -1;
     }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
@@ -202,6 +198,8 @@ int end_time_sort(pagemap_t * a, pagemap_t *b){
     }
 
 }
+
+
 
 /*
  * 1. sort the variables decending order on last access time - we need variables in the critical
@@ -227,10 +225,10 @@ void decide_checkpoint_split(listhead_t *head, long long freemem) {
             freemem = freemem / 2; // double in memory checkpointing
         }
         //lets sort the hashmap
-        HASH_SORT(pagemap, end_time_sort);
+        HASH_SORT(page_tracking_map, decending_time_sort);
 
         //map after sorting
-        for (s = pagemap; s != NULL; s = s->hh.next) {
+        for (s = page_tracking_map; s != NULL; s = s->hh.next) {
             if (s->paligned_size < freemem && s->size >= threshold_size) { // it fits in
                 freemem -= s->paligned_size; // TODO : restart needs aligned size
                 assert(i < 100); // we are working with a overprovisioned array

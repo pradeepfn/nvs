@@ -19,7 +19,7 @@ struct entry {
     int id;
     char var_name[VAR_SIZE];
     int process_id;
-    int version;
+    int early_copied;
     checkpoint_type type;
     LIST_ENTRY(entry) entries;
     /*Remote checkpoint specific members*/
