@@ -21,6 +21,7 @@
 int first_run=0;
 extern char pfile_location[32];
 extern int lib_process_id;
+extern long checkpoint_version;
 
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
@@ -209,12 +210,16 @@ static void init_mmap_files(log_t *log){
 			printf("init_map_files:timestamp of log[1] %ld.%06ld\n", h2->timestamp.tv_sec, h2->timestamp.tv_usec);
 
 		}
+        checkpoint_version = 0;
 	}else{
 		if(isDebugEnabled()){
 			printf("restart run. Most recent map file set as current.\n");
 		}
 		log->current = get_latest_mapfile(log);
-	}
+        //restoring latest stable checkpoint of the system
+        checkpoint_version = log->current->head->current_version;
+
+    }
 }
 
 /* return the log with latest timestamp out of two log files */

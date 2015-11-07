@@ -200,8 +200,6 @@ int init(int proc_id, int nproc){
         debug("start memory sampling thread\n");
     }
 
-    //restoring latest stable checkpoint of the system
-    checkpoint_version = chlog.current->head->current_version;
 
 
     //creating threadpool for earlycopy and destage
@@ -269,7 +267,7 @@ extern pagemap_t *page_tracking_map;
 void chkpt_all(int process_id) {
 
     //starting from second iteration
-    if (checkpoint_iteration != 1) {
+    if (early_copy_enabled && checkpoint_iteration != 1) {
         //signal we are about to checkpoint
         if (sem_post(&sem1) == -1) {
             log_err("semaphore one increment");
@@ -443,10 +441,10 @@ void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
     destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
     ds->nvlog->current->head->current_version = ds->checkpoint_version;
-    if(msync(ds->nvlog->current->head,sizeof(headmeta_t),MS_SYNC) == -1){
+    /*if(msync(ds->nvlog->current->head,sizeof(headmeta_t),MS_SYNC) == -1){
         log_err("msync failed");
         exit(-1);
-    }
+    }*/
     assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
     debug("[%d] checkpoint data destaged." , lib_process_id);
     return;
