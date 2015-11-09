@@ -84,3 +84,4 @@ void* thread_function(void *tdata){
     debug("memory sampling thread exiting..\n");
     pthread_exit(NULL);
 }
+

@@ -16,7 +16,9 @@ typedef struct allocate_t_{
 
 void *px_alighned_allocate(size_t size , char *varname);
 void stop_page_tracking();
+void start_page_tracking();
 void flush_access_times();
 void decide_checkpoint_split(listhead_t *head,long long freemem);
+void calc_early_copy_times();
 
 #endif //PHOENIX_PX_ALLOCATE_H

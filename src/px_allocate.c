@@ -59,15 +59,9 @@ void *px_alighned_allocate(size_t size , char *varname) {
         handle_error("posix memalign");
     }
     memset(ptr, 0, page_aligned_size);
+    pagemap_put(&page_tracking_map, varname, ptr, NULL, size, page_aligned_size, NULL);
 
-    if (lib_process_id == 0) {  // we track access only in first process
-        if (!sig_handler_installed) {
-            install_sighandler(access_monitor_handler);
-            sig_handler_installed = 1;
-        }
-        enable_write_protection(ptr, page_size); // only protect one page
-        pagemap_put(&page_tracking_map, varname, ptr, NULL, size, page_aligned_size, NULL);
-    }
+
 
     return ptr;
 
@@ -114,6 +108,25 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
         call_oldhandler(sig);
     }
 }
+
+
+
+void start_page_tracking(){
+    pagemap_t *s;
+
+    for(s=page_tracking_map;s!=NULL;s=s->hh.next){
+
+        if (!sig_handler_installed) {
+            install_sighandler(access_monitor_handler);
+            sig_handler_installed = 1;
+        }
+        enable_write_protection(s->pageptr, page_size); // only protect one page
+    }
+
+    debug("memory tracking started\n");
+    return;
+}
+
 
 /*
  * remove page protection on monitored chunks and
@@ -266,4 +279,16 @@ void decide_checkpoint_split(listhead_t *head, long long freemem) {
         }
     }
 
+}
+
+extern struct timeval px_lchk_time;
+/*
+ * calculate the time in which the last access took place from the most recent checkpoint.
+ */
+void calc_early_copy_times(){
+    pagemap_t *s;
+    for (s = page_tracking_map; s != NULL; s = s->hh.next) {
+        timersub(&(s->end_timestamp),&px_lchk_time,&(s->earlycopy_timestamp));
+    }
+    return;
 }

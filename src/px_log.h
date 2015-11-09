@@ -31,9 +31,11 @@ typedef struct memmap_t_{
 
 typedef struct log_t_{
 	memmap_t m[2];
+   // pthread_mutex_t mtx; // only one thread can write to log file
 	memmap_t *current;
 	offset_t log_size;
 	offset_t offset;
+
 }log_t;
 
 

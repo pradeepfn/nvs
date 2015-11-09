@@ -18,6 +18,7 @@ typedef struct pagemap_t_ {
     int started_tracking;
     struct timeval start_timestamp; /* start and end time stamp to monitor access patterns */
     struct timeval end_timestamp;
+    struct timeval earlycopy_timestamp;
 	char varname[20];
 
 } pagemap_t;

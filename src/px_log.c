@@ -39,6 +39,9 @@ void log_init(log_t *log , long log_size, int process_id){
 	if(isDebugEnabled()){
 		printf("initializing the structures... %d \n", process_id);
 	}
+    //init log guarding lock
+    //pthread_mutex_init(&log->mtx,NULL);
+
 	log->log_size = log_size/2;
     snprintf(log->m[0].file_name, sizeof(log->m[0].file_name), "%s%s%d",pfile_location,FILE_PATH_ONE,process_id);
     snprintf(log->m[1].file_name, sizeof(log->m[1].file_name),"%s%s%d",pfile_location,FILE_PATH_TWO,process_id);
@@ -86,16 +89,19 @@ int log_write(log_t *log, listhead_t *lhead, int process_id,long version){
 		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
 	}
     for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
-        if(np->process_id == process_id && np->type == NVRAM_CHECKPOINT){
+        //nvram bound, not early copied variable
+        if(np->process_id == process_id && np->type == NVRAM_CHECKPOINT && (!np->early_copied) ){
 			if(isDebugEnabled()){
 				printf("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %ld , size : %ld ,"
 							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, version, np->size, np->ptr);
 			}
 		    nvram_checkpoint_size+= np->size;
             checkpoint(log, np->var_name, np->process_id, version, np->size, np->ptr);
-            if(early_copy_enabled && np->early_copied){
-                disable_protection(np->ptr,np->size);
-            }
+        }
+
+        if(early_copy_enabled && np->early_copied){
+            disable_protection(np->ptr,np->size); // resetting the page protection
+            np->early_copied = 0; // resetting the flag to next iteration
         }
     }	
 
@@ -107,7 +113,7 @@ int log_write_var(log_t *log, entry_t *np, long version){
     assert(np->type == NVRAM_CHECKPOINT);
     nvram_checkpoint_size+= np->size;
     checkpoint(log,np->var_name,np->process_id,version,np->size,np->ptr);
-
+    return 1;
 }
 
 
@@ -331,6 +337,9 @@ static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map){
 
     dcheckpoint_map_entry_t *s;
     for(s=map;s!=NULL;s=s->hh.next){
+        assert(s != NULL);
+        log_info("[%d] variable name : %s", lib_process_id,s->var_name);
+        log_info("[%d] variable size : %ld",lib_process_id,s->size);
         tot_size += (sizeof(checkpoint_t) + s->size);
     }
     checkpoint_t *cp = get_meta(log->current->meta, log->current->head->offset);

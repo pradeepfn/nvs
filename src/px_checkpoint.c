@@ -1,4 +1,4 @@
-#define _GNU_SOURCE
+//#define _GNU_SOURCE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,6 +8,7 @@
 #include <mpi.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <pthread.h>
 #include <sched.h>
 #include <sys/mman.h>
 
@@ -49,13 +50,15 @@
 
 //copy stategies
 #define NAIVE_COPY 1
-#define FAULT_COPY 2
+/*#define FAULT_COPY 2
 #define PRE_COPY 3
 #define PAGE_ALIGNED_COPY 4
 #define REMOTE_COPY 5
 #define REMOTE_FAULT_COPY 6
-#define REMOTE_PRE_COPY 7
+#define REMOTE_PRE_COPY 7*/
 
+
+static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
 
 int is_remaining_space_enough(int);
 
@@ -88,6 +91,10 @@ long max_checkpoints = -1; // termination checkpoint iteration.
 threadpool_t *thread_pool; // threadpool for destaging and earlycopy
 long checkpoint_version; // keeping track of the latest checkpoint version
 int early_copy_enabled = 0; // enable disable early copy
+struct timeval px_lchk_time; // track the last checkpoint time, get used during early copy sleeps
+
+
+
 
 int status; // error status register
 
@@ -217,7 +224,7 @@ int init(int proc_id, int nproc){
         log_err("[%d] init semaphore two",lib_process_id);
     }
 
-
+    gettimeofday(&px_lchk_time,NULL);
     if(isDebugEnabled()){
         printf("phoenix initializing completed\n");
     }
@@ -267,16 +274,20 @@ extern pagemap_t *page_tracking_map;
 void chkpt_all(int process_id) {
 
     //starting from second iteration
-    if (early_copy_enabled && checkpoint_iteration != 1) {
+    if (early_copy_enabled && checkpoint_iteration > 2) {
         //signal we are about to checkpoint
+        debug("[%d] wait on sem1",lib_process_id);
         if (sem_post(&sem1) == -1) {
             log_err("semaphore one increment");
             exit(-1);
         }
+        debug("[%d] acquired sem1",lib_process_id);
         //wait for the signal from early copy thread
+        debug("[%d] wait on sem2",lib_process_id);
         if (sem_wait(&sem2) == -1) {
             log_err("semaphore two wait");
         }
+        debug("[%d] acquired sem2",lib_process_id);
     }
 
 
@@ -298,11 +309,17 @@ void chkpt_all(int process_id) {
     }
 
 
-    //stop memory sampling thread and stop page tracking
+    //stop memory sampling thread after first iteration
     if(process_id == 0 && checkpoint_iteration == 1){
         flush_access_times();
         stop_memory_sampling_thread();
+        start_page_tracking();
+    }
+
+    //get the access time value after second iteration
+    if(process_id == 0 && checkpoint_iteration == 2){
         stop_page_tracking(); //tracking started during alloc() calls
+        calc_early_copy_times();//calculate early copy times
     }
 
     if(checkpoint_iteration == 1){ // if this is first checkpoint of the app
@@ -324,16 +341,26 @@ void chkpt_all(int process_id) {
         }
     }
 
-
+    //aquire nvlog
+    debug("[%d] acquire nvlog lock", lib_process_id);
+    if(pthread_mutex_lock(&mtx)){
+        log_err("error acquiring lock");
+    }
 
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
 
     log_write(&chlog,&head,process_id,checkpoint_version);//local NVRAM write
 
+    if(pthread_mutex_unlock(&mtx)){
+        log_err("error releasing lock");
+    }
+
+
     int dlog_data=is_dlog_checkpoing_data_present(&head);
-    debug("[%d] dram checkpoint data present", process_id);
+
     if(dlog_data) { // nvram checkpoint version updated by destaging thread
+        debug("[%d] dram checkpoint data present", process_id);
         dlog_local_write(&chdlog, &head, process_id,checkpoint_version);//local DRAM write
 
         if (cr_type == ONLINE_CR) {
@@ -354,6 +381,7 @@ void chkpt_all(int process_id) {
     }
 
 
+
     if(dlog_data) {
         //add destage task
         destage_t targ1;
@@ -365,7 +393,7 @@ void chkpt_all(int process_id) {
         threadpool_add(thread_pool, &destage_data, (void *) &targ1, 0);
     }
 
-    if(early_copy_enabled) {
+    if(early_copy_enabled && checkpoint_iteration >= 2) {
 
         earlycopy_t targ2;
         targ2.nvlog = &chlog;
@@ -378,8 +406,11 @@ void chkpt_all(int process_id) {
     }
     //TODO : remove page protection done by early copy thread
 
+    debug("[%d] done with checkpoint iteration : %ld", lib_process_id,checkpoint_iteration);
     checkpoint_iteration++;
     checkpoint_version ++;
+
+    gettimeofday(&px_lchk_time,NULL); // recording the last checkpoint time.
 
     return;
 }
@@ -439,8 +470,19 @@ int finalize_(){
 /*copy the data from local DRAM log to NVRAM log*/
 void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
+
+    if(pthread_mutex_lock(&mtx)){
+        log_err("error acquiring lock");
+    }
+
     destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
     ds->nvlog->current->head->current_version = ds->checkpoint_version;
+
+
+    if(pthread_mutex_unlock(&mtx)){
+        log_err("error releasing lock");
+    }
+
     /*if(msync(ds->nvlog->current->head,sizeof(headmeta_t),MS_SYNC) == -1){
         log_err("msync failed");
         exit(-1);
@@ -453,6 +495,9 @@ void destage_data(void *args){
 
 
 /*
+ * we install the early copyhandler after the first two iteration of the
+ * checkpoint.
+ *
  * 1.store the new access time
  * 2. invalidate the early copy variable
  * 3. remove page-protection
@@ -514,6 +559,15 @@ void start_copy(void *args){
     //sort the access times
     HASH_SORT(page_tracking_map,ascending_time_sort);
     pagenode = page_tracking_map;
+
+    //aquire nvlog
+    if(pthread_mutex_lock(&mtx)){
+        log_err("error acquiring lock");
+    }
+
+
+    struct timeval current_time;
+    struct timeval time_since_last_checkpoint;
     //check the signaling semaphore
     while (((sem_ret = sem_trywait(&sem1)) == -1) && (pagenode != NULL)){
         //main MPI process still hasnt reached the checkpoint!
@@ -521,39 +575,89 @@ void start_copy(void *args){
             /*int c = sched_getcpu();
             log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);*/
 
+
+
+            gettimeofday(&current_time,NULL);
+
+            timersub(&current_time,&px_lchk_time,&time_since_last_checkpoint);
+            printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
+            printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
+            //printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*/
+
             // if the time is greater than variable, start copy
-            if( 2>1){
+            if(timercmp(&time_since_last_checkpoint,&(pagenode->earlycopy_timestamp),>)){
                 //TODO: use  one structure
                 for (np = head.lh_first; np != NULL; np = np->entries.le_next){
+
                     if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
+                        debug("[%d] variable to early copy : %s", lib_process_id, np->var_name);
                         break;
                     }
                 }
                 assert(np != NULL);
-                //mark it as copied
-                np->early_copied = 1;
-                //page protect it. We disable the protection in a subsequent write or during checkpoint
-                // see log_write method
-                enable_write_protection(np->ptr,np->size);
-                //copy the variable
-                log_write_var(ecargs->nvlog,np,checkpoint_version);
+                if(np->type == NVRAM_CHECKPOINT) {
+
+
+                    //page protect it. We disable the protection in a subsequent write or during checkpoint
+                    // see log_write method
+                    //enable_write_protection(np->ptr,np->size);
+                    //copy the variable
+                    //log_write_var(ecargs->nvlog, np, checkpoint_version);
+                    //mark it as copied
+                    np->early_copied = 1;
+                    log_info("[%d] early copied the variable : %s", lib_process_id, np->var_name);
+                }
                 //move the iterator forward
                 pagenode = pagenode->hh.next;
                 continue;
             }
-            else{
+            else {
+                //TODO: use  one structure
+                for (np = head.lh_first; np != NULL; np = np->entries.le_next){
+
+                    if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
+                        break;
+                    }
+                }
+
+                if(np->type == DRAM_CHECKPOINT){
+                    debug("[%d] DRAM variable : %s",lib_process_id,pagenode->varname);
+                    pagenode = pagenode->hh.next;
+                    continue;
+                }
                 //calculate sleep time
-                //TODO
+                debug("[%d] early copy thread to sleep",lib_process_id);
+                struct timeval sleeptime;
+                timersub(&(pagenode->earlycopy_timestamp), &time_since_last_checkpoint, &sleeptime);
+                //
+                uint64_t micros = (sleeptime.tv_sec * (uint64_t) 1000000) + (sleeptime.tv_usec);
+
+                if (micros > 0) { // TODO check output of timersub
+                    uint64_t sleep_offset = 0;
+                    log_info("[%d] time to sleep  : %ld" , lib_process_id, micros+sleep_offset);
+                    usleep(micros + sleep_offset);
+                    /*printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
+                    printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
+                    printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*/
+
+
+                }
 
             }
         }else{
-            assert(0); // wrong execution path
+                assert(0);
         }
     }
+    //relase nvlog
+    if(pthread_mutex_unlock(&mtx)){
+        log_err("error releasing lock");
+    }
 
-    if(sem_ret == 0 && sem_post(&sem2) == -1){
+    //debug("[%d] semaphore wait return value : %d", lib_process_id,sem_ret);
+    if(sem_post(&sem2) == -1){
         log_err("semaphore two increment");
         exit(-1);
     }
+    debug("[%d] early copy thread exiting",lib_process_id);
     return;
 }
