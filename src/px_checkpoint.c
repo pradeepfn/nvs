@@ -93,6 +93,8 @@ long checkpoint_version; // keeping track of the latest checkpoint version
 int early_copy_enabled = 0; // enable disable early copy
 struct timeval px_lchk_time; // track the last checkpoint time, get used during early copy sleeps
 
+destage_t targ1;
+earlycopy_t targ2;
 
 
 
@@ -108,6 +110,7 @@ thread_t thread;
 static sem_t sem1;
 static sem_t sem2;
 
+static void early_copy_handler(int sig, siginfo_t *si, void *unused);
 
 int init(int proc_id, int nproc){
     gettimeofday(&px_start_time,NULL);
@@ -321,6 +324,12 @@ void chkpt_all(int process_id) {
         stop_page_tracking(); //tracking started during alloc() calls
         calc_early_copy_times();//calculate early copy times
     }
+    
+    if(checkpoint_iteration == 2){
+        //install early copy handler
+        install_sighandler(&early_copy_handler);
+
+    }
 
     if(checkpoint_iteration == 1){ // if this is first checkpoint of the app
         if(split_ratio >= 0){ //ratio based split
@@ -381,10 +390,10 @@ void chkpt_all(int process_id) {
     }
 
 
-
+    //both destage and early copy will be done by the next checkpoint time.
+    //hence we are recycling the structures.
     if(dlog_data) {
         //add destage task
-        destage_t targ1;
         targ1.nvlog = &chlog;
         targ1.dlog = &chdlog;
         targ1.process_id = process_id;
@@ -395,7 +404,6 @@ void chkpt_all(int process_id) {
 
     if(early_copy_enabled && checkpoint_iteration >= 2) {
 
-        earlycopy_t targ2;
         targ2.nvlog = &chlog;
         targ2.list = &head;
         targ2.map = page_tracking_map;
@@ -521,6 +529,7 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
                         }
                     }
                     assert(np != NULL);
+                    debug("[%d] early copy of %s , invalidated ",lib_process_id,np->var_name);
                     np->early_copied = 0;
                     disable_protection(pagenode->pageptr,pagenode->paligned_size);
                     return;
@@ -610,9 +619,9 @@ void start_copy(void *args){
 
                     //page protect it. We disable the protection in a subsequent write or during checkpoint
                     // see log_write method
-                    //enable_write_protection(np->ptr,np->size);
+                    enable_write_protection(np->ptr,np->size);
                     //copy the variable
-                    //log_write_var(ecargs->nvlog, np, checkpoint_version);
+                    log_write_var(ecargs->nvlog, np, checkpoint_version);
                     //mark it as copied
                     np->early_copied = 1;
                     log_info("[%d] early copied the variable : %s", lib_process_id, np->var_name);
