@@ -549,6 +549,7 @@ int ascending_time_sort(pagemap_t *a, pagemap_t *b){
     }
 }
 
+int sorted = 0;
 void start_copy(void *args){
     earlycopy_t *ecargs = (earlycopy_t *)args;
     pagemap_t *pagenode;
@@ -557,7 +558,10 @@ void start_copy(void *args){
     debug("early copy task started");
 
     //sort the access times
-    HASH_SORT(page_tracking_map,ascending_time_sort);
+    if(!sorted) {
+        HASH_SORT(page_tracking_map, ascending_time_sort);
+        sorted = 1;
+    }
     pagenode = page_tracking_map;
 
     //aquire nvlog
@@ -569,7 +573,13 @@ void start_copy(void *args){
     struct timeval current_time;
     struct timeval time_since_last_checkpoint;
     //check the signaling semaphore
-    while (((sem_ret = sem_trywait(&sem1)) == -1) && (pagenode != NULL)){
+    debug("[%d] outside while loop",lib_process_id);
+    while ((sem_ret = sem_trywait(&sem1)) == -1){
+        if(pagenode == NULL){
+            sem_wait(&sem1); // TODO this is not the exact behaviour
+            break;
+        }
+        debug("[%d] outside while loop", lib_process_id);
         //main MPI process still hasnt reached the checkpoint!
         if(errno == EAGAIN){ // only when asynchronous wait fail
             /*int c = sched_getcpu();
@@ -658,6 +668,6 @@ void start_copy(void *args){
         log_err("semaphore two increment");
         exit(-1);
     }
-    debug("[%d] early copy thread exiting",lib_process_id);
+    debug("[%d] early copy thread exiting. sem ret value : %d",lib_process_id,sem_ret);
     return;
 }
