@@ -145,6 +145,51 @@ void stop_page_tracking(){
     return;
 }
 
+void broadcast_page_tracking(){
+    timeoffset_t offset_ary[100];
+    int i,j;
+    int n_vars=0;
+
+    const int nitems = 3;
+    MPI_Datatype timeoffset;
+    MPI_Datatype types[3] = {MPI_CHAR, MPI_LONG, MPI_LONG};
+    int blocklen[3] = {20, 1, 1};
+    MPI_Aint disp[3];
+
+    disp[0] = offsetof(timeoffset_t, varname);
+    disp[1] = offsetof(timeoffset_t, seconds);
+    disp[2] = offsetof(timeoffset_t, micro);
+
+    MPI_Type_create_struct(nitems, blocklen, disp, types, &timeoffset);
+    MPI_Type_commit(&timeoffset);
+
+
+    if(lib_process_id == 0) {
+        //populate the structure
+        var_t *s;
+        for (s = varmap, i = 0; s != NULL; s = s->hh.next, i++) {
+            strncpy(offset_ary[i].varname, s->varname, 20);
+            offset_ary[i].seconds = s->earlycopy_time_offset.tv_sec;
+            offset_ary[i].micro = s->earlycopy_time_offset.tv_usec;
+            n_vars++;
+        }
+    }
+
+    //broadcast
+    MPI_Bcast((void*)&n_vars,1,MPI_INT,0,MPI_COMM_WORLD);
+    MPI_Bcast((void*)offset_ary,n_vars*sizeof(offset_t),timeoffset,0,MPI_COMM_WORLD);
+
+    var_t *s2;
+    if(lib_process_id != 0){
+      for(j=0;j<n_vars;j++){
+          HASH_FIND_STR(varmap,offset_ary[j].varname,s2);
+          s2->earlycopy_time_offset.tv_sec = offset_ary[j].seconds;
+          s2->earlycopy_time_offset.tv_usec = offset_ary[j].micro;
+      }
+    }
+
+}
+
 
 /*
  * we are piggy backing the enabling page protection on memory chunks

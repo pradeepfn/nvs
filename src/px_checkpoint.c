@@ -7,8 +7,7 @@
 #include <semaphore.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <sched.h>
-#include <sys/mman.h>
+#include <stddef.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -205,8 +204,6 @@ int init(int proc_id, int nproc){
         start_memory_sampling_thread(); // sampling free DRAM memory during first checkpoint cycle
         debug("start memory sampling thread\n");
     }
-
-
 
     //creating threadpool for earlycopy and destage
     //all the threads should run in a single dedicated core/ or two.

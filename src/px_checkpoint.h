@@ -35,4 +35,12 @@ typedef struct var_t_ {
 } var_t;
 
 
+//struct to distribute early copy offset
+
+typedef struct timeoffset_t_{
+    char varname[20];
+    long seconds;
+    long micro;
+} timeoffset_t;
+
 #endif
