@@ -1,5 +1,3 @@
-//#define _GNU_SOURCE
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -96,15 +94,13 @@ struct timeval px_lchk_time; // track the last checkpoint time, get used during 
 destage_t targ1;
 earlycopy_t targ2;
 
+var_t *varmap = NULL;
 
 
 int status; // error status register
 
 log_t chlog;
 dlog_t chdlog;
-listhead_t head;
-
-thread_t thread;
 
 //semaphores used for synchronization between main thread and the early copy thread
 static sem_t sem1;
@@ -203,7 +199,7 @@ int init(int proc_id, int nproc){
 
 	log_init(&chlog,log_size,proc_id);
     dlog_init(&chdlog);
-	LIST_INIT(&head);
+
 
     if(proc_id == 0){
         start_memory_sampling_thread(); // sampling free DRAM memory during first checkpoint cycle
@@ -235,23 +231,17 @@ int init(int proc_id, int nproc){
 }
 
 
-void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
-
-    entry_t *n = malloc(sizeof(struct entry)); // new node in list
-    var_name = null_terminate(var_name);
-    memcpy(n->var_name,var_name,VAR_SIZE);
-    n->size = size;
-    n->process_id = process_id;
-    n->early_copied = 0;
-
+void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){
+    var_t *s;
+    varname = null_terminate(varname);
     if(is_chkpoint_present(&chlog)){
 		if(isDebugEnabled()){
-			printf("retrieving from the checkpointed memory : %s\n", var_name);
+			printf("retrieving from the checkpointed memory : %s\n", varname);
 		}
 	/*Different copy methods*/
 		switch(copy_strategy){
 			case NAIVE_COPY:
-				n->ptr = copy_read(&chlog, var_name,process_id,checkpoint_version);
+				s = copy_read(&chlog, varname,process_id,checkpoint_version);
 				break;
 			default:
 				printf("wrong copy strategy specified. please check the configuration\n");
@@ -259,19 +249,22 @@ void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){
 		}
 	}else{
 		if(isDebugEnabled()){
-			printf("[%d] allocating from the heap space : %s\n",lib_process_id,var_name);
+			printf("[%d] allocating from the heap space : %s\n",lib_process_id, varname);
 		}
-        n->ptr = px_alighned_allocate(size,var_name);
-        n->type = NVRAM_CHECKPOINT; // default checkpoint location is NVRAM
+        s = px_alighned_allocate(size, varname);
+
 	}
-    LIST_INSERT_HEAD(&head, n, entries);
-    return n->ptr;
+    s->type = NVRAM_CHECKPOINT; // default checkpoint location is NVRAM
+    s->started_tracking = 0;
+    s->end_timestamp = (struct timeval) {0,0};
+
+    HASH_ADD_STR(varmap, varname, s );
+    return s->ptr;
 }
 
 
 
 
-extern pagemap_t *page_tracking_map;
 
 
 void chkpt_all(int process_id) {
@@ -324,7 +317,7 @@ void chkpt_all(int process_id) {
         stop_page_tracking(); //tracking started during alloc() calls
         calc_early_copy_times();//calculate early copy times
     }
-    
+
     if(checkpoint_iteration == 2){
         //install early copy handler
         install_sighandler(&early_copy_handler);
@@ -336,7 +329,7 @@ void chkpt_all(int process_id) {
             if(lib_process_id == 0) {
                 log_info("using config split ratio on choosing DRAM variables");
             }
-            split_checkpoint_data(&head);
+            split_checkpoint_data(varmap);
         }else { // memory usage based split
             long long fmem = get_free_memory();
             if(free_memory != -1){
@@ -346,7 +339,7 @@ void chkpt_all(int process_id) {
                 log_info("[%d] using memory access info to decide on DRAM variables",lib_process_id);
                 log_info("[%d] free memory limit per process : %lld",lib_process_id, fmem);
             }
-            decide_checkpoint_split(&head, fmem);
+            decide_checkpoint_split(varmap, fmem);
         }
     }
 
@@ -359,21 +352,21 @@ void chkpt_all(int process_id) {
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
 
-    log_write(&chlog,&head,process_id,checkpoint_version);//local NVRAM write
+    log_write(&chlog,varmap,process_id,checkpoint_version);//local NVRAM write
 
     if(pthread_mutex_unlock(&mtx)){
         log_err("error releasing lock");
     }
 
 
-    int dlog_data=is_dlog_checkpoing_data_present(&head);
+    int dlog_data=is_dlog_checkpoing_data_present(varmap);
 
     if(dlog_data) { // nvram checkpoint version updated by destaging thread
         debug("[%d] dram checkpoint data present", process_id);
-        dlog_local_write(&chdlog, &head, process_id,checkpoint_version);//local DRAM write
+        dlog_local_write(&chdlog, varmap, process_id,checkpoint_version);//local DRAM write
 
         if (cr_type == ONLINE_CR) {
-            dlog_remote_write(&chdlog, &head, get_mypeer(process_id),checkpoint_version);//remote DRAM write
+            dlog_remote_write(&chdlog, varmap, get_mypeer(process_id),checkpoint_version);//remote DRAM write
             //at this point we have a ONLINE_CR stable checkpoint
             chlog.current->head->online_version = checkpoint_version;
         }
@@ -405,8 +398,7 @@ void chkpt_all(int process_id) {
     if(early_copy_enabled && checkpoint_iteration >= 2) {
 
         targ2.nvlog = &chlog;
-        targ2.list = &head;
-        targ2.map = page_tracking_map;
+        targ2.list = varmap;
 
 
         //add the precopy task
@@ -513,27 +505,19 @@ void destage_data(void *args){
  */
 static void early_copy_handler(int sig, siginfo_t *si, void *unused){
     if(si != NULL && si->si_addr != NULL){
-        pagemap_t *pagenode, *tmp;
+        var_t *s;
         void *pageptr;
         long offset =0;
         pageptr = si->si_addr;
-        entry_t *np;
 
-        HASH_ITER(hh, page_tracking_map, pagenode, tmp) {
-            offset = pageptr - pagenode->pageptr;
-            if (offset >= 0 && offset <= pagenode->size) { // the adress belong to this chunk.
-                if (pagenode != NULL) {
-                    for (np = head.lh_first; np != NULL; np = np->entries.le_next){
-                        if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
-                            break;
-                        }
-                    }
-                    assert(np != NULL);
-                    debug("[%d] early copy of %s , invalidated ",lib_process_id,np->var_name);
-                    np->early_copied = 0;
-                    disable_protection(pagenode->pageptr,pagenode->paligned_size);
-                    return;
-                }
+        for(s = varmap; s != NULL; s = s->hh.next){
+            offset = pageptr - s->ptr;
+            if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
+                assert(s != NULL);
+                debug("[%d] early copy of %s , invalidated ",lib_process_id, s->varname);
+                s->early_copied = 0;
+                disable_protection(s->ptr, s->paligned_size);
+                return;
             }
         }
         debug("[%d] offending memory access : %p ",lib_process_id,pageptr);
@@ -545,7 +529,7 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
 
 
 
-int ascending_time_sort(pagemap_t *a, pagemap_t *b){
+int ascending_time_sort(var_t *a, var_t *b){
     if(timercmp(&(a->end_timestamp),&(b->end_timestamp),<)){ // if a timestamp greater than b
         return -1;
     }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
@@ -561,17 +545,16 @@ int ascending_time_sort(pagemap_t *a, pagemap_t *b){
 int sorted = 0;
 void start_copy(void *args){
     earlycopy_t *ecargs = (earlycopy_t *)args;
-    pagemap_t *pagenode;
-    entry_t *np;
+    var_t *s;
     int sem_ret;
     debug("early copy task started");
 
     //sort the access times
     if(!sorted) {
-        HASH_SORT(page_tracking_map, ascending_time_sort);
+        HASH_SORT(varmap, ascending_time_sort);
         sorted = 1;
     }
-    pagenode = page_tracking_map;
+    s = varmap;
 
     //aquire nvlog
     if(pthread_mutex_lock(&mtx)){
@@ -584,7 +567,7 @@ void start_copy(void *args){
     //check the signaling semaphore
     debug("[%d] outside while loop",lib_process_id);
     while ((sem_ret = sem_trywait(&sem1)) == -1){
-        if(pagenode == NULL){
+        if(s == NULL){
             sem_wait(&sem1); // TODO this is not the exact behaviour
             break;
         }
@@ -599,55 +582,40 @@ void start_copy(void *args){
             gettimeofday(&current_time,NULL);
 
             timersub(&current_time,&px_lchk_time,&time_since_last_checkpoint);
-            printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
+            printf("pagenode time  %ld.%06ld\n", s->earlycopy_time_offset.tv_sec, s->earlycopy_time_offset.tv_usec);
             printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
             //printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*/
 
             // if the time is greater than variable, start copy
-            if(timercmp(&time_since_last_checkpoint,&(pagenode->earlycopy_timestamp),>)){
-                //TODO: use  one structure
-                for (np = head.lh_first; np != NULL; np = np->entries.le_next){
+            if(timercmp(&time_since_last_checkpoint,&(s->earlycopy_time_offset),>)){
 
-                    if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
-                        debug("[%d] variable to early copy : %s", lib_process_id, np->var_name);
-                        break;
-                    }
-                }
-                assert(np != NULL);
-                if(np->type == NVRAM_CHECKPOINT) {
+                if(s->type == NVRAM_CHECKPOINT) {
 
 
                     //page protect it. We disable the protection in a subsequent write or during checkpoint
                     // see log_write method
-                    enable_write_protection(np->ptr,np->size);
+                    enable_write_protection(s->ptr, s->size);
                     //copy the variable
-                    log_write_var(ecargs->nvlog, np, checkpoint_version);
+                    log_write_var(ecargs->nvlog, s, checkpoint_version);
                     //mark it as copied
-                    np->early_copied = 1;
-                    log_info("[%d] early copied the variable : %s", lib_process_id, np->var_name);
+                    s->early_copied = 1;
+                    log_info("[%d] early copied the variable : %s", lib_process_id, s->varname);
                 }
                 //move the iterator forward
-                pagenode = pagenode->hh.next;
+                s = s->hh.next;
                 continue;
             }
             else {
-                //TODO: use  one structure
-                for (np = head.lh_first; np != NULL; np = np->entries.le_next){
 
-                    if(!strncmp(pagenode->varname,np->var_name,VAR_SIZE)){
-                        break;
-                    }
-                }
-
-                if(np->type == DRAM_CHECKPOINT){
-                    debug("[%d] DRAM variable : %s",lib_process_id,pagenode->varname);
-                    pagenode = pagenode->hh.next;
+                if(s->type == DRAM_CHECKPOINT){
+                    debug("[%d] DRAM variable : %s",lib_process_id, s->varname);
+                    s = s->hh.next;
                     continue;
                 }
                 //calculate sleep time
                 debug("[%d] early copy thread to sleep",lib_process_id);
                 struct timeval sleeptime;
-                timersub(&(pagenode->earlycopy_timestamp), &time_since_last_checkpoint, &sleeptime);
+                timersub(&(s->earlycopy_time_offset), &time_since_last_checkpoint, &sleeptime);
                 //
                 uint64_t micros = (sleeptime.tv_sec * (uint64_t) 1000000) + (sleeptime.tv_usec);
 

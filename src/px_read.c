@@ -2,25 +2,17 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include <signal.h>
 #include <unistd.h>
-#include <sys/mman.h>
 
-#include "px_log.h"
-#include "px_checkpoint.h"
-#include "px_debug.h"
+#include "px_dlog.h"
 #include "px_util.h"
-#include "px_read.h"
-#include "px_remote.h"
-#include "px_constants.h"
 
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 
-pagemap_t *pagemap = NULL;
+var_t *pagemap = NULL;
 extern int chunk_size;
-extern thread_t thread;
 extern int lib_process_id;
 
 
@@ -29,9 +21,13 @@ void* local_dram_read(dlog_t *dlog, char *var_name,int process_id, int version);
 /*
 * naive copy read. copies the data from NVRAM to DRAM upon call
 */
-void *copy_read(log_t *log, char *var_name,int process_id, long version){
+var_t *copy_read(log_t *log, char *var_name,int process_id, long version){
 	void *buffer=NULL;
     void *data_addr = NULL;
+    int status;
+    long page_aligned_size;
+    var_t *s;
+
 	checkpoint_t *cbptr = log->current->meta;
     checkpoint_t *checkpoint = log_read(log,var_name,process_id,version);
     if(checkpoint == NULL){ // data not found
@@ -39,10 +35,23 @@ void *copy_read(log_t *log, char *var_name,int process_id, long version){
         assert(0);
         return NULL;
     }
+    int page_size = sysconf(_SC_PAGESIZE);
+    page_aligned_size = ((checkpoint->data_size + page_size - 1) & ~(page_size - 1));
 	data_addr = get_data_addr(cbptr,checkpoint);
-    buffer = malloc(checkpoint->data_size);
-	nvmmemcpy_read(buffer,data_addr,checkpoint->data_size);
-	return buffer;
+
+    status = posix_memalign(&buffer, page_size, page_aligned_size);
+    if (status != 0) {
+        return NULL;
+    }
+
+    s = (var_t *)malloc(sizeof(var_t));
+    s->ptr = buffer;
+    s->size = checkpoint->data_size;
+    s->paligned_size = page_aligned_size;
+    memcpy(s->varname,var_name,sizeof(char)*20);
+	nvmmemcpy_read(s->ptr,data_addr,checkpoint->data_size);
+
+	return s;
 }
 
 

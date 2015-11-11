@@ -10,9 +10,7 @@
 
 #include "px_log.h"
 #include "px_debug.h"
-#include "px_checkpoint.h"
 #include "px_util.h"
-#include "px_dlog.h"
 
 #define FILE_PATH_ONE "/mmap.file.one"
 #define FILE_PATH_TWO "/mmap.file.two"
@@ -30,7 +28,7 @@ static void checkpoint(log_t *log, char *var_name, int process_id, int version, 
 static void checkpoint1(log_t *log,void *start_addr, checkpoint_t *chkpt, void *data);
 static checkpoint_t *get_meta(void *base_addr,size_t offset);
 static void *get_start_addr(void *base_addr,checkpoint_t *last_meta);
-static int is_remaining_space_enough(log_t *log, listhead_t *lhead);
+static int is_remaining_space_enough(log_t *log, var_t *list);
 static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map);
 
 
@@ -78,9 +76,9 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
 
 extern int early_copy_enabled;
 
-int log_write(log_t *log, listhead_t *lhead, int process_id,long version){
-	entry_t *np;
-	if(!is_remaining_space_enough(log, lhead)){
+int log_write(log_t *log, var_t *list, int process_id,long version){
+	var_t *s;
+	if(!is_remaining_space_enough(log, list)){
 		if(isDebugEnabled()){ 
 			printf("remaining space is not enough. Switching to other file....\n");
 		}
@@ -88,31 +86,31 @@ int log_write(log_t *log, listhead_t *lhead, int process_id,long version){
 		log->current->head->offset = -1; // invalidate the data
 		gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
 	}
-    for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
+    for (s = list; s != NULL; s = s->hh.next){
         //nvram bound, not early copied variable
-        if(np->process_id == process_id && np->type == NVRAM_CHECKPOINT && (!np->early_copied) ){
+        if(s->process_id == process_id && s->type == NVRAM_CHECKPOINT && (!s->early_copied) ){
 			if(isDebugEnabled()){
 				printf("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %ld , size : %ld ,"
-							"pointer : %p \n",lib_process_id, np->var_name, np->process_id, version, np->size, np->ptr);
+							"pointer : %p \n",lib_process_id, s->varname, s->process_id, version, s->size, s->ptr);
 			}
-		    nvram_checkpoint_size+= np->size;
-            checkpoint(log, np->var_name, np->process_id, version, np->size, np->ptr);
+		    nvram_checkpoint_size+= s->size;
+            checkpoint(log, s->varname, s->process_id, version, s->size, s->ptr);
         }
 
-        if(early_copy_enabled && np->early_copied){
-            disable_protection(np->ptr,np->size); // resetting the page protection
-            np->early_copied = 0; // resetting the flag to next iteration
+        if(early_copy_enabled && s->early_copied){
+            disable_protection(s->ptr, s->size); // resetting the page protection
+            s->early_copied = 0; // resetting the flag to next iteration
         }
     }	
 
 	return 1;
 }
 
-int log_write_var(log_t *log, entry_t *np, long version){
+int log_write_var(log_t *log, var_t *np, long version){
     //TODO : check for remaining space
     assert(np->type == NVRAM_CHECKPOINT);
     nvram_checkpoint_size+= np->size;
-    checkpoint(log,np->var_name,np->process_id,version,np->size,np->ptr);
+    checkpoint(log,np->varname,np->process_id,version,np->size,np->ptr);
     return 1;
 }
 
@@ -308,12 +306,12 @@ static checkpoint_t *get_meta(void *base_addr,size_t offset){
     return ptr;
 }
 
-static int is_remaining_space_enough(log_t *log, listhead_t *lhead){
+static int is_remaining_space_enough(log_t *log, var_t *list){
     //TODO: This does not take checkpoint location in to account
 	long tot_size=0;
-	struct entry *np;
-	for (np = lhead->lh_first; np != NULL; np = np->entries.le_next){
-				tot_size += (sizeof(checkpoint_t)+np->size);	
+	var_t *s;
+	for (s = list; s != NULL; s = s->hh.next){
+				tot_size += (sizeof(checkpoint_t)+ s->size);
 	}	
 	if(tot_size > (log->log_size - sizeof(headmeta_t))){
 		printf("allocated buffer is not sufficient for program exec\n");

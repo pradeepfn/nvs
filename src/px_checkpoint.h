@@ -3,8 +3,11 @@
 
 #include <sys/queue.h>
 #include <signal.h>
+#include "uthash.h"
 
 #define VAR_SIZE 20
+
+typedef long offset_t;
 
 typedef enum
 {
@@ -12,35 +15,24 @@ typedef enum
     NVRAM_CHECKPOINT
 }checkpoint_type;
 
-LIST_HEAD(listhead, entry);
-struct entry {
-    void *ptr;
-    size_t size;
-    int id;
-    char var_name[VAR_SIZE];
-    int process_id;
+typedef struct var_t_ {
+    void *ptr;       /* memory address of the variable*/
+    void *nvptr;   /*this get used in the pre-copy in the restart execution*/
+    void **remote_ptr; /*pointer grid of memory group */
+    void *local_remote_ptr;  /* local pointer out of memory grid */
+    offset_t size;
+    offset_t paligned_size;
+    UT_hash_handle hh;         /* makes this structure hashable */
     int early_copied;
+    int started_tracking;
+    int process_id;
     checkpoint_type type;
-    LIST_ENTRY(entry) entries;
-    /*Remote checkpoint specific members*/
-    void **rmt_ptr;   /*pointer grid of memory group */
-	void *local_ptr;  /* local pointer out of memory grid */
-};
+    //struct timeval start_timestamp; /* start and end time stamp to monitor access patterns */
+    struct timeval end_timestamp; /*last access time of the variable*/
+    struct timeval earlycopy_time_offset; /* time offset since checkpoint, before starting early copy */
+    char varname[20];  /* key */
 
-LIST_HEAD(tlisthead, thread_t_);
-struct thread_t_{
-	pthread_t pthreadid;
-	volatile sig_atomic_t flag;
-    LIST_ENTRY(thread_t_) entries;
-}; 
+} var_t;
 
-typedef struct tcontext_t_{
-	void *addr;
-	int chunk_size;
-}tcontext_t;
 
-typedef struct entry entry_t;
-typedef struct listhead listhead_t;
-typedef struct thread_t_ thread_t;
-typedef struct tlisthead tlisthead_t;
 #endif

@@ -1,3 +1,5 @@
+#ifndef PX_REMOTE_H
+#define PX_REMOTE_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,3 +28,5 @@ int remote_finalize(void);
 #ifdef __cplusplus
 }
 #endif
+
+#endif // PX_REMOTE_H

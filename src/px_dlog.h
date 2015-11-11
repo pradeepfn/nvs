@@ -1,7 +1,3 @@
-//
-// Created by pradeep on 9/17/15.
-//
-
 #ifndef PHOENIX_PX_DLOG_H
 #define PHOENIX_PX_DLOG_H
 
@@ -40,8 +36,8 @@ typedef struct dlog_t_{
 
 
 void dlog_init(dlog_t *dlog);
-int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version);
-int dlog_local_write(dlog_t *dlog, listhead_t *lhead,int process_id, long version);
+int dlog_remote_write(dlog_t *dlog, var_t *list,int process_id,long version);
+int dlog_local_write(dlog_t *dlog, var_t *list,int process_id, long version);
 dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, long version, checkpoint_type type);
 #endif //PHOENIX_PX_DLOG_H
 

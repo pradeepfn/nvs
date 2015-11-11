@@ -27,7 +27,6 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused);
 
 allocate_t alloc_struct;
 
-pagemap_t *page_tracking_map = NULL;
 int page_size;
 int sig_handler_installed = 0;
 
@@ -41,10 +40,11 @@ extern int lib_process_id;
  * accesses of its chunks
  */
 
-void *px_alighned_allocate(size_t size , char *varname) {
+var_t *px_alighned_allocate(size_t size , char *varname) {
     long page_aligned_size;
-    int s;
+    int status;
     void *ptr;
+    var_t *s;
 
     page_size = sysconf(_SC_PAGESIZE);
     /*
@@ -54,16 +54,20 @@ void *px_alighned_allocate(size_t size , char *varname) {
 	*/
     page_aligned_size = ((size + page_size - 1) & ~(page_size - 1));
     //debug("mem aligned allocation %ld : %ld \n", size, page_aligned_size);
-    s = posix_memalign(&ptr, page_size, page_aligned_size);
-    if (s != 0) {
-        handle_error("posix memalign");
+    status = posix_memalign(&ptr, page_size, page_aligned_size);
+    if (status != 0) {
+        return NULL;
     }
+
     memset(ptr, 0, page_aligned_size);
-    pagemap_put(&page_tracking_map, varname, ptr, NULL, size, page_aligned_size, NULL);
 
+    s = (var_t *)malloc(sizeof(var_t));
+    s->ptr = ptr;
+    s->size = size;
+    s->paligned_size = page_aligned_size;
+    memcpy(s->varname,varname,sizeof(char)*20);
 
-
-    return ptr;
+    return s;
 
 
 }
@@ -75,31 +79,30 @@ void *px_alighned_allocate(size_t size , char *varname) {
  * 3. release the write protection on current chunk
  * 4. apply write protection on other chunks
  */
+extern var_t *varmap;
+
 static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
     if(si != NULL && si->si_addr != NULL){
-        pagemap_t *pagenode, *tmp;
+        var_t *s;
         void *pageptr;
         long offset =0;
         pageptr = si->si_addr;
 
 
-        HASH_ITER(hh, page_tracking_map, pagenode, tmp) {
-            offset = pageptr - pagenode->pageptr;
-            if(offset >=0 && offset <= pagenode->size){ // the adress belong to this chunk.
+        for(s=varmap;s != NULL;s=s->hh.next) {
+            offset = pageptr - s->ptr;
+            if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
                 if(isDebugEnabled()){
-                    printf("[%d] starting address of the matching chunk %p\n",lib_process_id,pagenode->pageptr);
+                    printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
                 }
-                if(pagenode != NULL) {
-                    if (!pagenode->started_tracking) {
-                        gettimeofday(&(pagenode->start_timestamp), NULL);
-                        pagenode->started_tracking = 1;
-                        //debug("first page access for variable %s",pagenode->varname);
+                if(s != NULL) {
+                    if (!s->started_tracking) {
+                        s->started_tracking = 1;
                     } else {
-                        gettimeofday(&(pagenode->end_timestamp), NULL);
-
+                        gettimeofday(&(s->end_timestamp), NULL);
                     }
-                    disable_protection(pagenode->pageptr, page_size);
-                    protect_all_other_pages(pagenode->varname);
+                    disable_protection(s->ptr, page_size);
+                    protect_all_other_pages(s->varname);
                 }
                 return;
             }
@@ -112,15 +115,15 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
 
 
 void start_page_tracking(){
-    pagemap_t *s;
+    var_t *s;
 
-    for(s=page_tracking_map;s!=NULL;s=s->hh.next){
+    for(s=varmap;s!=NULL;s=s->hh.next){
 
         if (!sig_handler_installed) {
             install_sighandler(access_monitor_handler);
             sig_handler_installed = 1;
         }
-        enable_write_protection(s->pageptr, page_size); // only protect one page
+        enable_write_protection(s->ptr, page_size); // only protect one page
     }
 
     debug("memory tracking started\n");
@@ -133,9 +136,9 @@ void start_page_tracking(){
  * restore original SIGSEGV signal handler
  */
 void stop_page_tracking(){
-    pagemap_t *s;
-    for(s=page_tracking_map;s!=NULL;s=s->hh.next){
-        disable_protection(s->pageptr,page_size);
+    var_t *s;
+    for(s=varmap;s!=NULL;s=s->hh.next){
+        disable_protection(s->ptr,page_size);
     }
     debug("memory tracking disabled\n");
     install_old_handler();
@@ -148,13 +151,13 @@ void stop_page_tracking(){
  * within page fault itself.
  */
 void protect_all_other_pages(char *varname) {
-    pagemap_t *s;
+    var_t *s;
 
-    for(s=page_tracking_map;s!=NULL;s=s->hh.next){
+    for(s=varmap;s!=NULL;s=s->hh.next){
         if(!strncmp(s->varname,varname,20)){
             continue;
         }
-        enable_write_protection(s->pageptr,page_size);
+        enable_write_protection(s->ptr,page_size);
         //debug("enabling page protection except for variable %s\n",s->varname);
     }
 
@@ -173,13 +176,13 @@ FILE *fp;
 extern struct timeval px_start_time;
 void flush_access_times(){
     char file_name[50];
-    pagemap_t *s;
+    var_t *s;
     DIR* dir = opendir("stats");
 
     if(dir){
         snprintf(file_name,sizeof(file_name),"stats/variable_access.log");
         fp=fopen(file_name,"a+");
-        for(s=page_tracking_map;s!=NULL;s=s->hh.next){
+        for(s=varmap;s!=NULL;s=s->hh.next){
             fprintf(fp,"%s ,%lu,%lu ,%lu\n",s->varname,s->size,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
             //enable_write_protection(s->pageptr,page_size);
             //s->started_tracking = 0;
@@ -198,7 +201,7 @@ void flush_access_times(){
    * return (int)  0 if (a == b)
    * return (int)  1 if (a > b)
    */
-int decending_time_sort(pagemap_t *a, pagemap_t *b){
+int decending_time_sort(var_t *a, var_t *b){
     if(timercmp(&(a->end_timestamp),&(b->end_timestamp),>)){ // if a timestamp greater than b
         return -1;
     }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
@@ -224,13 +227,11 @@ extern int cr_type;
 extern int n_processes;
 extern int threshold_size;
 
-void decide_checkpoint_split(listhead_t *head, long long freemem) {
+void decide_checkpoint_split(var_t *list, long long freemem) {
     char carray[100][20]; //contiguous memory : over provisioned
-    pagemap_t *s;
-    entry_t *np;
+    var_t *s;
     int j, i = 0;
     int n_vars = 0;
-    long page_aligned_size;
 
 
     if (lib_process_id == 0) { // root process does the split
@@ -238,10 +239,10 @@ void decide_checkpoint_split(listhead_t *head, long long freemem) {
             freemem = freemem / 2; // double in memory checkpointing
         }
         //lets sort the hashmap
-        HASH_SORT(page_tracking_map, decending_time_sort);
+        HASH_SORT(list, decending_time_sort);
 
         //map after sorting
-        for (s = page_tracking_map; s != NULL; s = s->hh.next) {
+        for (s = list; s != NULL; s = s->hh.next) {
             if (s->paligned_size < freemem && s->size >= threshold_size) { // it fits in
                 freemem -= s->paligned_size; // TODO : restart needs aligned size
                 assert(i < 100); // we are working with a overprovisioned array
@@ -263,20 +264,18 @@ void decide_checkpoint_split(listhead_t *head, long long freemem) {
     //transfer the learned splits in to internal data structures
     for(j=0;j< n_vars;j++){
         //debug("[%d] variable to match : %s ",lib_process_id, carray[j]);
-        for (np = head->lh_first; np != NULL; np = np->entries.le_next) {
-            if(!strncmp(carray[j],np->var_name,20)){
-                //debug("[%d] matched variable : %s , %s",lib_process_id, carray[j],np->var_name);
-                np->type = DRAM_CHECKPOINT;
+        HASH_FIND_STR(list,carray[j],s);
+        // debug("[%d] matched variable : %s , %s",lib_process_id, carray[j],np->var_name);
+                s->type = DRAM_CHECKPOINT;
                 if(cr_type == ONLINE_CR) {
                     if (lib_process_id == 0) {
                         debug("[%d] allocated remote DRAM pointers for variable %s",
-                              lib_process_id, np->var_name);
+                              lib_process_id, s->varname);
                     }
-                    page_aligned_size = ((np->size + page_size - 1) & ~(page_size - 1));
-                    np->local_ptr = remote_alloc(&np->rmt_ptr, page_aligned_size);
+                    s->local_remote_ptr = remote_alloc(&s->remote_ptr, s->paligned_size);
                 }
-            }
-        }
+
+
     }
 
 }
@@ -286,9 +285,9 @@ extern struct timeval px_lchk_time;
  * calculate the time in which the last access took place from the most recent checkpoint.
  */
 void calc_early_copy_times(){
-    pagemap_t *s;
-    for (s = page_tracking_map; s != NULL; s = s->hh.next) {
-        timersub(&(s->end_timestamp),&px_lchk_time,&(s->earlycopy_timestamp));
+    var_t *s;
+    for (s = varmap; s != NULL; s = s->hh.next) {
+        timersub(&(s->end_timestamp),&px_lchk_time,&(s->earlycopy_time_offset));
     }
     return;
 }

@@ -1,7 +1,3 @@
-//
-// Created by pradeep on 10/30/15.
-//
-
 #ifndef PHOENIX_EARLYCOPY_H
 #define PHOENIX_EARLYCOPY_H
 
@@ -10,8 +6,7 @@
 
 typedef struct earlycopy_t_{
     log_t *nvlog; //nvram
-    listhead_t *list; // current data
-    pagemap_t *map; // timing data
+    var_t *list; // current data
 
 }earlycopy_t;
 

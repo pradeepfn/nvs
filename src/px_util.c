@@ -157,89 +157,6 @@ long disable_protection(void *page_start_addr,size_t aligned_size){
     return aligned_size;
 }
 
-/*
-* put an element to pagemap.wrapper method
-*/
-void pagemap_put(pagemap_t **pagemapptr, char *varname, void *pageptr, void *nvpageptr, offset_t size, offset_t asize,
-                 void **memory_grid){
-	pagemap_t *s;
-	HASH_FIND_PTR(*pagemapptr, &pageptr, s);
-    if (s==NULL) {
-		s = (pagemap_t *)malloc(sizeof(pagemap_t));
-		s->pageptr = pageptr;
-		s->nvpageptr = nvpageptr;
-		s->size = size;
-		s->paligned_size = asize;
-		s->copied = 0;
-		s->remote_ptr = memory_grid;
-        s->started_tracking = 0;
-        s->start_timestamp = (struct timeval) {0,0};
-        s->end_timestamp = (struct timeval) {0,0};
-
-		memcpy(s->varname,varname,sizeof(char)*20);
-		HASH_ADD_INT( *pagemapptr, pageptr, s );
-	}
-}
-
-/*
-* get an element to pagemap.wrapper method
-*/
-pagemap_t *pagemap_get(pagemap_t **pagemapptr, void *pageptr){
-	pagemap_t *s, *tmp;
-	long offset = 0;
-	if(isDebugEnabled()){
-		printf("memory address trying to access %p\n",pageptr);
-	}
-	HASH_ITER(hh, *pagemapptr, s, tmp) {
-		offset = pageptr - s->pageptr;
-		if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
-			/*if(isDebugEnabled()){
-				printf("starting address of the matching chunk %p\n",s->pageptr);
-			}*/
-			return s;
-		}
-	}
-	handle_error("address not found in pagemap");
-}
-
-/*
-* this utility method copies all the not copied data from NVRAM to DRAM
-* the pre-copy thread make use of this method
-*/
-void copy_chunks(pagemap_t **page_map_ptr){
-	pagemap_t *s, *tmp;
-	//1. iterate and copy all the not copied chunks.
-	//2. disable the protection
-	//3. copy them to DRAM location
-	HASH_ITER(hh, *page_map_ptr, s, tmp) {
-		if(!s->copied){
-			if(isDebugEnabled()){
-				printf("pre fetching variable : %s \n",s->varname);
-			}
-			disable_protection(s->pageptr,s->paligned_size);
-			
-			nvmmemcpy_read(s->pageptr,s->nvpageptr,s->size);	
-			s->copied = 1;
-		}	
-	}
-}
-
-void copy_remote_chunks(pagemap_t **page_map_ptr){
-	pagemap_t *s, *tmp;
-	//1. iterate and copy all the not copied chunks.
-	//2. disable the protection
-	//3. copy them to DRAM location
-	HASH_ITER(hh, *page_map_ptr, s, tmp) {
-		if(!s->copied){
-			if(isDebugEnabled()){
-				printf("[%d] remote pre-fetch name : %s , size : %ld alignedsize : %ld \n",lib_process_id, s->varname,s->size, s->paligned_size);
-			}
-			disable_protection(s->pageptr,s->paligned_size);
-			remote_read(s->pageptr,s->remote_ptr,s->size);	
-			s->copied = 1;
-		}	
-	}
-}
 
 extern int n_processes;
 extern int buddy_offset;
@@ -264,24 +181,24 @@ int get_mypeer(int myrank){
 extern int split_ratio;
 extern int cr_type;
 
-void split_checkpoint_data(listhead_t *head) {
-    entry_t *np;
+void split_checkpoint_data(var_t *list) {
+    var_t *s;
     int i;
     long page_aligned_size;
     long page_size = sysconf(_SC_PAGESIZE);
 
-    for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
+    for(s = list,i=0; s != NULL; s = s->hh.next,i++){
         if(i<split_ratio){
-            np->type = DRAM_CHECKPOINT;
-            page_aligned_size = ((np->size+page_size-1)& ~(page_size-1));
+            s->type = DRAM_CHECKPOINT;
+            page_aligned_size = ((s->size+page_size-1)& ~(page_size-1));
             if(lib_process_id == 0) {
                 log_info("[%d] variable : %s  chosen for DRAM checkpoint\n",
-                         lib_process_id,np->var_name);
+                         lib_process_id, s->varname);
             }
             if(cr_type == ONLINE_CR){
                 debug("[%d] allocated remote DRAM pointers for variable %s",
-                      lib_process_id ,np->var_name);
-                np->local_ptr = remote_alloc(&np->rmt_ptr,page_aligned_size);
+                      lib_process_id , s->varname);
+                s->local_remote_ptr = remote_alloc(&s->remote_ptr,page_aligned_size);
             }
         }
     }
@@ -306,12 +223,12 @@ char* null_terminate(char *c_string){
 /*
  * find whether we have dram destined data. we partition the variable space.
  */
-int is_dlog_checkpoing_data_present(listhead_t *head){
-    entry_t *np;
+int is_dlog_checkpoing_data_present(var_t *list){
+    var_t *s;
     int i;
 
-    for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
-        if(np->type == DRAM_CHECKPOINT){
+    for(s = list,i=0; s != NULL; s = s->hh.next,i++){
+        if(s->type == DRAM_CHECKPOINT){
             return 1;
         }
     }

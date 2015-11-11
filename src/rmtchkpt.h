@@ -1,3 +1,5 @@
+#ifndef _RMTCHKPT_H
+#define _RMTCHKPT_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,12 +16,14 @@ int remote_init(void);
 int remote_finalize(void);
 
 /*Remote memory allocation*/
-void* alloc_remote(entry_t *chunk);
+void* alloc_remote(var_t *chunk);
 
 /*Remote memory copy*/
-int copy_to_remote(entry_t *chunk);
+int copy_to_remote(var_t *chunk);
 
 
 #ifdef __cplusplus
 }
 #endif
+
+#endif // _RMTCHKPT_H

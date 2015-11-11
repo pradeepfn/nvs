@@ -1,10 +1,9 @@
 #ifndef __PX_LOG_H
 #define __PX_LOG_H
 
-#include "px_checkpoint.h"
 #include "px_dlog.h"
 
-typedef long offset_t;
+
 
 typedef struct checkpoint_t_{
     char var_name[20];
@@ -40,8 +39,8 @@ typedef struct log_t_{
 
 
 void log_init(log_t *, long, int);
-int log_write(log_t *,listhead_t *,int,long);
-int log_write_var(log_t *, entry_t *, long);
+int log_write(log_t *,var_t *,int,long);
+int log_write_var(log_t *, var_t *, long);
 checkpoint_t *log_read(log_t *, char *, int , long);
 int is_chkpoint_present(log_t *log);
 

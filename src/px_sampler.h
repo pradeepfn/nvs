@@ -1,7 +1,3 @@
-//
-// Created by pradeep on 10/2/15.
-//
-
 #ifndef PHOENIX_PX_SAMPLER_H
 #define PHOENIX_PX_SAMPLER_H
 
