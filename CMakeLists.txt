@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.2)
+cmake_minimum_required(VERSION 2.8)
 project(phoenix)
 
 #versin number
 set (PHOENIX_VERSION_MAJOR 1)
 set (PHOENIX_VERSION_MINOR 3)
+
 
 # configure a header file to pass some of the CMake settings
 # to the source code
@@ -15,6 +16,8 @@ configure_file (
 # add the binary tree to the search path for include files
 # so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
+include_directories("/usr/lib/mpich/include")
+#include_directories("/home1/03528/pradeepf/armci_install/include")
 
 set(HEADERS 
     include/phoenix.h
@@ -24,6 +27,9 @@ set(HEADERS
 include_directories("include")
 
 find_package(MPI REQUIRED)
+
+set(MPI_C_COMPILER mpicc)
+add_definitions(-DNDEBUG)
 
 include_directories(${MPI_INCLUDE_PATH})
 include_directories("/home1/03528/pradeepf/armci_install/include")
@@ -49,7 +55,15 @@ set(SOURCE_FILES
     src/rmtchkpt.c
     src/rmtchkpt.h
     src/timecount.c
-    src/uthash.h)
+    src/uthash.h
+    src/px_allocate.c
+    src/px_allocate.h
+    src/px_sampler.c
+    src/px_sampler.h
+    src/px_threadpool.h
+    src/px_threadpool.c
+    src/px_destager.h
+    src/px_earlycopy.h)
 
 SET(MY_OWN_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}" CACHE PATH "Prefix prepended to
 install directories")

@@ -3,10 +3,13 @@
 #include <math.h>
 #include <time.h>
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 #include "px_util.h"
 #include "px_remote.h"
 #include "px_debug.h"
+#include "px_constants.h"
 
 // read bandwidth to constant maching
 // 2048Mb/s -> 600
@@ -16,7 +19,7 @@
 // 128Mb/s -> 38
 // 64Mb/s ->19
 // -1 relates to DRAM -> no delay
-#define MICROSEC 1000000
+
 
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
@@ -107,7 +110,7 @@ int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval 
 
 
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
-    struct sigaction sa; 
+    struct sigaction sa;
     sa.sa_flags = SA_SIGINFO;
     sigemptyset(&sa.sa_mask);
     sa.sa_sigaction = sighandler;
@@ -116,7 +119,17 @@ void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
 	}
 }
 
+
+void install_old_handler(){
+    struct sigaction temp;
+    debug("old signal handler installed");
+    if (sigaction(SIGSEGV, &old_sa, &temp) == -1){
+        handle_error("sigaction");
+    }
+}
+
 void call_oldhandler(int signo){
+    debug("old signal handler called");
     (*old_sa.sa_handler)(signo);
 }
 
@@ -126,95 +139,24 @@ void enable_protection(void *ptr, size_t size) {
 	}
 }
 
+void enable_write_protection(void *ptr, size_t size) {
+    if (mprotect(ptr, size,PROT_READ) == -1){
+        handle_error("mprotect");
+    }
+}
+
+
 /*
 * Disable the protection of the whole aligned memory block related to each variable access
 * return : size of memory
 */
 long disable_protection(void *page_start_addr,size_t aligned_size){
-	if (mprotect(page_start_addr,aligned_size,PROT_READ|PROT_WRITE) == -1){
+	if (mprotect(page_start_addr,aligned_size,PROT_WRITE) == -1){
         handle_error("mprotect");
 	}
     return aligned_size;
 }
 
-/*
-* put an element to pagemap.wrapper method
-*/
-void put_pagemap(pagemap_t **pagemapptr ,char *varname, void *pageptr, void *nvpageptr, offset_t size, offset_t asize,void **memory_grid){
-	pagemap_t *s;
-	HASH_FIND_INT(*pagemapptr, &pageptr, s);
-    if (s==NULL) {
-		s = (pagemap_t *)malloc(sizeof(pagemap_t));
-		s->pageptr = pageptr;
-		s->nvpageptr = nvpageptr;
-		s->size = size;
-		s->paligned_size = asize;
-		s->copied = 0;
-		s->remote_ptr = memory_grid;
-		memcpy(s->varname,varname,sizeof(char)*20);
-		HASH_ADD_INT( *pagemapptr, pageptr, s );
-	}
-}
-
-/*
-* get an element to pagemap.wrapper method
-*/
-pagemap_t *get_pagemap(pagemap_t **pagemapptr, void *pageptr){
-	pagemap_t *s, *tmp;
-	long offset = 0;
-	if(isDebugEnabled()){
-		printf("memory address trying to access %p\n",pageptr);
-	}
-	HASH_ITER(hh, *pagemapptr, s, tmp) {
-		offset = pageptr - s->pageptr;
-		if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
-			if(isDebugEnabled()){
-				printf("starting address of the matching chunk %p\n",s->pageptr);
-			}
-			return s;
-		}
-	}
-	handle_error("address not found in pagemap");
-}
-
-/*
-* this utility method copies all the not copied data from NVRAM to DRAM
-* the pre-copy thread make use of this method
-*/
-void copy_chunks(pagemap_t **page_map_ptr){
-	pagemap_t *s, *tmp;
-	//1. iterate and copy all the not copied chunks.
-	//2. disable the protection
-	//3. copy them to DRAM location
-	HASH_ITER(hh, *page_map_ptr, s, tmp) {
-		if(!s->copied){
-			if(isDebugEnabled()){
-				printf("pre fetching variable : %s \n",s->varname);
-			}
-			disable_protection(s->pageptr,s->paligned_size);
-			
-			nvmmemcpy_read(s->pageptr,s->nvpageptr,s->size);	
-			s->copied = 1;
-		}	
-	}
-}
-
-void copy_remote_chunks(pagemap_t **page_map_ptr){
-	pagemap_t *s, *tmp;
-	//1. iterate and copy all the not copied chunks.
-	//2. disable the protection
-	//3. copy them to DRAM location
-	HASH_ITER(hh, *page_map_ptr, s, tmp) {
-		if(!s->copied){
-			if(isDebugEnabled()){
-				printf("[%d] remote pre-fetch name : %s , size : %ld alignedsize : %ld \n",lib_process_id, s->varname,s->size, s->paligned_size);
-			}
-			disable_protection(s->pageptr,s->paligned_size);
-			remote_read(s->pageptr,s->remote_ptr,s->size);	
-			s->copied = 1;
-		}	
-	}
-}
 
 extern int n_processes;
 extern int buddy_offset;
@@ -237,16 +179,58 @@ int get_mypeer(int myrank){
 }
 
 extern int split_ratio;
+extern int cr_type;
 
-void split_checkpoint_data(listhead_t *head) {
-    entry_t *np;
+void split_checkpoint_data(var_t *list) {
+    var_t *s;
     int i;
+    long page_aligned_size;
+    long page_size = sysconf(_SC_PAGESIZE);
 
-    for(np = head->lh_first,i=0; np != NULL; np = np->entries.le_next,i++){
+    for(s = list,i=0; s != NULL; s = s->hh.next,i++){
         if(i<split_ratio){
-            np->type = DRAM_CHECKPOINT;
-        } else{
-            np->type = NVRAM_CHECKPOINT;
+            s->type = DRAM_CHECKPOINT;
+            page_aligned_size = ((s->size+page_size-1)& ~(page_size-1));
+            if(lib_process_id == 0) {
+                log_info("[%d] variable : %s  chosen for DRAM checkpoint\n",
+                         lib_process_id, s->varname);
+            }
+            if(cr_type == ONLINE_CR){
+                debug("[%d] allocated remote DRAM pointers for variable %s",
+                      lib_process_id , s->varname);
+                s->local_remote_ptr = remote_alloc(&s->remote_ptr,page_aligned_size);
+            }
         }
     }
+}
+
+/*
+ * input char array is size of 20
+ * we null terminate it at the first space
+ */
+char* null_terminate(char *c_string){
+    int i;
+    for(i=0;i<19;i++){
+        if(c_string[i] == ' '){
+            c_string[i] = '\0';
+            return c_string;
+        }
+    }
+    c_string[i] = '\0';
+    return c_string;
+}
+
+/*
+ * find whether we have dram destined data. we partition the variable space.
+ */
+int is_dlog_checkpoing_data_present(var_t *list){
+    var_t *s;
+    int i;
+
+    for(s = list,i=0; s != NULL; s = s->hh.next,i++){
+        if(s->type == DRAM_CHECKPOINT){
+            return 1;
+        }
+    }
+    return 0;
 }

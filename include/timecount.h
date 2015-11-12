@@ -1,4 +1,7 @@
 
+
+void end_timestamp();
+
 void start_time_(int *mype);
 void pause_time_();
 void resume_time_();

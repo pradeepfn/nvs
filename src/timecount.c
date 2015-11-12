@@ -86,10 +86,14 @@ void make_timestamp_(){
 	fflush(fp2);
 }
 
-void end_timestamp_(){
+void end_timestamp(){
 	struct timeval current_time;
 	gettimeofday(&current_time,NULL);
 	fprintf(fp2,"%lu:%lu\n",current_time.tv_sec, current_time.tv_usec);
 	fflush(fp2);
 	fclose(fp2);
+}
+
+void end_timestamp_(){
+    end_timestamp();
 }

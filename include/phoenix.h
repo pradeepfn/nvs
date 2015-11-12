@@ -3,7 +3,7 @@
 
 int init(int proc_id, int nproc);
 int finalize(void);
-void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id);
+void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id);
 void afree(void *ptr);
 void chkpt_all(int process_id);
 
