@@ -86,7 +86,8 @@ struct threadpool_t {
     int count;
     int shutdown;
     int started;
-    int run_on_cpu;
+    int *run_on_cpu;
+    int cpu_ary_size;
     cpu_set_t set;
 };
 
@@ -100,7 +101,7 @@ static void *threadpool_thread(void *threadpool);
 int threadpool_free(threadpool_t *pool);
 
 // using flags param to set the thread affinity
-threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
+threadpool_t *threadpool_create(int thread_count, int queue_size, int *cores, int core_size)
 {
     if(thread_count <= 0 || thread_count > MAX_THREADS || queue_size <= 0 || queue_size > MAX_QUEUE) {
         return NULL;
@@ -118,7 +119,8 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
     pool->queue_size = queue_size;
     pool->head = pool->tail = pool->count = 0;
     pool->shutdown = pool->started = 0;
-    pool->run_on_cpu = flags;
+    pool->run_on_cpu = cores;
+    pool->cpu_ary_size = core_size;
 
     CPU_ZERO(&(pool->set));
 
@@ -272,14 +274,17 @@ int threadpool_free(threadpool_t *pool)
 }
 
 
-int stick_this_thread_to_core(int core_id) {
+int stick_this_thread_to_core(int *core_array,int array_size) {
+    int i;
     int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
-    if (core_id < 0 || core_id >= num_cores)
-        return EINVAL;
-
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    CPU_SET(core_id, &cpuset);
+    for(i=0;i<array_size;i++) {
+        if (core_array[i] < 0 || core_array[i] >= num_cores) {
+            return EINVAL;
+        }
+        CPU_SET(core_array[i], &cpuset);
+    }
 
     pthread_t current_thread = pthread_self();
     return pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
@@ -291,8 +296,8 @@ static void *threadpool_thread(void *threadpool)
     threadpool_task_t task;
     int ret;
 
-    if(pool->run_on_cpu != -1){
-           ret = stick_this_thread_to_core(pool->run_on_cpu);
+    if(pool->cpu_ary_size > 0){
+           ret = stick_this_thread_to_core(pool->run_on_cpu,pool->cpu_ary_size);
            if(ret != 0){
                log_err("CPU pining failed");
            }

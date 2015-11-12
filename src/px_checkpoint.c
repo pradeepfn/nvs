@@ -1,3 +1,6 @@
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +11,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <stddef.h>
+#include <sched.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -44,7 +48,7 @@
 #define MAX_CHECKPOINTS "max.checkpoints"
 #define EARLY_COPY_ENABLED "early.copy.enabled"
 #define EARLY_COPY_OFFSET "early.copy.offset"  // (microseconds) when early copy invalidated. we increase the early copy time by this amount
-
+#define HELPER_CORES "helper.cores"
 
 //copy stategies
 #define NAIVE_COPY 1
@@ -91,6 +95,9 @@ long checkpoint_version; // keeping track of the latest checkpoint version
 int early_copy_enabled = 0; // enable disable early copy
 struct timeval px_lchk_time; // track the last checkpoint time, get used during early copy sleeps
 volatile long early_copy_offset_add = 0; // increase early copy time if invalidated
+int helper_cores[5]; // helper cores to use for destaging/earlycopy
+int helper_core_size; // actual size of the data in helper_cores array
+
 
 destage_t targ1;
 earlycopy_t targ2;
@@ -184,6 +191,8 @@ int init(int proc_id, int nproc){
             early_copy_enabled = atoi(varvalue);
         } else if (!strncmp(EARLY_COPY_OFFSET, varname, sizeof(varname))){
             early_copy_offset_add = atol(varvalue);
+        }else if (!strncmp(HELPER_CORES, varname, sizeof(varname))){
+            helper_cores[helper_core_size++] = atoi(varvalue);
         } else{
 			log_err("unknown varibale : %s  please check the config",varname);
 			exit(1);
@@ -213,7 +222,7 @@ int init(int proc_id, int nproc){
     //all the threads should run in a single dedicated core/ or two.
     int THREAD_COUNT = 2;
     int QUEUE_SIZE = 2;
-    thread_pool = threadpool_create(THREAD_COUNT,QUEUE_SIZE,3);
+    thread_pool = threadpool_create(THREAD_COUNT,QUEUE_SIZE,helper_cores,helper_core_size);
 
 
     //initializaing signaling semaphores. share with threads, init to '0'
@@ -492,7 +501,7 @@ void destage_data(void *args){
         exit(-1);
     }*/
     assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
-    debug("[%d] checkpoint data destaged." , lib_process_id);
+    //debug("[%d] checkpoint data destaged." , lib_process_id);
     return;
 }
 
@@ -518,7 +527,7 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
             offset = pageptr - s->ptr;
             if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
                 assert(s != NULL);
-                log_info("[%d] early copy of %s , invalidated , offset %ld.%06ld",lib_process_id, s->varname,
+                debug("[%d] early copy of %s , invalidated , offset %ld.%06ld",lib_process_id, s->varname,
                 s->earlycopy_time_offset.tv_sec,s->earlycopy_time_offset.tv_usec);
                 s->early_copied = 0;
                 struct timeval inc;
@@ -584,8 +593,8 @@ void start_copy(void *args){
         //main MPI process still hasnt reached the checkpoint!
         if(errno == EAGAIN){ // only when asynchronous wait fail
             /*int c = sched_getcpu();
-            log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);*/
-
+            log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);
+*/
 
 
             gettimeofday(&current_time,NULL);
