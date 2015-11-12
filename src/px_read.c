@@ -47,6 +47,7 @@ var_t *copy_read(log_t *log, char *var_name,int process_id, long version){
     s = (var_t *)malloc(sizeof(var_t));
     s->ptr = buffer;
     s->size = checkpoint->data_size;
+    s->process_id = process_id;
     s->paligned_size = page_aligned_size;
     memcpy(s->varname,var_name,sizeof(char)*20);
 	nvmmemcpy_read(s->ptr,data_addr,checkpoint->data_size);

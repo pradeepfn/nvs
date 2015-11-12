@@ -52,16 +52,15 @@ void log_init(log_t *log , long log_size, int process_id){
 extern long nvram_checkpoint_size;
 
 int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_id){
+    log_info("[%d] destage thread starting",lib_process_id);
     dcheckpoint_map_entry_t *s;
     if(is_remaining_space_enough2(log,map)){
         //go ahead and append to log
         for(s=map;s!=NULL;s=s->hh.next){
             if(s->process_id == process_id) {
-                if (isDebugEnabled()) {
-                    printf("[%d] nvram destage checkpoint  varname : %s , process_id :  %d , version : %ld , size : %ld ,"
+                    log_info("[%d] nvram destage checkpoint  varname : %s , process_id :  %d , version : %ld , size : %ld ,"
                                    "pointer : %p \n", lib_process_id, s->var_name, s->process_id, s->version, s->size,
                            s->data_ptr);
-                }
                 nvram_checkpoint_size+= s->size;
                 checkpoint(log, s->var_name, process_id, s->version, s->size, s->data_ptr);
             }
@@ -71,6 +70,7 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
         log_err("not enough space for data destaging..");
         assert(0);
     }
+    log_info("[%d] destage thread exiting",lib_process_id);
     return 1;
 }
 

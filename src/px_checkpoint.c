@@ -43,6 +43,7 @@
 #define THRESHOLD_SIZE "threshold.size"
 #define MAX_CHECKPOINTS "max.checkpoints"
 #define EARLY_COPY_ENABLED "early.copy.enabled"
+#define EARLY_COPY_OFFSET "early.copy.offset"  // (microseconds) when early copy invalidated. we increase the early copy time by this amount
 
 
 //copy stategies
@@ -89,6 +90,7 @@ threadpool_t *thread_pool; // threadpool for destaging and earlycopy
 long checkpoint_version; // keeping track of the latest checkpoint version
 int early_copy_enabled = 0; // enable disable early copy
 struct timeval px_lchk_time; // track the last checkpoint time, get used during early copy sleeps
+volatile long early_copy_offset_add = 0; // increase early copy time if invalidated
 
 destage_t targ1;
 earlycopy_t targ2;
@@ -180,6 +182,8 @@ int init(int proc_id, int nproc){
             max_checkpoints = atol(varvalue);
         }else if (!strncmp(EARLY_COPY_ENABLED, varname, sizeof(varname))){
             early_copy_enabled = atoi(varvalue);
+        } else if (!strncmp(EARLY_COPY_OFFSET, varname, sizeof(varname))){
+            early_copy_offset_add = atol(varvalue);
         } else{
 			log_err("unknown varibale : %s  please check the config",varname);
 			exit(1);
@@ -248,7 +252,7 @@ void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){
 		if(isDebugEnabled()){
 			printf("[%d] allocating from the heap space : %s\n",lib_process_id, varname);
 		}
-        s = px_alighned_allocate(size, varname);
+        s = px_alighned_allocate(size, process_id,varname);
 
 	}
     s->type = NVRAM_CHECKPOINT; // default checkpoint location is NVRAM
@@ -514,10 +518,12 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
             offset = pageptr - s->ptr;
             if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
                 assert(s != NULL);
-                debug("[%d] early copy of %s , invalidated , offset %ld.%06ld",lib_process_id, s->varname,
+                log_info("[%d] early copy of %s , invalidated , offset %ld.%06ld",lib_process_id, s->varname,
                 s->earlycopy_time_offset.tv_sec,s->earlycopy_time_offset.tv_usec);
                 s->early_copied = 0;
-                struct timeval inc = {0,50000};
+                struct timeval inc;
+                inc.tv_sec = 0;
+                inc.tv_usec = early_copy_offset_add;
                 timeradd(&s->earlycopy_time_offset,&inc,&s->earlycopy_time_offset);
                 disable_protection(s->ptr, s->paligned_size);
                 return;
@@ -625,7 +631,7 @@ void start_copy(void *args){
 
                 if (micros > 10) { // TODO check output of timersub
                     uint64_t sleep_offset = 0;
-                    log_info("[%d] early copy thread sleeping  : %ld" , lib_process_id, micros+sleep_offset);
+                    //debug("[%d] early copy thread sleeping  : %ld" , lib_process_id, micros+sleep_offset);
                     usleep(micros + sleep_offset);
                     /*printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
                     printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);

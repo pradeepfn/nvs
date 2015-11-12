@@ -15,7 +15,7 @@ typedef struct allocate_t_{
     long page_size;
 } allocate_t;
 
-var_t *px_alighned_allocate(size_t size , char *varname);
+var_t *px_alighned_allocate(size_t size ,int process_id, char *varname);
 void stop_page_tracking();
 void start_page_tracking();
 void flush_access_times();

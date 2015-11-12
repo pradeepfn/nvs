@@ -40,7 +40,7 @@ extern int lib_process_id;
  * accesses of its chunks
  */
 
-var_t *px_alighned_allocate(size_t size , char *varname) {
+var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {
     long page_aligned_size;
     int status;
     void *ptr;
@@ -65,6 +65,7 @@ var_t *px_alighned_allocate(size_t size , char *varname) {
     s->ptr = ptr;
     s->size = size;
     s->paligned_size = page_aligned_size;
+    s->process_id = process_id;
     memcpy(s->varname,varname,sizeof(char)*20);
 
     return s;
