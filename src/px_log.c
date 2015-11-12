@@ -336,8 +336,8 @@ static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map){
     dcheckpoint_map_entry_t *s;
     for(s=map;s!=NULL;s=s->hh.next){
         assert(s != NULL);
-        log_info("[%d] variable name : %s", lib_process_id,s->var_name);
-        log_info("[%d] variable size : %ld",lib_process_id,s->size);
+        //log_info("[%d] variable name : %s", lib_process_id,s->var_name);
+        //log_info("[%d] variable size : %ld",lib_process_id,s->size);
         tot_size += (sizeof(checkpoint_t) + s->size);
     }
     checkpoint_t *cp = get_meta(log->current->meta, log->current->head->offset);

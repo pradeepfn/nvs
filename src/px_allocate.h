@@ -21,5 +21,6 @@ void start_page_tracking();
 void flush_access_times();
 void decide_checkpoint_split(var_t *list,long long freemem);
 void calc_early_copy_times();
+void broadcast_page_tracking();
 
 #endif //PHOENIX_PX_ALLOCATE_H

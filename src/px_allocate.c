@@ -183,10 +183,16 @@ void broadcast_page_tracking(){
     if(lib_process_id != 0){
       for(j=0;j<n_vars;j++){
           HASH_FIND_STR(varmap,offset_ary[j].varname,s2);
+          assert(s2 != NULL);
           s2->earlycopy_time_offset.tv_sec = offset_ary[j].seconds;
           s2->earlycopy_time_offset.tv_usec = offset_ary[j].micro;
       }
     }
+
+    debug("[%d] varname : %s , second : %ld , microseconds : %ld",lib_process_id, offset_ary[0].varname,
+          offset_ary[0].seconds,offset_ary[0].micro);
+    debug("[%d] varname : %s , second : %ld , microseconds : %ld",lib_process_id, offset_ary[1].varname,
+          offset_ary[1].seconds,offset_ary[1].micro);
 
 }
 
