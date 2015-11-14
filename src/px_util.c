@@ -59,21 +59,21 @@ int msleep(unsigned long nanosec)
 }
 
 
-int nvmmemcpy_read(void *dest, void *src, size_t len) {
-	if(nvram_wbw > 0){
+int nvmmemcpy_read(void *dest, void *src, size_t len, int rbw) {
+	if(rbw > 0){
 		unsigned long lat_ns;
 		//read bandwidth is taken as the two times, write bandwidth
-		lat_ns = calc_delay_ns(len,nvram_wbw*2);
+		lat_ns = calc_delay_ns(len,rbw);
 		msleep(lat_ns);
 	}
     memcpy(dest,src,len);
     return 0;
 }
 
-int nvmmemcpy_write(void *dest, void *src, size_t len) {
-	if(nvram_wbw > 0){
+int nvmmemcpy_write(void *dest, void *src, size_t len, int wbw) {
+	if(wbw > 0){
 		unsigned long lat_ns;
-		lat_ns = calc_delay_ns(len,nvram_wbw);
+		lat_ns = calc_delay_ns(len,wbw);
 		msleep(lat_ns);
 	}
     memcpy(dest,src,len);

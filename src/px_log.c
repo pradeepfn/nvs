@@ -24,13 +24,16 @@ extern long checkpoint_version;
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
 static memmap_t *get_latest_mapfile(log_t *log);
-static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data);
-static void checkpoint1(log_t *log,void *start_addr, checkpoint_t *chkpt, void *data);
+static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data,int wbw);
+static void checkpoint1(log_t *log,void *start_addr, checkpoint_t *chkpt, void *data,int wbw);
 static checkpoint_t *get_meta(void *base_addr,size_t offset);
 static void *get_start_addr(void *base_addr,checkpoint_t *last_meta);
 static int is_remaining_space_enough(log_t *log, var_t *list);
 static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map);
 
+
+extern int nvram_wbw;
+extern int nvram_ec_wbw;
 
 
 void log_init(log_t *log , long log_size, int process_id){
@@ -62,7 +65,7 @@ int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_i
                      //              "pointer : %p \n", lib_process_id, s->var_name, s->process_id, s->version, s->size,
                      //      s->data_ptr);
                 nvram_checkpoint_size+= s->size;
-                checkpoint(log, s->var_name, process_id, s->version, s->size, s->data_ptr);
+                checkpoint(log, s->var_name, process_id, s->version, s->size, s->data_ptr,nvram_wbw);
             }
         }
     }else{
@@ -96,7 +99,7 @@ int log_write(log_t *log, var_t *list, int process_id,long version){
                      lib_process_id, s->varname, s->process_id, version);
 
 		    nvram_checkpoint_size+= s->size;
-            checkpoint(log, s->varname, s->process_id, version, s->size, s->ptr);
+            checkpoint(log, s->varname, s->process_id, version, s->size, s->ptr,nvram_wbw);
         }
 
         if(early_copy_enabled && s->early_copied){
@@ -108,11 +111,14 @@ int log_write(log_t *log, var_t *list, int process_id,long version){
 	return 1;
 }
 
+/*
+ * This log write function get used by the early copy thread
+ */
 int log_write_var(log_t *log, var_t *np, long version){
     //TODO : check for remaining space
     assert(np->type == NVRAM_CHECKPOINT);
     nvram_checkpoint_size+= np->size;
-    checkpoint(log,np->varname,np->process_id,version,np->size,np->ptr);
+    checkpoint(log,np->varname,np->process_id,version,np->size,np->ptr,nvram_ec_wbw);
     return 1;
 }
 
@@ -258,7 +264,7 @@ static memmap_t *get_latest_mapfile(log_t *log){
     return NULL;
 }
 
-static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data){
+static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data,int wbw){
     checkpoint_t chkpt;
     void *start_addr;
 	checkpoint_t *cbptr = log->current->meta;
@@ -282,14 +288,14 @@ static void checkpoint(log_t *log, char *var_name, int process_id, int version, 
         chkpt.prv_offset = -1;
         chkpt.offset = 0;
     }
-    checkpoint1(log,start_addr, &chkpt,data);
+    checkpoint1(log,start_addr, &chkpt,data,wbw);
     return;
 }
 
-static void checkpoint1(log_t *log, void *start_addr, checkpoint_t *chkpt, void *data){
+static void checkpoint1(log_t *log, void *start_addr, checkpoint_t *chkpt, void *data,int wbw){
     memcpy(start_addr,chkpt,sizeof(checkpoint_t));
     void *data_offset = ((char *)start_addr)+sizeof(checkpoint_t);
-    nvmmemcpy_write(data_offset,data,chkpt->data_size);
+    nvmmemcpy_write(data_offset,data,chkpt->data_size,wbw);
     log->current->head->offset = chkpt->offset;
     return;
 }

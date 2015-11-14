@@ -14,6 +14,7 @@
 var_t *pagemap = NULL;
 extern int chunk_size;
 extern int lib_process_id;
+extern int nvram_wbw;
 
 
 void* local_dram_read(dlog_t *dlog, char *var_name,int process_id, int version);
@@ -50,7 +51,7 @@ var_t *copy_read(log_t *log, char *var_name,int process_id, long version){
     s->process_id = process_id;
     s->paligned_size = page_aligned_size;
     memcpy(s->varname,var_name,sizeof(char)*20);
-	nvmmemcpy_read(s->ptr,data_addr,checkpoint->data_size);
+	nvmmemcpy_read(s->ptr,data_addr,checkpoint->data_size,nvram_wbw*2);
 
 	return s;
 }

@@ -66,6 +66,7 @@ var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {
     s->size = size;
     s->paligned_size = page_aligned_size;
     s->process_id = process_id;
+    s->early_copied = 0;
     memcpy(s->varname,varname,sizeof(char)*20);
 
     return s;

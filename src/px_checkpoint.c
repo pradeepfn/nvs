@@ -37,6 +37,7 @@
 #define DEBUG_ENABLE "debug.enable"
 #define PFILE_LOCATION "pfile.location"
 #define NVRAM_WBW "nvram.wbw"
+#define NVRAM_EARLY_COPY_WBW "nvram.ec.wbw"
 #define RSTART "rstart"
 #define REMOTE_CHECKPOINT_ENABLE "rmt.chkpt.enable"
 #define REMOTE_RESTART_ENABLE "rmt.rstart.enable"
@@ -76,7 +77,8 @@ int  checkpoint_size_printed = 0; // flag variable
 long nvram_checkpoint_size = 0;
 long local_dram_checkpoint_size =0;
 long remote_dram_checkpoint_size=0;
-int nvram_wbw = -1;
+int nvram_wbw = -1;  // nvram write bandwidth seen by a core
+int nvram_ec_wbw = -1; // nvram early copy write bandwidth seen by the core
 int rstart = 0;
 int remote_checkpoint = 0;
 int remote_restart = 0;
@@ -155,6 +157,8 @@ int init(int proc_id, int nproc){
             strncpy(pfile_location, varvalue, sizeof(pfile_location));
         } else if (!strncmp(NVRAM_WBW, varname, sizeof(varname))) {
             nvram_wbw = atoi(varvalue);
+        } else if (!strncmp(NVRAM_EARLY_COPY_WBW, varname, sizeof(varname))) {
+            nvram_ec_wbw = atoi(varvalue);
         } else if (!strncmp(RSTART, varname, sizeof(varname))) {
             rstart = atoi(varvalue);
         } else if (!strncmp(REMOTE_CHECKPOINT_ENABLE, varname, sizeof(varname))) {
@@ -500,7 +504,7 @@ void destage_data(void *args){
         log_err("msync failed");
         exit(-1);
     }*/
-    assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
+    //assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
     //debug("[%d] checkpoint data destaged." , lib_process_id);
     return;
 }

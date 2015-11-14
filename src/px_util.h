@@ -10,8 +10,8 @@
 
 #define MICROSEC 1000000
 
-int nvmmemcpy_read(void *, void *, size_t);
-int nvmmemcpy_write(void *, void *, size_t);
+int nvmmemcpy_read(void *, void *, size_t,int);
+int nvmmemcpy_write(void *, void *, size_t,int);
 void *get_data_addr(void *, checkpoint_t *);
 long disable_protection(void *addr, size_t size);
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
