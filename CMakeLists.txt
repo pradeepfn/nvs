@@ -29,7 +29,7 @@ include_directories("include")
 find_package(MPI REQUIRED)
 
 set(MPI_C_COMPILER mpicc)
-add_definitions(-DNDEBUG)
+#add_definitions(-DNDEBUG)
 
 include_directories(${MPI_INCLUDE_PATH})
 include_directories("/home1/03528/pradeepf/armci_install/include")

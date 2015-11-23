@@ -115,8 +115,16 @@ int log_write(log_t *log, var_t *list, int process_id,long version){
  * This log write function get used by the early copy thread
  */
 int log_write_var(log_t *log, var_t *np, long version){
-    //TODO : check for remaining space
+
     assert(np->type == NVRAM_CHECKPOINT);
+    // im going to switch the logs if this is the first early copy in an iteration
+    if (version > log->current->head->ec_version){
+        log->current = (log->current == &(log->m[0]))?&(log->m[1]):&(log->m[0]);
+        log->current->head->ec_version = version;
+        log->current->head->offset = -1; // invalidate the data
+        gettimeofday(&(log->current->head->timestamp),NULL); // setting the timestamp
+        debug("[%d] switching logs", lib_process_id);
+    }
     nvram_checkpoint_size+= np->size;
     checkpoint(log,np->varname,np->process_id,version,np->size,np->ptr,nvram_ec_wbw);
     return 1;
@@ -210,6 +218,7 @@ static void init_mmap_files(log_t *log){
 			headmeta_t head;
 			head.offset = -1;
             head.current_version = -1;
+            head.ec_version = -1;
 			gettimeofday(&(head.timestamp),NULL);
 			memcpy(log->m[i].head,&head,sizeof(headmeta_t));
 			//TODO: introduce a magic value to check atomicity
@@ -326,11 +335,11 @@ static int is_remaining_space_enough(log_t *log, var_t *list){
 		assert(0);
 	}
 	checkpoint_t *cp = get_meta(log->current->meta, log->current->head->offset);
-	size_t remaing_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1 + sizeof(checkpoint_t) + cp->data_size ); //adding 1 since offset can be -1
-	if(isDebugEnabled()){
-		printf("[%d] offset : remaining : checkpoint  sizes - %ld : %ld : %ld \n",lib_process_id,log->current->head->offset,remaing_size,tot_size);
-	}
-	return (remaing_size > tot_size); 
+	long remaining_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1 + sizeof(checkpoint_t) + cp->data_size ); //adding 1 since offset can be -1
+    assert(remaining_size > 0);
+    debug("[%d] offset : remaining : checkpoint  sizes - %ld : %ld : %ld \n",lib_process_id,log->current->head->offset,
+          remaining_size,tot_size);
+	return (remaining_size > tot_size);
 }
 
 
@@ -349,9 +358,9 @@ static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map){
         tot_size += (sizeof(checkpoint_t) + s->size);
     }
     checkpoint_t *cp = get_meta(log->current->meta, log->current->head->offset);
-    size_t remaing_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1 + sizeof(checkpoint_t) + cp->data_size ); //adding 1 since offset can be -1
-    if(isDebugEnabled()){
-        printf("[%d] offset : remaining : checkpoint  sizes - %ld : %ld : %ld \n",lib_process_id,log->current->head->offset,remaing_size,tot_size);
-    }
-    return (remaing_size > tot_size);
+    long remaining_size = log->log_size - (sizeof(headmeta_t) + log->current->head->offset+1 + sizeof(checkpoint_t) + cp->data_size ); //adding 1 since offset can be -1
+    assert(remaining_size > 0);
+    debug("[%d] offset : remaining : checkpoint  sizes - %ld : %ld : %ld \n",lib_process_id,log->current->head->offset,
+          remaining_size,tot_size);
+    return (remaining_size > tot_size);
 }

@@ -18,6 +18,7 @@ typedef struct headmeta_t_{
     offset_t offset; // record the offest, and i used it as atomic checkpoint flag
     long current_version; // new atomic flag that uses checkpoint version
     long online_version; // online stable checkpoint version achieved when we double checkpoint data.
+    long ec_version;
     struct timeval timestamp;
 }headmeta_t;
 
