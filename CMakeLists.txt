@@ -29,7 +29,8 @@ include_directories("include")
 find_package(MPI REQUIRED)
 
 set(MPI_C_COMPILER mpicc)
-#add_definitions(-DNDEBUG)
+add_definitions(-DNDEBUG)
+#add_definitions(-DTIMING)
 
 include_directories(${MPI_INCLUDE_PATH})
 include_directories("/home1/03528/pradeepf/armci_install/include")
@@ -63,7 +64,8 @@ set(SOURCE_FILES
     src/px_threadpool.h
     src/px_threadpool.c
     src/px_destager.h
-    src/px_earlycopy.h)
+    src/px_earlycopy.h
+    src/px_timer.h)
 
 SET(MY_OWN_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}" CACHE PATH "Prefix prepended to
 install directories")

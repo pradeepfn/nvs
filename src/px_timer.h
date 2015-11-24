@@ -79,7 +79,7 @@ struct timer {
 #define TIMER_PAUSE(tim)
 #define TIMER_RESUME(tim)
 #define TIMER_CLEAR(tim)
-#define TIMER_END(clk,tim)
+#define TIMER_END(tim,clk)
 
 #endif	/* TIMING */
 /*-------------------------------------- FUNCTIONS ---------------------------*/

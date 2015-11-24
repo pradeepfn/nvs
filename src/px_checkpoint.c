@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <stddef.h>
 #include <sched.h>
+#include <dirent.h>
 
 #include "phoenix.h"
 #include "px_checkpoint.h"
@@ -27,6 +28,7 @@
 #include "px_threadpool.h"
 #include "px_destager.h"
 #include "px_earlycopy.h"
+#include "px_timer.h"
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -116,6 +118,16 @@ dlog_t chdlog;
 static sem_t sem1;
 static sem_t sem2;
 
+
+//declare file pointers
+#ifdef TIMING
+    FILE *ef,*cf,*df;
+    TIMER_DECLARE3(et,ct,dt); // declaring earycopy_timer, checkpoint_timer,destage_timer
+#endif
+
+
+
+
 static void early_copy_handler(int sig, siginfo_t *si, void *unused);
 
 int init(int proc_id, int nproc){
@@ -129,6 +141,30 @@ int init(int proc_id, int nproc){
 
 	lib_process_id = proc_id;
     n_processes = nproc;
+
+//if TIMING is defined , we create log files, so that we can output the timings to them
+#ifdef TIMING
+
+    char file_name[50];
+    DIR* dir = opendir("stats");
+    if(dir){
+		snprintf(file_name,sizeof(file_name),"stats/earlycopy%d.log",proc_id);
+		ef=fopen(file_name,"w");
+
+		snprintf(file_name,sizeof(file_name),"stats/checkpoint%d.log",proc_id);
+		cf=fopen(file_name,"w");
+
+        snprintf(file_name,sizeof(file_name),"stats/destagetime%d.log",proc_id);
+        df=fopen(file_name,"w");
+
+    }else{ // directory does not exist
+        printf("Error: no stats directory found.\n\n");
+		assert(0);
+    }
+#endif
+
+
+
 
 	
 	//naive way of reading the config file
@@ -283,6 +319,8 @@ void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){
 
 void chkpt_all(int process_id) {
 
+
+    TIMER_START(ct);
     //starting from second iteration
     if (early_copy_enabled && checkpoint_iteration > 2) {
         //signal we are about to checkpoint
@@ -427,7 +465,12 @@ void chkpt_all(int process_id) {
     checkpoint_iteration++;
     checkpoint_version ++;
 
-
+    TIMER_END(ct,elapsed);
+    #ifdef  TIMING
+        ulong  elapsed = 0;
+        fprintf(cf,"%lu\n",elapsed);
+        fflush(cf);
+    #endif
 
     return;
 }
@@ -469,6 +512,14 @@ int finalize(){
     threadpool_destroy(thread_pool,threadpool_graceful);
     return remote_finalize();
 
+//close file pointers
+#ifdef TIMING
+    fclose(ef);
+    fclose(cf);
+    fclose(df);
+#endif
+
+
     err:
         log_err("[%d] program error",lib_process_id);
         return -1;
@@ -488,6 +539,9 @@ int finalize_(){
 void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
 
+
+    TIMER_START(dt);
+
     if(pthread_mutex_lock(&mtx)){
         log_err("error acquiring lock");
     }
@@ -499,6 +553,14 @@ void destage_data(void *args){
     if(pthread_mutex_unlock(&mtx)){
         log_err("error releasing lock");
     }
+
+    TIMER_END(dt,elapsed);
+    #ifdef  TIMING
+        ulong elapsed = 0;
+        fprintf(df,"%lu\n",elapsed);
+        fflush(df);
+    #endif
+
 
     /*if(msync(ds->nvlog->current->head,sizeof(headmeta_t),MS_SYNC) == -1){
         log_err("msync failed");
@@ -566,6 +628,8 @@ int ascending_time_sort(var_t *a, var_t *b){
 
 int sorted = 0;
 void start_copy(void *args){
+   
+    TIMER_START(et);
     earlycopy_t *ecargs = (earlycopy_t *)args;
     var_t *s;
     int sem_ret;
@@ -586,6 +650,9 @@ void start_copy(void *args){
 
     struct timeval current_time;
     struct timeval time_since_last_checkpoint;
+
+    TIMER_PAUSE(et);
+
     //check the signaling semaphore
     //debug("[%d] outside while loop",lib_process_id);
     while ((sem_ret = sem_trywait(&sem1)) == -1){
@@ -613,7 +680,7 @@ void start_copy(void *args){
             if(timercmp(&time_since_last_checkpoint,&(s->earlycopy_time_offset),>)){
 
                 if(s->type == NVRAM_CHECKPOINT) {
-
+                    TIMER_RESUME(et);
 
                     //page protect it. We disable the protection in a subsequent write or during checkpoint
                     // see log_write method
@@ -623,12 +690,13 @@ void start_copy(void *args){
                     //mark it as copied
                     s->early_copied = 1;
                     //log_info("[%d] early copied the variable : %s", lib_process_id, s->varname);
+                    TIMER_PAUSE(et);
                 }
                 //move the iterator forward
                 s = s->hh.next;
                 continue;
-            }
-            else {
+
+            } else {
 
                 if(s->type == DRAM_CHECKPOINT){
                     //debug("[%d] DRAM variable : %s",lib_process_id, s->varname);
@@ -658,6 +726,7 @@ void start_copy(void *args){
                 assert(0);
         }
     }
+    TIMER_RESUME(et);
     //relase nvlog
     if(pthread_mutex_unlock(&mtx)){
         log_err("error releasing lock");
@@ -668,6 +737,13 @@ void start_copy(void *args){
         log_err("semaphore two increment");
         exit(-1);
     }
+    TIMER_END(et,elapsed);
+    #ifdef  TIMING
+        ulong elapsed = 0;
+        fprintf(ef,"%lu\n",elapsed);
+        fflush(ef);
+    #endif
+
     //debug("[%d] early copy thread exiting. sem ret value : %d",lib_process_id,sem_ret);
     return;
 }
