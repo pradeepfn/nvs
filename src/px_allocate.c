@@ -67,6 +67,8 @@ var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {
     s->paligned_size = page_aligned_size;
     s->process_id = process_id;
     s->early_copied = 0;
+    s->earlycopy_time_offset.tv_sec = 0;
+    s->earlycopy_time_offset.tv_usec = 0;
     memcpy(s->varname,varname,sizeof(char)*20);
 
     return s;
@@ -231,6 +233,7 @@ void flush_access_times(){
     char file_name[50];
     var_t *s;
     DIR* dir = opendir("stats");
+    struct timeval ct;
 
     if(dir){
         snprintf(file_name,sizeof(file_name),"stats/variable_access.log");
@@ -240,6 +243,8 @@ void flush_access_times(){
             //enable_write_protection(s->pageptr,page_size);
             //s->started_tracking = 0;
         }
+        gettimeofday(&ct,NULL);
+        fprintf(fp,"checkpoint time : %lu , %lu\n",ct.tv_sec,ct.tv_usec);
         fflush(fp);
     }else{ // directory does not exist
         printf("Error: no stats directory found.\n\n");
@@ -340,7 +345,10 @@ extern struct timeval px_lchk_time;
 void calc_early_copy_times(){
     var_t *s;
     for (s = varmap; s != NULL; s = s->hh.next) {
-        timersub(&(s->end_timestamp),&px_lchk_time,&(s->earlycopy_time_offset));
+        //calculate early copy time if valid
+        if(timercmp(&(s->end_timestamp), &px_lchk_time,>)){
+            timersub(&(s->end_timestamp),&px_lchk_time,&(s->earlycopy_time_offset));
+        }
     }
     return;
 }

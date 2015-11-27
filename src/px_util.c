@@ -25,7 +25,6 @@
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 extern int chunk_size;
-extern int nvram_wbw;
 extern int lib_process_id;
 struct sigaction old_sa; 
 

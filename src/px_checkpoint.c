@@ -121,8 +121,8 @@ static sem_t sem2;
 
 //declare file pointers
 #ifdef TIMING
-    FILE *ef,*cf,*df;
-    TIMER_DECLARE3(et,ct,dt); // declaring earycopy_timer, checkpoint_timer,destage_timer
+    FILE *ef,*cf,*df,*itf;
+    TIMER_DECLARE4(et,ct,dt,it); // declaring earycopy_timer, checkpoint_timer,destage_timer
 #endif
 
 
@@ -157,13 +157,16 @@ int init(int proc_id, int nproc){
         snprintf(file_name,sizeof(file_name),"stats/destagetime%d.log",proc_id);
         df=fopen(file_name,"w");
 
+        snprintf(file_name,sizeof(file_name),"stats/iterationtime%d.log",proc_id);
+        itf=fopen(file_name,"w");
+
     }else{ // directory does not exist
         printf("Error: no stats directory found.\n\n");
 		assert(0);
     }
 #endif
 
-
+    TIMER_START(it); // timer for checkpoint iterations
 
 
 	
@@ -319,6 +322,12 @@ void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){
 
 void chkpt_all(int process_id) {
 
+    ulong  it_elapsed = 0;
+    TIMER_END(it,it_elapsed);
+    #ifdef  TIMING
+        fprintf(itf,"%lu\n",it_elapsed);
+        fflush(itf);
+    #endif
 
     TIMER_START(ct);
     //starting from second iteration
@@ -359,7 +368,6 @@ void chkpt_all(int process_id) {
 
     //stop memory sampling thread after first iteration
     if(process_id == 0 && checkpoint_iteration == 1){
-        flush_access_times();
         stop_memory_sampling_thread();
         start_page_tracking();
     }
@@ -367,7 +375,7 @@ void chkpt_all(int process_id) {
     //get the access time value after second iteration
     if(process_id == 0 && checkpoint_iteration == 2){
         stop_page_tracking(); //tracking started during alloc() calls
-
+        flush_access_times();
     }
 
     if(checkpoint_iteration == 2){
@@ -465,13 +473,13 @@ void chkpt_all(int process_id) {
     checkpoint_iteration++;
     checkpoint_version ++;
 
+    ulong  elapsed = 0;
     TIMER_END(ct,elapsed);
     #ifdef  TIMING
-        ulong  elapsed = 0;
         fprintf(cf,"%lu\n",elapsed);
         fflush(cf);
     #endif
-
+    TIMER_START(it);
     return;
 }
 
@@ -509,15 +517,24 @@ int finalize(){
         goto err;
     }
 
+    ulong  it_elapsed = 0;
+    TIMER_END(it,it_elapsed);
+    #ifdef  TIMING
+        fprintf(itf,"%lu\n",it_elapsed);
+        fflush(itf);
+     #endif
+
+    //close file pointers
+    #ifdef TIMING
+        fclose(ef);
+        fclose(cf);
+        fclose(df);
+    #endif
+
     threadpool_destroy(thread_pool,threadpool_graceful);
     return remote_finalize();
 
-//close file pointers
-#ifdef TIMING
-    fclose(ef);
-    fclose(cf);
-    fclose(df);
-#endif
+
 
 
     err:
@@ -554,9 +571,9 @@ void destage_data(void *args){
         log_err("error releasing lock");
     }
 
+    ulong elapsed = 0;
     TIMER_END(dt,elapsed);
     #ifdef  TIMING
-        ulong elapsed = 0;
         fprintf(df,"%lu\n",elapsed);
         fflush(df);
     #endif
@@ -593,7 +610,7 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
             offset = pageptr - s->ptr;
             if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
                 assert(s != NULL);
-                debug("[%d] early copy of %s , invalidated , offset %ld.%06ld",lib_process_id, s->varname,
+                debug("[%d] early copy of %s , invalidated , offset %lu.%lu",lib_process_id, s->varname,
                 s->earlycopy_time_offset.tv_sec,s->earlycopy_time_offset.tv_usec);
                 s->early_copied = 0;
                 struct timeval inc;
@@ -628,7 +645,7 @@ int ascending_time_sort(var_t *a, var_t *b){
 
 int sorted = 0;
 void start_copy(void *args){
-   
+
     TIMER_START(et);
     earlycopy_t *ecargs = (earlycopy_t *)args;
     var_t *s;
@@ -657,6 +674,7 @@ void start_copy(void *args){
     //debug("[%d] outside while loop",lib_process_id);
     while ((sem_ret = sem_trywait(&sem1)) == -1){
         if(s == NULL){
+            log_warn("[%d] all the variables got early copied..",lib_process_id);
             sem_wait(&sem1); // TODO this is not the exact behaviour
             break;
         }
@@ -737,9 +755,10 @@ void start_copy(void *args){
         log_err("semaphore two increment");
         exit(-1);
     }
+
+    ulong elapsed = 0;
     TIMER_END(et,elapsed);
     #ifdef  TIMING
-        ulong elapsed = 0;
         fprintf(ef,"%lu\n",elapsed);
         fflush(ef);
     #endif

@@ -39,8 +39,8 @@ typedef struct var_t_ {
 
 typedef struct timeoffset_t_{
     char varname[20];
-    long seconds;
-    long micro;
+    ulong seconds;
+    ulong micro;
 } timeoffset_t;
 
 #endif

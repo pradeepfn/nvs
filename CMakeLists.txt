@@ -17,7 +17,7 @@ configure_file (
 # so that we will find TutorialConfig.h
 include_directories("${PROJECT_BINARY_DIR}")
 include_directories("/usr/lib/mpich/include")
-#include_directories("/home1/03528/pradeepf/armci_install/include")
+
 
 set(HEADERS 
     include/phoenix.h
@@ -30,7 +30,7 @@ find_package(MPI REQUIRED)
 
 set(MPI_C_COMPILER mpicc)
 add_definitions(-DNDEBUG)
-#add_definitions(-DTIMING)
+add_definitions(-DTIMING)
 
 include_directories(${MPI_INCLUDE_PATH})
 include_directories("/home1/03528/pradeepf/armci_install/include")
