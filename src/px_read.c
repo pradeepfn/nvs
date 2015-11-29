@@ -106,7 +106,7 @@ void* local_dram_read(dlog_t *dlog, char *var_name,int process_id, int version){
     if(dlog->dlog_checkpoint_version != version){
         return  NULL;
     }
-    dcheckpoint_map_entry_t *entry;
+    var_t *entry;
     HASH_FIND_STR(dlog->map[NVRAM_CHECKPOINT],var_name,entry);
     return entry; // NULL if not found
 }

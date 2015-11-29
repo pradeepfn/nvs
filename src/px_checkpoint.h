@@ -5,7 +5,7 @@
 #include <signal.h>
 #include "uthash.h"
 
-#define VAR_SIZE 20
+
 
 typedef long offset_t;
 

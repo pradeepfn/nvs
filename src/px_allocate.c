@@ -69,7 +69,7 @@ var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {
     s->early_copied = 0;
     s->earlycopy_time_offset.tv_sec = 0;
     s->earlycopy_time_offset.tv_usec = 0;
-    memcpy(s->varname,varname,sizeof(char)*20);
+    strncpy(s->varname,varname,sizeof(char)*20);
 
     return s;
 

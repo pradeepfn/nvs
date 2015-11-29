@@ -70,7 +70,7 @@ extern long remote_dram_checkpoint_size;
 
 int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type type) {
     var_t *np;
-    dcheckpoint_map_entry_t *s;
+    var_t *s;
 
 
 
@@ -83,7 +83,7 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
         //first we check wether this entry already in our hash table
         HASH_FIND_STR(dlog->map[type], np->varname, s);
         if (s == NULL) { //create a new entry
-            s = (dcheckpoint_map_entry_t *) malloc(sizeof(dcheckpoint_map_entry_t));
+            s = (var_t *) malloc(sizeof(var_t));
             strncpy(s->var_name, np->varname, 20);
             s->process_id = np->process_id;
             s->size = np->size;
@@ -137,14 +137,14 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
  * return a checkpoint_t structure if the variable found in the
  * map. Else NULL will be return.
  */
-dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, long version, checkpoint_type type) {
+var_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, long version, checkpoint_type type) {
     if(!dlog->is_dlog_valid  || dlog->dlog_checkpoint_version != version){
         return  NULL;
     }
 
 
-    dcheckpoint_map_entry_t *tmap = NULL;
-    dcheckpoint_map_entry_t *s;
+    var_t *tmap = NULL;
+    var_t *s;
     /*select the remote/local map to traverse*/
     tmap = dlog->map[type];
 

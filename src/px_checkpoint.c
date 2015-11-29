@@ -429,10 +429,9 @@ void chkpt_all(int process_id) {
         if (cr_type == ONLINE_CR) {
             dlog_remote_write(&chdlog, varmap, get_mypeer(process_id),checkpoint_version);//remote DRAM write
             //at this point we have a ONLINE_CR stable checkpoint
-            chlog.current->head->online_version = checkpoint_version;
         }
     }else{ // pure NVRAM checkpoint
-        chlog.current->head->current_version = checkpoint_version;
+        log_commitv(&chlog,checkpoint_version);
         //TODO: msync
     }
 
@@ -552,39 +551,29 @@ int finalize_(){
 
 
 
-/*copy the data from local DRAM log to NVRAM log*/
+/*copy the data from local DRAM log to NVRAM log
+ * make priority to destaging over early copy thread
+ */
 void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
-
-
+    int status;
     TIMER_START(dt);
 
-    if(pthread_mutex_lock(&mtx)){
-        log_err("error acquiring lock");
+    var_t *s;
+    for(s=ds->dlog->map[NVRAM_CHECKPOINT];s!=NULL;s=s->hh.next){
+        status = log_write(ds->nvlog,s,lib_process_id,ds->checkpoint_version);
+        if(status == -1){
+            log_err("nvlog write failed while data destage");
+            exit(1);
+        }
     }
-
-    destage_data_log_write(ds->nvlog,ds->dlog->map[NVRAM_CHECKPOINT],ds->process_id);
-    ds->nvlog->current->head->current_version = ds->checkpoint_version;
-
-
-    if(pthread_mutex_unlock(&mtx)){
-        log_err("error releasing lock");
-    }
-
+    log_commitv(ds->nvlog,ds->checkpoint_version);
     ulong elapsed = 0;
     TIMER_END(dt,elapsed);
     #ifdef  TIMING
         fprintf(df,"%lu\n",elapsed);
         fflush(df);
     #endif
-
-
-    /*if(msync(ds->nvlog->current->head,sizeof(headmeta_t),MS_SYNC) == -1){
-        log_err("msync failed");
-        exit(-1);
-    }*/
-    //assert(ds->nvlog->current->head->online_version == ds->checkpoint_version); //double checkpoint stable pushed in to nvram as well
-    //debug("[%d] checkpoint data destaged." , lib_process_id);
     return;
 }
 
@@ -649,7 +638,7 @@ void start_copy(void *args){
     TIMER_START(et);
     earlycopy_t *ecargs = (earlycopy_t *)args;
     var_t *s;
-    int sem_ret;
+    int sem_ret,status;
     //debug("early copy task started");
 
     //sort the access times
@@ -704,7 +693,10 @@ void start_copy(void *args){
                     // see log_write method
                     enable_write_protection(s->ptr, s->size);
                     //copy the variable
-                    log_write_var(ecargs->nvlog, s, checkpoint_version);
+                    status = log_write(ecargs->nvlog, s, lib_process_id,checkpoint_version);
+                    if(status == -1){
+                        log_err("early copying data to nvlog failed");
+                    }
                     //mark it as copied
                     s->early_copied = 1;
                     //log_info("[%d] early copied the variable : %s", lib_process_id, s->varname);
