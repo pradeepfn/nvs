@@ -7,9 +7,9 @@
 #include <unistd.h>
 
 #include "px_util.h"
-#include "px_remote.h"
 #include "px_debug.h"
 #include "px_constants.h"
+#include "px_remote.h"
 
 // read bandwidth to constant maching
 // 2048Mb/s -> 600
@@ -79,10 +79,6 @@ int nvmmemcpy_write(void *dest, void *src, size_t len, int wbw) {
     return 0;
 }
 
-void *get_data_addr(void *base_addr, checkpoint_t *chkptr){
-    char *temp = ((char *)base_addr) + chkptr->offset + sizeof(checkpoint_t);
-    return (void *)temp;
-}
 
 int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y) 
 {

@@ -3,21 +3,17 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <assert.h>
 #include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/time.h>
+#include <pthread.h>
+#include <assert.h>
 
 #include "px_log.h"
 #include "px_debug.h"
-#include "px_util.h"
 #include "px_constants.h"
 
 #define FILE_PATH_ONE "/mmap.file.meta" // stores the ring buffer
 #define FILE_PATH_TWO "/mmap.file.data" // stores linear metadata
 
-//global variables
-int first_run=0;
 extern char pfile_location[32];
 extern int lib_process_id;
 extern long checkpoint_version;
@@ -27,14 +23,15 @@ static void init_mmap_files(log_t *log);
 
 
 extern int nvram_wbw;
-extern int nvram_ec_wbw;
 
+checkpoint_t* ringb_element(log_t *log, ulong index);
+void* log_ptr(log_t *log,ulong offset);
 
 void log_init(log_t *log , long log_size, int process_id){
 	if(isDebugEnabled()){
 		printf("initializing the structures... %d \n", process_id);
 	}
-    log->plock = PTHREAD_MUTEX_INITIALIZER;
+    pthread_mutex_init(&(log->plock),NULL);
 	log->data_log.log_size = log_size;
     snprintf(log->ring_buffer.file_name, sizeof(log->ring_buffer.file_name), "%s%s%d",pfile_location,FILE_PATH_ONE,process_id);
     snprintf(log->data_log.file_name, sizeof(log->data_log.file_name),"%s%s%d",pfile_location,FILE_PATH_TWO,process_id);
@@ -63,8 +60,7 @@ extern long nvram_checkpoint_size;
 extern int early_copy_enabled;
 
 int log_write(log_t *log, var_t *variable, int process_id,long version){
-	var_t *s;
-    void *reserved_log_ptr;
+    void *reserved_log_ptr,*preamble_log_ptr;
     ulong reserved_log_offset;
     ulong avail_size;
 
@@ -81,8 +77,6 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
         pthread_mutex_unlock(&(log->plock));
         return -1;
     }
-    //check space in linear log
-    checkpoint_t *head_elem = ringb_element(log,log->ring_buffer.head->head);
 
     ulong dhead_offset = log->ring_buffer.log_head; // data head offset
     ulong dtail_offset = log->ring_buffer.log_tail; // data tail offset
@@ -121,19 +115,20 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
     checkpoint_elem->size = variable->size;
     checkpoint_elem->start_offset = reserved_log_offset;
     checkpoint_elem->hash = 0; // yet to implement
-    checkpoint_elem->end_offset = dhead_offset + checkpoint_size;
+    checkpoint_elem->end_offset = reserved_log_offset + checkpoint_size;
 
     log->ring_buffer.head->head = next_rb_index; // atomically commit slot reservation
     pthread_mutex_unlock(&(log->plock));
 
     //non locked operation
     reserved_log_ptr = log_ptr(log,reserved_log_offset);
+    preamble_log_ptr = log_ptr(log,checkpoint_elem->end_offset+1);
     preamble_t preamble;
-    memcpy(reserved_log_ptr,&preamble,sizeof(preamble_t));
+    memcpy(preamble_log_ptr,&preamble,sizeof(preamble_t));
     // write to log on the granted log boundry and update the commit bit
     // valid_bit followed by data. we use the valid bit to atomically copy the checkpoint data.
     nvmmemcpy_write(reserved_log_ptr,variable->ptr,variable->size,nvram_wbw);
-    ((preamble_t *)reserved_log_ptr)->value = MAGIC_VALUE; // atomic commit of the copied data
+    ((preamble_t *)preamble_log_ptr)->value = MAGIC_VALUE; // atomic commit of the copied data
 	return 1;
 }
 
@@ -150,9 +145,9 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
                 rb_elem->process_id == process_id)){
             return rb_elem;
         }
-        iter_index = (iter_index == 0)?(RING_BUFFER_SLOTS-1):--iter_index;
+        iter_index = (iter_index == 0)?(RING_BUFFER_SLOTS-1):(iter_index-1);
     }
-    log_warn("[%d] no checkpointed data found %s, %d ",lib_process_id,var_name,version);
+    log_warn("[%d] no checkpointed data found %s, %lu ",lib_process_id,var_name,version);
     return NULL;
 
 }

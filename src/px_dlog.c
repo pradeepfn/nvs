@@ -84,36 +84,37 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
         HASH_FIND_STR(dlog->map[type], np->varname, s);
         if (s == NULL) { //create a new entry
             s = (var_t *) malloc(sizeof(var_t));
-            strncpy(s->var_name, np->varname, 20);
+            strncpy(s->varname, np->varname, 20);
             s->process_id = np->process_id;
             s->size = np->size;
             s->version = version;
 
             if (type == DOUBLE_IN_MEMORY_LOCAL) {
                 void *data_ptr = malloc(np->size);// allocate local DRAM memory
-                s->data_ptr = data_ptr;
+                s->ptr = data_ptr;
                 if(isDebugEnabled()){
-                    printf("[%d] new DRAM memory location for : %s \n",lib_process_id, s->var_name);
+                    printf("[%d] new DRAM memory location for : %s \n",lib_process_id, s->varname);
                 }
                 local_dram_checkpoint_size+=s->size;
 
             } else if (type == DOUBLE_IN_MEMORY_REMOTE) {
-                s->data_ptr = np->local_remote_ptr;// we use the group allocated memory directly
+                s->ptr = np->local_remote_ptr;// we use the group allocated memory directly
                 if(isDebugEnabled()){
-                    printf("[%d] remote variable mapped to ARMCI group allocated pointer for : %s \n",lib_process_id, s->var_name);
+                    printf("[%d] remote variable mapped to ARMCI group allocated pointer for : "
+                                   "%s \n",lib_process_id, s->varname);
                 }
                 remote_dram_checkpoint_size+=s->size;
             }
-            HASH_ADD_STR(dlog->map[type], var_name, s); //now we have a complete data entry for a variable.add it!
+            HASH_ADD_STR(dlog->map[type], varname, s); //now we have a complete data entry for a variable.add it!
         }
         // we either created a s or, found older version from our hash map
         s->version = version;
 
         if(type == DOUBLE_IN_MEMORY_LOCAL){
-            memcpy(s->data_ptr, np->ptr, np->size);
+            memcpy(s->ptr, np->ptr, np->size);
             if(isDebugEnabled()){
-                printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %ld ,"
-                               "size : %ld , pointer : %p \n",lib_process_id, s->var_name, process_id, s->version, s->size, s->data_ptr);
+                printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %ld ,size : %ld , "
+                               "pointer : %p \n",lib_process_id, s->varname, process_id, s->version, s->size, s->ptr);
             }
         }
         if(type == DOUBLE_IN_MEMORY_REMOTE){ // nothing to do. we have already set the group pointer
@@ -123,10 +124,6 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
         assert(strncmp(s->var_name, np->varname,np->size) == 0);
         assert(s->process_id == np->process_id);
 
-        /*if(type == DOUBLE_IN_MEMORY_REMOTE){
-
-            printf("[%d] data vlaue ******************  : %f \n",lib_process_id, ((float *)s->data_ptr)[0]);
-        }*/
     }
 
     return 0;

@@ -55,18 +55,6 @@
 
 //copy stategies
 #define NAIVE_COPY 1
-/*#define FAULT_COPY 2
-#define PRE_COPY 3
-#define PAGE_ALIGNED_COPY 4
-#define REMOTE_COPY 5
-#define REMOTE_FAULT_COPY 6
-#define REMOTE_PRE_COPY 7*/
-
-
-static pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-
-int is_remaining_space_enough(int);
-
 
 /*default config params*/
 long log_size = 2*1024*1024;
@@ -81,7 +69,7 @@ long local_dram_checkpoint_size =0;
 long remote_dram_checkpoint_size=0;
 int nvram_wbw = -1;  // nvram write bandwidth seen by a core
 int nvram_ec_wbw = -1; // nvram early copy write bandwidth seen by the core
-int rstart = 0;
+int restart_run = 0;
 int remote_checkpoint = 0;
 int remote_restart = 0;
 char pfile_location[32];
@@ -199,7 +187,7 @@ int init(int proc_id, int nproc){
         } else if (!strncmp(NVRAM_EARLY_COPY_WBW, varname, sizeof(varname))) {
             nvram_ec_wbw = atoi(varvalue);
         } else if (!strncmp(RSTART, varname, sizeof(varname))) {
-            rstart = atoi(varvalue);
+            restart_run = atoi(varvalue);
         } else if (!strncmp(REMOTE_CHECKPOINT_ENABLE, varname, sizeof(varname))) {
             if (atoi(varvalue) == 1) {
                 remote_checkpoint = 1;
@@ -360,7 +348,7 @@ void chkpt_all(int process_id) {
         return;
     }
 
-    if(rstart == 1){
+    if(restart_run == 1){
         printf("skipping checkpointing data of process : %d \n",process_id);
         return;
     }
@@ -404,21 +392,19 @@ void chkpt_all(int process_id) {
         }
     }
 
-    //aquire nvlog
-    //debug("[%d] acquire nvlog lock", lib_process_id);
-    if(pthread_mutex_lock(&mtx)){
-        log_err("error acquiring lock");
-    }
-
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
-
-    log_write(&chlog,varmap,process_id,checkpoint_version);//local NVRAM write
-
-    if(pthread_mutex_unlock(&mtx)){
-        log_err("error releasing lock");
+    var_t *s;
+    for (s = varmap; s != NULL; s = s->hh.next){
+        if(s->process_id == process_id && s->type == NVRAM_CHECKPOINT && (!s->early_copied) ){
+            nvram_checkpoint_size+= s->size;
+            log_write(&chlog,s,process_id,checkpoint_version);
+        }
+        if(early_copy_enabled && s->early_copied){
+            disable_protection(s->ptr, s->size); // resetting the page protection
+            s->early_copied = 0; // resetting the flag to next iteration
+        }
     }
-
 
     int dlog_data=is_dlog_checkpoing_data_present(varmap);
 
@@ -466,7 +452,6 @@ void chkpt_all(int process_id) {
         //add the precopy task
         threadpool_add(thread_pool, &start_copy, (void *) &targ2, 0);
     }
-    //TODO : remove page protection done by early copy thread
 
     //debug("[%d] done with checkpoint iteration : %ld", lib_process_id,checkpoint_iteration);
     checkpoint_iteration++;
@@ -648,10 +633,7 @@ void start_copy(void *args){
     }
     s = varmap;
 
-    //aquire nvlog
-    if(pthread_mutex_lock(&mtx)){
-        log_err("error acquiring lock");
-    }
+
 
 
     struct timeval current_time;
@@ -737,10 +719,6 @@ void start_copy(void *args){
         }
     }
     TIMER_RESUME(et);
-    //relase nvlog
-    if(pthread_mutex_unlock(&mtx)){
-        log_err("error releasing lock");
-    }
 
     //debug("[%d] semaphore wait return value : %d", lib_process_id,sem_ret);
     if(sem_post(&sem2) == -1){

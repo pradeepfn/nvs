@@ -29,7 +29,6 @@ var_t *copy_read(log_t *log, char *var_name,int process_id, long version){
     long page_aligned_size;
     var_t *s;
 
-	checkpoint_t *cbptr = log->current->meta;
     checkpoint_t *checkpoint = log_read(log,var_name,process_id,version);
     if(checkpoint == NULL){ // data not found
         printf("Error data not found");
@@ -37,8 +36,8 @@ var_t *copy_read(log_t *log, char *var_name,int process_id, long version){
         return NULL;
     }
     int page_size = sysconf(_SC_PAGESIZE);
-    page_aligned_size = ((checkpoint->data_size + page_size - 1) & ~(page_size - 1));
-	data_addr = get_data_addr(cbptr,checkpoint);
+    page_aligned_size = ((checkpoint->size + page_size - 1) & ~(page_size - 1));
+	data_addr = log_ptr(log,checkpoint->start_offset);
 
     status = posix_memalign(&buffer, page_size, page_aligned_size);
     if (status != 0) {
@@ -47,11 +46,11 @@ var_t *copy_read(log_t *log, char *var_name,int process_id, long version){
 
     s = (var_t *)malloc(sizeof(var_t));
     s->ptr = buffer;
-    s->size = checkpoint->data_size;
+    s->size = checkpoint->size;
     s->process_id = process_id;
     s->paligned_size = page_aligned_size;
     memcpy(s->varname,var_name,sizeof(char)*20);
-	nvmmemcpy_read(s->ptr,data_addr,checkpoint->data_size,nvram_wbw*2);
+	nvmmemcpy_read(s->ptr,data_addr,checkpoint->size,nvram_wbw*2);
 
 	return s;
 }
