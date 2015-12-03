@@ -2,7 +2,6 @@
 #define PHOENIX_PX_DLOG_H
 
 #include "uthash.h"
-#include "px_checkpoint.h"
 #include "px_types.h"
 
 

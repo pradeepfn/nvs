@@ -16,7 +16,7 @@ int nvmmemcpy_write(void * dest, void * src, size_t size,int wbw);
 long disable_protection(void *addr, size_t size);
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
 void call_oldhandler(int signo);
-int get_mypeer(int myrank);
+int get_mypeer(rcontext_t *rcontext, int myrank);
 void split_checkpoint_data(rcontext_t *rcontext, var_t *list);
 void install_old_handler();
 int is_dlog_checkpoing_data_present(var_t *list);

@@ -1,4 +1,3 @@
-#include <temp.h>
 #include "minunit.h"
 
 #define PROCESS_ID 1
@@ -6,7 +5,7 @@
 
 
 char *test_loginit(){
-    hello();
+    printf("log init test\n");
     return 0;
 }
 

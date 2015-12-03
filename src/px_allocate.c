@@ -95,9 +95,9 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
         for(s=varmap;s != NULL;s=s->hh.next) {
             offset = pageptr - s->ptr;
             if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
-                if(isDebugEnabled()){
+               /* if(isDebugEnabled()){
                     printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
-                }
+                }*/
                 if(s != NULL) {
                     if (!s->started_tracking) {
                         s->started_tracking = 1;
@@ -148,7 +148,7 @@ void stop_page_tracking(){
     return;
 }
 
-void broadcast_page_tracking(){
+void broadcast_page_tracking(rcontext_t *runtime_context){
     timeoffset_t offset_ary[100];
     int i,j;
     int n_vars=0;
@@ -167,7 +167,7 @@ void broadcast_page_tracking(){
     MPI_Type_commit(&timeoffset);
 
 
-    if(lib_process_id == 0) {
+    if(runtime_context->process_id == 0) {
         //populate the structure
         var_t *s;
         for (s = varmap, i = 0; s != NULL; s = s->hh.next, i++) {
@@ -183,7 +183,7 @@ void broadcast_page_tracking(){
     MPI_Bcast((void*)offset_ary,n_vars*sizeof(offset_t),timeoffset,0,MPI_COMM_WORLD);
 
     var_t *s2;
-    if(lib_process_id != 0){
+    if(runtime_context->process_id != 0){
       for(j=0;j<n_vars;j++){
           HASH_FIND_STR(varmap,offset_ary[j].varname,s2);
           assert(s2 != NULL);
@@ -280,15 +280,15 @@ int decending_time_sort(var_t *a, var_t *b){
  * 3. if online C/R - each DRAM variable needs 2X space , same space if traditional C/R
  */
 
-void decide_checkpoint_split(var_t *list, long long freemem) {
+void decide_checkpoint_split(rcontext_t *runtime_context, var_t *list, long long freemem) {
     char carray[100][20]; //contiguous memory : over provisioned
     var_t *s;
     int j, i = 0;
     int n_vars = 0;
 
 
-    if (lib_process_id == 0) { // root process does the split
-        if (cr_type == ONLINE_CR) {
+    if (runtime_context->process_id == 0) { // root process does the split
+        if (runtime_context->config_context->cr_type == ONLINE_CR) {
             freemem = freemem / 2; // double in memory checkpointing
         }
         //lets sort the hashmap
@@ -296,7 +296,7 @@ void decide_checkpoint_split(var_t *list, long long freemem) {
 
         //map after sorting
         for (s = list; s != NULL; s = s->hh.next) {
-            if (s->paligned_size < freemem && s->size >= threshold_size) { // it fits in
+            if (s->paligned_size < freemem && s->size >= runtime_context->config_context->threshold_size) { // it fits in
                 freemem -= s->paligned_size; // TODO : restart needs aligned size
                 assert(i < 100); // we are working with a overprovisioned array
                 strncpy(carray[i], s->varname, 20);
@@ -320,8 +320,8 @@ void decide_checkpoint_split(var_t *list, long long freemem) {
         HASH_FIND_STR(list,carray[j],s);
         // debug("[%d] matched variable : %s , %s",lib_process_id, carray[j],np->var_name);
                 s->type = DRAM_CHECKPOINT;
-                if(cr_type == ONLINE_CR) {
-                    if (lib_process_id == 0) {
+                if(runtime_context->config_context->cr_type == ONLINE_CR) {
+                    if (runtime_context->process_id == 0) {
                         debug("[%d] allocated remote DRAM pointers for variable %s",
                               lib_process_id, s->varname);
                     }
@@ -336,12 +336,12 @@ void decide_checkpoint_split(var_t *list, long long freemem) {
 /*
  * calculate the time in which the last access took place from the most recent checkpoint.
  */
-void calc_early_copy_times(){
+void calc_early_copy_times(rcontext_t *runtime_context){
     var_t *s;
     for (s = varmap; s != NULL; s = s->hh.next) {
         //calculate early copy time if valid
-        if(timercmp(&(s->end_timestamp), &px_lchk_time,>)){
-            timersub(&(s->end_timestamp),&px_lchk_time,&(s->earlycopy_time_offset));
+        if(timercmp(&(s->end_timestamp), &(runtime_context->lchk_time),>)){
+            timersub(&(s->end_timestamp),&(runtime_context->lchk_time),&(s->earlycopy_time_offset));
         }
     }
     return;

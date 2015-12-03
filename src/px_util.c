@@ -150,21 +150,19 @@ long disable_protection(void *page_start_addr,size_t aligned_size){
 }
 
 
-extern int n_processes;
-extern int buddy_offset;
 
-int get_mypeer(int myrank){
+int get_mypeer(rcontext_t *rcontext, int myrank){
     int mypeer;
 
     if(myrank % 2 == 0) { //FIXME: This logic fails when offset is a even number
-        mypeer = (myrank + buddy_offset) % n_processes;
+        mypeer = (myrank + rcontext->config_context->buddy_offset) % rcontext->nproc;
         return mypeer;
     }else {
-        if(myrank >= buddy_offset){
-            mypeer = myrank - buddy_offset;
+        if(myrank >= rcontext->config_context->buddy_offset){
+            mypeer = myrank - rcontext->config_context->buddy_offset;
             return mypeer;
         } else{
-            mypeer = n_processes + myrank - buddy_offset;
+            mypeer = rcontext->nproc + myrank - rcontext->config_context->buddy_offset;
             return mypeer;
         }
     }
@@ -262,7 +260,7 @@ void read_configs(ccontext_t *config_context,char *file_path){
                 config_context->remote_restart = 1;
             }
         } else if (!strncmp(BUDDY_OFFSET, varname, sizeof(varname))) {
-            buddy_offset = atoi(varvalue);
+            config_context->buddy_offset = atoi(varvalue);
         } else if (!strncmp(SPLIT_RATIO, varname, sizeof(varname))) {
             config_context->split_ratio = atoi(varvalue);
         } else if (!strncmp(CR_TYPE, varname, sizeof(varname))) {

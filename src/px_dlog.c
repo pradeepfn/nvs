@@ -69,8 +69,6 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
     var_t *np;
     var_t *s;
 
-    ccontext_t *ccontext = dlog->runtime_context;
-
     //iterate the list
     for (np = list; np != NULL; np = np->hh.next) {
         if(np->type != DRAM_CHECKPOINT){

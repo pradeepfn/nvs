@@ -208,8 +208,8 @@ void chkpt_all(int process_id) {
     }
 
     if(runtime_context.checkpoint_iteration == 2){
-        calc_early_copy_times(); //calculate early copy times
-        broadcast_page_tracking(); // broadcast the page tracking details to other nodes
+        calc_early_copy_times(&runtime_context); //calculate early copy times
+        broadcast_page_tracking(&runtime_context); // broadcast the page tracking details to other nodes
         install_sighandler(&early_copy_handler); //install early copy handler
 
     }
@@ -229,7 +229,7 @@ void chkpt_all(int process_id) {
                 log_info("[%d] using memory access info to decide on DRAM variables",runtime_context.process_id);
                 log_info("[%d] free memory limit per process : %lld",runtime_context.process_id, fmem);
             }
-            decide_checkpoint_split(varmap, fmem);
+            decide_checkpoint_split(&runtime_context, varmap, fmem);
         }
     }
 
@@ -254,7 +254,7 @@ void chkpt_all(int process_id) {
         dlog_local_write(&dlog, varmap, process_id,runtime_context.checkpoint_version);//local DRAM write
 
         if (config_context.cr_type == ONLINE_CR) {
-            dlog_remote_write(&dlog, varmap, get_mypeer(process_id),runtime_context.checkpoint_version);//remote DRAM write
+            dlog_remote_write(&dlog, varmap, get_mypeer(&runtime_context, process_id),runtime_context.checkpoint_version);//remote DRAM write
             //at this point we have a ONLINE_CR stable checkpoint
         }
     }else{ // pure NVRAM checkpoint
@@ -358,6 +358,7 @@ int finalize(){
 
     threadpool_destroy(runtime_context.thread_pool,threadpool_graceful);
     return remote_finalize();
+/*
 
 
 
@@ -365,6 +366,7 @@ int finalize(){
     err:
         log_err("[%d] program error",runtime_context.process_id);
         return -1;
+*/
 
 }
 

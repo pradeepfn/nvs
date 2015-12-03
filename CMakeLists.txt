@@ -40,6 +40,7 @@ include_directories("/home1/03528/pradeepf/armci_install/include")
 set(CMAKE_C_FLAGS "-Wall -g")
 
 set(SOURCE_FILES
+    src/px_types.h
     src/px_checkpoint.c
     src/px_constants.h
     src/px_debug.c
@@ -66,8 +67,7 @@ set(SOURCE_FILES
     src/px_threadpool.h
     src/px_threadpool.c
     src/px_earlycopy.h
-    src/px_timer.h
-    src/px_types.h)
+    src/px_timer.h)
 
 SET(MY_OWN_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}" CACHE PATH "Prefix prepended to
 install directories")

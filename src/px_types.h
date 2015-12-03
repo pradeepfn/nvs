@@ -6,9 +6,12 @@
 #include <sys/types.h>
 
 #include "px_threadpool.h"
-#include "px_log.h"
+#include "uthash.h"
 
 
+struct log_t_;
+struct dlog_t_;
+struct var_t_;
 
 /* holds the static config of the runtime
  * This dat-type models the config file */
@@ -51,11 +54,11 @@ typedef struct rcontext_t_{
     ulong remote_dram_checkpoint_size;
     int process_id;
     int nproc;
-    log_t nvlog;
-    dlog_t dlog;
-    var_t *varmap;
+    struct log_t_ *nvlog;
+    struct dlog_t_ *dlog;
+    struct var_t_ *varmap;
 
-} rcontext_t;
+}rcontext_t;
 
 
 
@@ -98,8 +101,8 @@ typedef struct timeoffset_t_{
 
 
 typedef struct destage_t_{
-    dlog_t *dlog;
-    log_t *nvlog;
+    struct dlog_t_ *dlog;
+    struct log_t_ *nvlog;
     int process_id;
     long checkpoint_version;
 }destage_t;
