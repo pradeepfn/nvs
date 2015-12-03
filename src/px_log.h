@@ -63,6 +63,7 @@ typedef struct log_t_{
 	ringbuffer_t ring_buffer;
     logdata_t data_log;
     pthread_mutex_t plock;
+    rcontext_t *runtime_context;
 }log_t;
 
 

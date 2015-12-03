@@ -3,8 +3,12 @@
 #define PHOENIX_PX_TYPES_H
 
 #include <sys/time.h>
+#include <sys/types.h>
 
 #include "px_threadpool.h"
+#include "px_log.h"
+
+
 
 /* holds the static config of the runtime
  * This dat-type models the config file */

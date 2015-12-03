@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /*call this during MPI_Initialize*/
-int remote_init(int my_rank, int n_rank);
+int remote_init(int my_rank, int n_rank,int buddy_offset);
 
 /*Remote memory allocation*/
 void* remote_alloc(void ***memory_grid, size_t size);

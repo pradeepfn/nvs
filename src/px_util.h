@@ -17,7 +17,7 @@ long disable_protection(void *addr, size_t size);
 void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
 void call_oldhandler(int signo);
 int get_mypeer(int myrank);
-void split_checkpoint_data(var_t *list);
+void split_checkpoint_data(rcontext_t *rcontext, var_t *list);
 void install_old_handler();
 int is_dlog_checkpoing_data_present(var_t *list);
 void enable_write_protection(void *ptr, size_t size);

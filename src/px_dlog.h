@@ -3,6 +3,7 @@
 
 #include "uthash.h"
 #include "px_checkpoint.h"
+#include "px_types.h"
 
 
 typedef enum { // type we used for seperating double in memory remote and local checkpoint versions
@@ -15,6 +16,7 @@ typedef struct dlog_t_{
 
     long dlog_checkpoint_version; //current version no of the checkpoint
     int is_dlog_valid; // used for atomic udate the buffer
+    rcontext_t *runtime_context;
 
     long dlog_remote_checkpoint_version; // track version and validity of remote checkpoint
     int is_dlog_remote_valid;

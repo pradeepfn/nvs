@@ -69,8 +69,7 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
     var_t *np;
     var_t *s;
 
-
-
+    ccontext_t *ccontext = dlog->runtime_context;
 
     //iterate the list
     for (np = list; np != NULL; np = np->hh.next) {
@@ -90,17 +89,17 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
                 void *data_ptr = malloc(np->size);// allocate local DRAM memory
                 s->ptr = data_ptr;
                 if(isDebugEnabled()){
-                    printf("[%d] new DRAM memory location for : %s \n",lib_process_id, s->varname);
+                    printf("[%d] new DRAM memory location for : %s \n",dlog->runtime_context->process_id, s->varname);
                 }
-                local_dram_checkpoint_size+=s->size;
+                dlog->runtime_context->local_dram_checkpoint_size+=s->size;
 
             } else if (type == DOUBLE_IN_MEMORY_REMOTE) {
                 s->ptr = np->local_remote_ptr;// we use the group allocated memory directly
                 if(isDebugEnabled()){
                     printf("[%d] remote variable mapped to ARMCI group allocated pointer for : "
-                                   "%s \n",lib_process_id, s->varname);
+                                   "%s \n",dlog->runtime_context->process_id, s->varname);
                 }
-                remote_dram_checkpoint_size+=s->size;
+                dlog->runtime_context->remote_dram_checkpoint_size+=s->size;
             }
             HASH_ADD_STR(dlog->map[type], varname, s); //now we have a complete data entry for a variable.add it!
         }
@@ -111,7 +110,7 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
             memcpy(s->ptr, np->ptr, np->size);
             if(isDebugEnabled()){
                 printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %ld ,size : %ld , "
-                               "pointer : %p \n",lib_process_id, s->varname, process_id, s->version, s->size, s->ptr);
+                               "pointer : %p \n",dlog->runtime_context->process_id, s->varname, process_id, s->version, s->size, s->ptr);
             }
         }
         if(type == DOUBLE_IN_MEMORY_REMOTE){ // nothing to do. we have already set the group pointer

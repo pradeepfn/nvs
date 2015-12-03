@@ -5,7 +5,6 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <pthread.h>
-#include <assert.h>
 
 #include "px_log.h"
 #include "px_debug.h"
@@ -19,19 +18,20 @@
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
 
-
-
 checkpoint_t* ringb_element(log_t *log, ulong index);
 void* log_ptr(log_t *log,ulong offset);
 
 void log_init(log_t *log , long log_size, int process_id){
+    ccontext_t *config_context = log->runtime_context->config_context;
 	if(isDebugEnabled()){
 		printf("initializing the structures... %d \n", process_id);
 	}
     pthread_mutex_init(&(log->plock),NULL);
 	log->data_log.log_size = log_size;
-    snprintf(log->ring_buffer.file_name, sizeof(log->ring_buffer.file_name), "%s%s%d",pfile_location,FILE_PATH_ONE,process_id);
-    snprintf(log->data_log.file_name, sizeof(log->data_log.file_name),"%s%s%d",pfile_location,FILE_PATH_TWO,process_id);
+    snprintf(log->ring_buffer.file_name, sizeof(log->ring_buffer.file_name), "%s%s%d",
+            config_context->pfile_location,FILE_PATH_ONE,process_id);
+    snprintf(log->data_log.file_name, sizeof(log->data_log.file_name),"%s%s%d",
+             config_context->pfile_location,FILE_PATH_TWO,process_id);
     init_mmap_files(log);
 }
 
@@ -122,7 +122,7 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
     memcpy(preamble_log_ptr,&preamble,sizeof(preamble_t));
     // write to log on the granted log boundry and update the commit bit
     // valid_bit followed by data. we use the valid bit to atomically copy the checkpoint data.
-    nvmmemcpy_write(reserved_log_ptr,variable->ptr,variable->size,nvram_wbw);
+    nvmmemcpy_write(reserved_log_ptr,variable->ptr,variable->size,log->runtime_context->config_context->nvram_wbw);
     ((preamble_t *)preamble_log_ptr)->value = MAGIC_VALUE; // atomic commit of the copied data
 	return 1;
 }
@@ -142,7 +142,7 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
         }
         iter_index = (iter_index == 0)?(RING_BUFFER_SLOTS-1):(iter_index-1);
     }
-    log_warn("[%d] no checkpointed data found %s, %lu ",lib_process_id,var_name,version);
+    log_warn("[%d] no checkpointed data found %s, %lu ",log->runtime_context->process_id,var_name,version);
     return NULL;
 
 }
@@ -163,7 +163,7 @@ void* log_ptr(log_t *log,ulong offset){
 
 /* check whether our checkpoint init flag file is present */
 int is_chkpoint_present(log_t *log){
-	if(restart_run){
+	if(log->runtime_context->config_context->restart_run){
 		return 1;
 	}
 	return 0;
@@ -209,7 +209,7 @@ static void init_mmap_files(log_t *log){
     close (fd);
 
 	
-	if(!restart_run){
+	if(!log->runtime_context->config_context->restart_run){
 
         debug("first run of the library. Initializing the mapped files..\n");
         headmeta_t head;
@@ -221,7 +221,7 @@ static void init_mmap_files(log_t *log){
         memcpy(log->ring_buffer.head, &head, sizeof(headmeta_t));
         //TODO: introduce a magic value to check atomicity
 
-        checkpoint_version = 0;
+        log->runtime_context->checkpoint_version = 0;
 	}else{
         // TODO : implement
 

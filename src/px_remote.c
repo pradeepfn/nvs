@@ -23,11 +23,10 @@ int remote_barrier() {
 	return 0;
 }
 
-extern int buddy_offset;
 
 /*We assume MPI_Init has already been invoked
  * If not, just add this line MPI_Init*/
-int remote_init(int my_rank, int n_rank) {
+int remote_init(int my_rank, int n_rank,int buddy_offset) {
 
 	/*For now lets assume 1 buddy for each node*/
 	int no_members=2;

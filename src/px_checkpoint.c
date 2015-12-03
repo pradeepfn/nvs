@@ -3,8 +3,6 @@
 #include <string.h>
 #include <sys/time.h>
 #include <mpi.h>
-#include <semaphore.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <dirent.h>
 
@@ -18,7 +16,6 @@
 #include "px_constants.h"
 #include "px_sampler.h"
 #include "timecount.h"
-#include "px_threadpool.h"
 #include "px_earlycopy.h"
 #include "px_timer.h"
 #include "px_dlog.h"
@@ -52,6 +49,13 @@ void destage_data(void *args);
 
 int init(int proc_id, int nproc){
     int status;
+
+    //tie up the global variable hieararchy
+    runtime_context.config_context = &config_context;
+    runtime_context.varmap = varmap;
+    nvlog.runtime_context = &runtime_context;
+    dlog.runtime_context = &runtime_context;
+
     gettimeofday(&(runtime_context.px_start_time),NULL);
 	if(lib_initialized){
 		printf("Error: the library already initialized.");
@@ -89,7 +93,7 @@ int init(int proc_id, int nproc){
 		printf("persistant file location : %s\n", config_context.pfile_location);
 		printf("NVRAM write bandwidth : %d Mb\n", config_context.nvram_wbw);
 	}
-    status = remote_init(proc_id,nproc);
+    status = remote_init(proc_id,nproc,config_context.buddy_offset);
     if(status){printf("Error: initializing remote copy procedures..\n");}
 
 	log_init(&nvlog,config_context.log_size,proc_id);
@@ -215,7 +219,7 @@ void chkpt_all(int process_id) {
             if(runtime_context.process_id == 0) {
                 log_info("using config split ratio on choosing DRAM variables");
             }
-            split_checkpoint_data(varmap);
+            split_checkpoint_data(&runtime_context, varmap);
         }else { // memory usage based split
             long long fmem = get_free_memory();
             if(config_context.free_memory != -1){

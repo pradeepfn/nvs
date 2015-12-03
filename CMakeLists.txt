@@ -65,7 +65,6 @@ set(SOURCE_FILES
     src/px_sampler.h
     src/px_threadpool.h
     src/px_threadpool.c
-    src/px_destager.h
     src/px_earlycopy.h
     src/px_timer.h
     src/px_types.h)
