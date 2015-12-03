@@ -27,6 +27,7 @@ typedef struct ccontext_t_{
     int helper_cores[5];
     int helper_core_size;
     int cr_type;
+    ulong ec_offset_add;
 
 } ccontext_t;
 
@@ -45,6 +46,7 @@ typedef struct rcontext_t_{
     ulong local_dram_checkpoint_size;
     ulong remote_dram_checkpoint_size;
     int process_id;
+    int nproc;
     log_t nvlog;
     dlog_t dlog;
     var_t *varmap;

@@ -7,6 +7,7 @@
 
 #include "px_util.h"
 #include "px_debug.h"
+#include "px_constants.h"
 
 // read bandwidth to constant maching
 // 2048Mb/s -> 600
@@ -199,4 +200,93 @@ int is_dlog_checkpoing_data_present(var_t *list){
         }
     }
     return 0;
+}
+
+void read_configs(ccontext_t *config_context,char *file_path){
+    char varname[30];
+    char varvalue[32];// we are reading integers in to this
+
+    //initialize with defaults
+    config_context->log_size = 2*1024*1024;
+    config_context->chunk_size = 4096;
+    config_context->copy_strategy = 1;
+    config_context->nvram_wbw = -1;
+    config_context->restart_run = 0;
+    config_context->remote_checkpoint = 0;
+    config_context->remote_restart = 0;
+    config_context->helper_core_size =0;
+    config_context->buddy_offset = 1;
+    config_context->split_ratio = 0;
+    config_context->cr_type = TRADITIONAL_CR;
+    config_context->free_memory = -1;
+    config_context->threshold_size = 4096;
+    config_context->max_checkpoints = -1;
+    config_context->early_copy_enabled = 0;
+    config_context->ec_offset_add = 0;
+
+
+    FILE *fp = fopen(file_path,"r");
+    if(fp == NULL){
+        printf("error while opening the file\n");
+        exit(1);
+    }
+    while (fscanf(fp, "%s =  %s", varname, varvalue) != EOF) { // TODO: space truncate
+        if (varname[0] == '#') {
+            // consuming the input line starting with '#'
+            fscanf(fp, "%*[^\n]");
+            fscanf(fp, "%*1[\n]");
+            continue;
+        } else if (!strncmp(NVM_SIZE, varname, sizeof(varname))) {
+            config_context->log_size = atoi(varvalue) * 1024 * 1024;
+        } else if (!strncmp(CHUNK_SIZE, varname, sizeof(varname))) {
+           config_context->chunk_size = atoi(varvalue);
+        } else if (!strncmp(COPY_STRATEGY, varname, sizeof(varname))) {
+            config_context->copy_strategy = atoi(varvalue);
+        } else if (!strncmp(DEBUG_ENABLE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 1) {
+                enable_debug();
+            }
+        } else if (!strncmp(PFILE_LOCATION, varname, sizeof(varname))) {
+            strncpy(config_context->pfile_location, varvalue,
+                    sizeof(config_context-> pfile_location));
+        } else if (!strncmp(NVRAM_WBW, varname, sizeof(varname))) {
+            config_context->nvram_wbw = atoi(varvalue);
+        } else if (!strncmp(RSTART, varname, sizeof(varname))) {
+            config_context->restart_run = atoi(varvalue);
+        } else if (!strncmp(REMOTE_CHECKPOINT_ENABLE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 1) {
+                config_context->remote_checkpoint = 1;
+            }
+        } else if (!strncmp(REMOTE_RESTART_ENABLE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 1) {
+                config_context->remote_restart = 1;
+            }
+        } else if (!strncmp(BUDDY_OFFSET, varname, sizeof(varname))) {
+            buddy_offset = atoi(varvalue);
+        } else if (!strncmp(SPLIT_RATIO, varname, sizeof(varname))) {
+            config_context->split_ratio = atoi(varvalue);
+        } else if (!strncmp(CR_TYPE, varname, sizeof(varname))) {
+            if (atoi(varvalue) == 0) {
+                config_context->cr_type = TRADITIONAL_CR;
+            } else if (atoi(varvalue) == 1) {
+                config_context->cr_type = ONLINE_CR;
+            }
+        } else if (!strncmp(FREE_MEMORY, varname, sizeof(varname))) {
+            config_context->free_memory = atol(varvalue) * 1024 * 1024;
+        } else if (!strncmp(THRESHOLD_SIZE, varname, sizeof(varname))) {
+            config_context->threshold_size = atoi(varvalue);
+        } else if (!strncmp(MAX_CHECKPOINTS, varname, sizeof(varname))){
+            config_context->max_checkpoints = atol(varvalue);
+        }else if (!strncmp(EARLY_COPY_ENABLED, varname, sizeof(varname))){
+            config_context->early_copy_enabled = atoi(varvalue);
+        } else if (!strncmp(EARLY_COPY_OFFSET, varname, sizeof(varname))){
+            config_context->ec_offset_add = atol(varvalue);
+        }else if (!strncmp(HELPER_CORES, varname, sizeof(varname))){
+            config_context->helper_cores[config_context->helper_core_size++] = atoi(varvalue);
+        } else{
+            log_err("unknown varibale : %s  please check the config",varname);
+            exit(1);
+        }
+    }
+    fclose(fp);
 }
