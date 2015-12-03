@@ -35,7 +35,6 @@ volatile int done_tracking = 0;
 
 
 
-extern int lib_process_id;
 /* This function allocates a page aligned memory location and write protect it so we can track the
  * accesses of its chunks
  */
@@ -228,7 +227,6 @@ void protect_all_other_pages(char *varname) {
  *  we want to capture the timings of the next iterations of the computation
  */
 FILE *fp;
-extern struct timeval px_start_time;
 void flush_access_times(){
     char file_name[50];
     var_t *s;
@@ -281,9 +279,6 @@ int decending_time_sort(var_t *a, var_t *b){
  * 2. select the maximum number of variables that fits in as per the free mem region
  * 3. if online C/R - each DRAM variable needs 2X space , same space if traditional C/R
  */
-extern int cr_type;
-extern int n_processes;
-extern int threshold_size;
 
 void decide_checkpoint_split(var_t *list, long long freemem) {
     char carray[100][20]; //contiguous memory : over provisioned
@@ -338,7 +333,6 @@ void decide_checkpoint_split(var_t *list, long long freemem) {
 
 }
 
-extern struct timeval px_lchk_time;
 /*
  * calculate the time in which the last access took place from the most recent checkpoint.
  */

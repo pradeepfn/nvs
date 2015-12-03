@@ -15,15 +15,11 @@
 #define FILE_PATH_ONE "/mmap.file.meta" // stores the ring buffer
 #define FILE_PATH_TWO "/mmap.file.data" // stores linear metadata
 
-extern char pfile_location[32];
-extern int lib_process_id;
-extern long checkpoint_version;
 
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
 
 
-extern int nvram_wbw;
 
 checkpoint_t* ringb_element(log_t *log, ulong index);
 void* log_ptr(log_t *log,ulong offset);
@@ -57,8 +53,6 @@ int log_commitv(log_t *log,ulong version){
 
 
 /* writing to the data to persistent storage*/
-extern long nvram_checkpoint_size;
-extern int early_copy_enabled;
 
 int log_write(log_t *log, var_t *variable, int process_id,long version){
     void *reserved_log_ptr,*preamble_log_ptr;
@@ -166,7 +160,6 @@ void* log_ptr(log_t *log,ulong offset){
 }
 
 
-extern int restart_run;
 
 /* check whether our checkpoint init flag file is present */
 int is_chkpoint_present(log_t *log){

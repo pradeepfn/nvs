@@ -11,7 +11,6 @@
 #include "px_debug.h"
 #include "px_remote.h"
 
-extern int lib_process_id;
 
 int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type type);
 
@@ -65,8 +64,6 @@ int dlog_local_write(dlog_t *dlog, var_t *list,int process_id,long version){
     return status;
 }
 
-extern long local_dram_checkpoint_size;
-extern long remote_dram_checkpoint_size;
 
 int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type type) {
     var_t *np;
