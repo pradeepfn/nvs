@@ -6,6 +6,8 @@ set (PHOENIX_VERSION_MAJOR 1)
 set (PHOENIX_VERSION_MINOR 3)
 
 
+set(CMAKE_BUILD_TYPE Debug)
+
 # configure a header file to pass some of the CMake settings
 # to the source code
 configure_file (
@@ -39,7 +41,6 @@ set(CMAKE_C_FLAGS "-Wall -g")
 
 set(SOURCE_FILES
     src/px_checkpoint.c
-    src/px_checkpoint.h
     src/px_constants.h
     src/px_debug.c
     src/px_debug.h
@@ -52,6 +53,7 @@ set(SOURCE_FILES
     src/px_remote.c
     src/px_remote.h
     src/px_util.c
+    src/px_mpiutil.c
     src/px_util.h
     src/rmtchkpt.c
     src/rmtchkpt.h
@@ -65,7 +67,8 @@ set(SOURCE_FILES
     src/px_threadpool.c
     src/px_destager.h
     src/px_earlycopy.h
-    src/px_timer.h)
+    src/px_timer.h
+    src/px_types.h)
 
 SET(MY_OWN_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}" CACHE PATH "Prefix prepended to
 install directories")
@@ -74,3 +77,9 @@ prepended to install directories" FORCE)
 
 add_library(phoenix STATIC ${SOURCE_FILES})
 install(TARGETS phoenix DESTINATION lib)
+
+
+ add_subdirectory(tests)
+
+ enable_testing()
+ add_test(NAME log_test COMMAND log_test)

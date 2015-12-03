@@ -10,6 +10,7 @@
 #include "px_log.h"
 #include "px_debug.h"
 #include "px_constants.h"
+#include "px_util.h"
 
 #define FILE_PATH_ONE "/mmap.file.meta" // stores the ring buffer
 #define FILE_PATH_TWO "/mmap.file.data" // stores linear metadata

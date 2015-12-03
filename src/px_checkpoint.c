@@ -4,14 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <sys/time.h>
 #include <mpi.h>
 #include <semaphore.h>
 #include <unistd.h>
 #include <pthread.h>
-#include <stddef.h>
-#include <sched.h>
 #include <dirent.h>
 
 #include "phoenix.h"
@@ -26,37 +23,15 @@
 #include "px_sampler.h"
 #include "timecount.h"
 #include "px_threadpool.h"
-#include "px_destager.h"
 #include "px_earlycopy.h"
 #include "px_timer.h"
 
-#define CONFIG_FILE_NAME "phoenix.config"
-
-//config file params
-#define NVM_SIZE "nvm.size"
-#define CHUNK_SIZE "chunk.size"
-#define COPY_STRATEGY "copy.strategy"
-#define DEBUG_ENABLE "debug.enable"
-#define PFILE_LOCATION "pfile.location"
-#define NVRAM_WBW "nvram.wbw"
-#define NVRAM_EARLY_COPY_WBW "nvram.ec.wbw"
-#define RSTART "rstart"
-#define REMOTE_CHECKPOINT_ENABLE "rmt.chkpt.enable"
-#define REMOTE_RESTART_ENABLE "rmt.rstart.enable"
-#define BUDDY_OFFSET "buddy.offset"
-#define SPLIT_RATIO "split.ratio"
-#define CR_TYPE "cr.type"
-#define FREE_MEMORY "free.memory"
-#define THRESHOLD_SIZE "threshold.size"
-#define MAX_CHECKPOINTS "max.checkpoints"
-#define EARLY_COPY_ENABLED "early.copy.enabled"
-#define EARLY_COPY_OFFSET "early.copy.offset"  // (microseconds) when early copy invalidated. we increase the early copy time by this amount
-#define HELPER_CORES "helper.cores"
 
 //copy stategies
-#define NAIVE_COPY 1
+
 
 /*default config params*/
+/*
 long log_size = 2*1024*1024;
 int chunk_size = 4096;
 int copy_strategy = 1;
@@ -94,6 +69,7 @@ int helper_core_size; // actual size of the data in helper_cores array
 destage_t targ1;
 earlycopy_t targ2;
 
+
 var_t *varmap = NULL;
 
 
@@ -102,9 +78,8 @@ int status; // error status register
 log_t chlog;
 dlog_t chdlog;
 
-//semaphores used for synchronization between main thread and the early copy thread
-static sem_t sem1;
-static sem_t sem2;
+*/
+
 
 
 //declare file pointers
@@ -117,6 +92,7 @@ static sem_t sem2;
 
 
 static void early_copy_handler(int sig, siginfo_t *si, void *unused);
+void destage_data(void *args);
 
 int init(int proc_id, int nproc){
     gettimeofday(&px_start_time,NULL);

@@ -2,7 +2,7 @@
 #define __PX_LOG_H
 
 
-#include "px_checkpoint.h"
+#include "px_types.h"
 
 /*
  * An element in the ring buffer, the offsets points to data locations in linear log

@@ -4,12 +4,9 @@
 #include <time.h>
 #include <sys/mman.h>
 #include <sys/time.h>
-#include <unistd.h>
 
 #include "px_util.h"
 #include "px_debug.h"
-#include "px_constants.h"
-#include "px_remote.h"
 
 // read bandwidth to constant maching
 // 2048Mb/s -> 600
@@ -24,8 +21,7 @@
 #define handle_error(msg) \
     do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
-extern int chunk_size;
-extern int lib_process_id;
+
 struct sigaction old_sa; 
 
 unsigned long calc_delay_ns(size_t datasize,int bandwidth){
@@ -173,31 +169,6 @@ int get_mypeer(int myrank){
     }
 }
 
-extern int split_ratio;
-extern int cr_type;
-
-void split_checkpoint_data(var_t *list) {
-    var_t *s;
-    int i;
-    long page_aligned_size;
-    long page_size = sysconf(_SC_PAGESIZE);
-
-    for(s = list,i=0; s != NULL; s = s->hh.next,i++){
-        if(i<split_ratio){
-            s->type = DRAM_CHECKPOINT;
-            page_aligned_size = ((s->size+page_size-1)& ~(page_size-1));
-            if(lib_process_id == 0) {
-                log_info("[%d] variable : %s  chosen for DRAM checkpoint\n",
-                         lib_process_id, s->varname);
-            }
-            if(cr_type == ONLINE_CR){
-                debug("[%d] allocated remote DRAM pointers for variable %s",
-                      lib_process_id , s->varname);
-                s->local_remote_ptr = remote_alloc(&s->remote_ptr,page_aligned_size);
-            }
-        }
-    }
-}
 
 /*
  * input char array is size of 20
