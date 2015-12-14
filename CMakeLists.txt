@@ -82,3 +82,4 @@ install(TARGETS phoenix DESTINATION lib)
 
  enable_testing()
  add_test(NAME log_test COMMAND log_test)
+ add_test(NAME log_test_commit COMMAND log_test_commit)

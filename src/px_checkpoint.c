@@ -96,7 +96,7 @@ int init(int proc_id, int nproc){
     status = remote_init(proc_id,nproc,config_context.buddy_offset);
     if(status){printf("Error: initializing remote copy procedures..\n");}
 
-	log_init(&nvlog,config_context.log_size,proc_id);
+	log_init(&nvlog,proc_id);
     dlog_init(&dlog);
 
     if(proc_id == 0){

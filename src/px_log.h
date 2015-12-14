@@ -43,12 +43,12 @@ typedef struct ringbuffer_t_{
     ulong log_tail; // tail offset of the linear log, caching purposes
 }ringbuffer_t;
 
+/* log data strucuture that get data stored in */
 typedef struct logdata_t_{
     void *start_ptr;
     char file_name[256];
     ulong log_size;
 }logdata_t;
-
 
 /*we use this structure to identify valid
  * data in the linear log. If this is not set, the memcpy
@@ -59,6 +59,10 @@ typedef struct preamble_t_{
 }preamble_t;
 
 
+
+/*
+ * log structure exposed by the API.
+ */
 typedef struct log_t_{
 	ringbuffer_t ring_buffer;
     logdata_t data_log;
@@ -67,11 +71,13 @@ typedef struct log_t_{
 }log_t;
 
 
-void log_init(log_t *, long, int);
+int log_init(log_t *log, int proc_id);
 int log_write(log_t *,var_t *,int,long);
 checkpoint_t *log_read(log_t *, char *, int , long);
 int log_commitv(log_t *log,ulong version);
 int is_chkpoint_present(log_t *log);
 void* log_ptr(log_t *log,ulong offset);
+int log_isfull(log_t *log);
+int log_isempty(log_t *log);
 #endif
 

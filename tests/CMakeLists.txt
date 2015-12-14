@@ -7,7 +7,7 @@ set(TEST_SOURCES
     ../src/px_util.c
     ../src/px_debug.c
     ../src/px_debug.h
-    ../src/px_types.h
-    logtest.c)
+    ../src/px_types.h)
 
-add_executable(log_test ${TEST_SOURCES})
+add_executable(log_test logtest.c ${TEST_SOURCES})
+add_executable(log_test_commit logtest_commit.c ${TEST_SOURCES})
