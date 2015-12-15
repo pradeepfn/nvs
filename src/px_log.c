@@ -65,8 +65,8 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
     ulong reserved_log_offset;
     ulong avail_size;
 
-    debug("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %ld ",
-          lib_process_id, s->varname, s->process_id, version);
+    debug("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %ld ", log->runtime_context->process_id,
+          variable->varname, process_id, version);
 
     ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
 
@@ -116,12 +116,16 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
     checkpoint_elem->version = version;
     checkpoint_elem->size = variable->size;
     checkpoint_elem->start_offset = reserved_log_offset;
-    checkpoint_elem->hash = 0; // yet to implement
     checkpoint_elem->end_offset = reserved_log_offset + checkpoint_size-1;
 
     log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; // atomically commit slot reservation
     log->ring_buffer.log_head = checkpoint_elem->end_offset + 1; // this is a soft state
     pthread_mutex_unlock(&(log->plock));
+
+#ifdef PX_DIGEST
+    md5_digest(checkpoint_elem->hash,variable->ptr,variable->size);
+    memcpy(variable->hash,checkpoint_elem->hash,MD5_LENGTH);
+#endif
 
     //no lock operation
     reserved_log_ptr = log_ptr(log,reserved_log_offset);
@@ -172,7 +176,7 @@ checkpoint_t* ringb_element(log_t *log, ulong index){
 }
 
 void* log_ptr(log_t *log,ulong offset){
-    assert(offset>0 && offset < log->data_log.log_size );
+    assert(offset>=0 && offset < log->data_log.log_size );
     return ((char *)(log->data_log.start_ptr)+offset);
 }
 
@@ -224,7 +228,7 @@ static void init_mmap_files(log_t *log){
     lseek (fd, 0, SEEK_SET);
     addr = mmap (NULL,rblog_size, PROT_WRITE, MAP_SHARED, fd, 0);
     if(addr == MAP_FAILED){
-        printf("Runtime Error: error while memory mapping the file\n");
+        log_err("Runtime Error: error while memory mapping the file\n");
         exit(1);
     }
 

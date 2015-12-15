@@ -12,7 +12,7 @@ typedef struct checkpoint_t_{
     int process_id;
     ulong version;
     ulong size;
-    ulong hash; // 64 bit hash value
+    unsigned char hash[MD5_LENGTH]; // 64 bit hash value
     long start_offset;  // start offset in linear log
     long end_offset;   // end offset in linear log
 }checkpoint_t;

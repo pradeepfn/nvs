@@ -8,6 +8,7 @@
 #define RING_BUFFER_SLOTS 120
 #define VAR_SIZE 20
 #define MAGIC_VALUE 342312
+#define MD5_LENGTH 16
 
 #define CONFIG_FILE_NAME "phoenix.config"
 
@@ -32,6 +33,8 @@
 #define EARLY_COPY_OFFSET "early.copy.offset"  // (microseconds) when early copy invalidated. we increase the early copy time by this amount
 #define HELPER_CORES "helper.cores"
 #define NAIVE_COPY 1
+
+
 
 
 #define mb()    asm volatile("mfence" : : : "memory")

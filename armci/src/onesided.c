@@ -16,10 +16,10 @@
 #include <time.h>
 
 /*these are defined in px_util.c in phoenix lib*/
-unsigned long calc_delay_ns(size_t datasize,int bandwidth);
+/*unsigned long calc_delay_ns(size_t datasize,int bandwidth);
 int __nsleep(const struct timespec *req, struct timespec *rem);
 int msleep(unsigned long nanosec);
-extern int nvram_wbw;
+extern int nvram_wbw;*/
 
 /** Declare the start of a local access epoch.  This allows direct access to
   * data in local memory.
@@ -160,12 +160,12 @@ int ARMCI_Get(void *src, void *dst, int size, int target) {
       gmr_dla_lock(src_mreg);
     }
 
-    if(nvram_wbw > 0){
+    /*if(nvram_wbw > 0){
         unsigned long lat_ns;
         //read bandwidth is taken as the two times, write bandwidth
         lat_ns = calc_delay_ns(size,nvram_wbw*2);
         msleep(lat_ns);
-    }  
+    }*/  
 
 
     ARMCI_Copy(src, dst, size);

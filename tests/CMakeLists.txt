@@ -10,4 +10,6 @@ set(TEST_SOURCES
     ../src/px_types.h)
 
 add_executable(log_test logtest.c ${TEST_SOURCES})
+target_link_libraries(log_test ssl crypto)
 add_executable(log_test_commit logtest_commit.c ${TEST_SOURCES})
+target_link_libraries(log_test_commit ssl crypto)

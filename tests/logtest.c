@@ -1,3 +1,4 @@
+#include <px_util.h>
 #include "minunit.h"
 #include "px_types.h"
 #include "px_log.h"
@@ -50,6 +51,10 @@ char *test_logread(){
         snprintf(varname,20,"var%d",i);
         checkpoint_t *checkpoint = log_read(&nvlog,varname,PROCESS_ID,0);
         char *data = (char *)log_ptr(&nvlog,checkpoint->start_offset);
+        //calculate the md5
+        unsigned char digest[MD5_LENGTH];
+        md5_digest(digest,data,checkpoint->size);
+        assert(!strncmp(digest,checkpoint->hash,MD5_LENGTH));
         log_info("%s , %d , %ld , %s ",checkpoint->var_name , checkpoint->process_id, checkpoint->version ,data);
     }
     return 0;

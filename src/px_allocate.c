@@ -110,7 +110,6 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
                 return;
             }
         }
-        debug("[%d] offending memory access : %p ",lib_process_id,pageptr);
         call_oldhandler(sig);
     }
 }
@@ -192,9 +191,9 @@ void broadcast_page_tracking(rcontext_t *runtime_context){
       }
     }
 
-    debug("[%d] varname : %s , second : %ld , microseconds : %ld",lib_process_id, offset_ary[0].varname,
+    debug("[%d] varname : %s , second : %ld , microseconds : %ld",runtime_context->process_id, offset_ary[0].varname,
           offset_ary[0].seconds,offset_ary[0].micro);
-    debug("[%d] varname : %s , second : %ld , microseconds : %ld",lib_process_id, offset_ary[1].varname,
+    debug("[%d] varname : %s , second : %ld , microseconds : %ld",runtime_context->process_id, offset_ary[1].varname,
           offset_ary[1].seconds,offset_ary[1].micro);
 
 }
@@ -323,7 +322,7 @@ void decide_checkpoint_split(rcontext_t *runtime_context, var_t *list, long long
                 if(runtime_context->config_context->cr_type == ONLINE_CR) {
                     if (runtime_context->process_id == 0) {
                         debug("[%d] allocated remote DRAM pointers for variable %s",
-                              lib_process_id, s->varname);
+                              runtime_context->process_id, s->varname);
                     }
                     s->local_remote_ptr = remote_alloc(&s->remote_ptr, s->paligned_size);
                 }

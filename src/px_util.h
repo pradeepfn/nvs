@@ -23,6 +23,7 @@ int is_dlog_checkpoing_data_present(var_t *list);
 void enable_write_protection(void *ptr, size_t size);
 char* null_terminate(char *c_string);
 void read_configs(ccontext_t *config_context,char *file_path);
+void md5_digest(unsigned char *digest,void *data,ulong length);
 
 
 

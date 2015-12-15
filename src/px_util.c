@@ -4,6 +4,7 @@
 #include <time.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+#include <openssl/md5.h>
 
 #include "px_util.h"
 #include "px_debug.h"
@@ -287,4 +288,18 @@ void read_configs(ccontext_t *config_context,char *file_path){
         }
     }
     fclose(fp);
+}
+
+/*
+ * returns md5 hash of given data
+ *
+ * digest - char array with lenth MD5_DIGEST_LENGTH - 16
+ */
+void md5_digest(unsigned char *digest,void *data, ulong length){
+    MD5_CTX mdContext;
+
+    MD5_Init(&mdContext);
+    MD5_Update(&mdContext,data,length);
+    MD5_Final(digest,&mdContext);
+    return;
 }

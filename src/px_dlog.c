@@ -115,7 +115,7 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
 
         }
         // sanity check
-        assert(strncmp(s->var_name, np->varname,np->size) == 0);
+        assert(strncmp(s->varname, np->varname,np->size) == 0);
         assert(s->process_id == np->process_id);
 
     }

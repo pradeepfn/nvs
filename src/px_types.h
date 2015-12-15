@@ -7,6 +7,7 @@
 
 #include "px_threadpool.h"
 #include "uthash.h"
+#include "px_constants.h"
 
 
 struct log_t_;
@@ -86,6 +87,7 @@ typedef struct var_t_ {
     struct timeval end_timestamp; /*last access time of the variable*/
     struct timeval earlycopy_time_offset; /* time offset since checkpoint, before starting early copy */
     ulong version; // use in dlog hash structure.
+    unsigned char hash[MD5_LENGTH]; // used for md5 digest store
     char varname[20];  /* key */
 
 } var_t;

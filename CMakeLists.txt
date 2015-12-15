@@ -4,7 +4,7 @@ project(phoenix)
 #versin number
 set (PHOENIX_VERSION_MAJOR 1)
 set (PHOENIX_VERSION_MINOR 3)
-
+#set(CMAKE_VERBOSE_MAKEFILE on)
 
 set(CMAKE_BUILD_TYPE Debug)
 
@@ -31,8 +31,10 @@ include_directories("include")
 find_package(MPI REQUIRED)
 
 set(MPI_C_COMPILER mpicc)
-add_definitions(-DNDEBUG)
+#add_definitions(-DNDEBUG)
 add_definitions(-DTIMING)
+add_definitions(-DPX_DIGEST)
+
 
 include_directories(${MPI_INCLUDE_PATH})
 include_directories("/home1/03528/pradeepf/armci_install/include")

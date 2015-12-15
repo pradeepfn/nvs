@@ -27,7 +27,7 @@ void split_checkpoint_data(rcontext_t *rcontext, var_t *list) {
             }
             if(rcontext->config_context->cr_type == ONLINE_CR){
                 debug("[%d] allocated remote DRAM pointers for variable %s",
-                      lib_process_id , s->varname);
+                      rcontext->process_id , s->varname);
                 s->local_remote_ptr = remote_alloc(&s->remote_ptr,page_aligned_size);
             }
         }
