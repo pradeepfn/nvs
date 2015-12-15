@@ -4,6 +4,7 @@
 
 #include <sys/time.h>
 #include <sys/types.h>
+#include <semaphore.h>
 
 #include "px_threadpool.h"
 #include "uthash.h"
@@ -44,7 +45,9 @@ typedef struct ccontext_t_{
 typedef struct rcontext_t_{
 
     ccontext_t *config_context;
-    struct timeval lchk_time; // last checkpoint time
+    struct timeval lchk_start_time; // last checkpoint time
+    struct timeval lchk_end_time; // end time of las checkpoint
+    struct timeval lchk_iteration_time; // last iteration time
     ulong checkpoint_version;
     threadpool_t *thread_pool;
     long free_memory;
@@ -55,6 +58,11 @@ typedef struct rcontext_t_{
     ulong remote_dram_checkpoint_size;
     int process_id;
     int nproc;
+    int ec_finished; /* flag variable to check if early copy thread finished*/
+    int ec_abort; /* flag variable to signal ec thread - stop early copy */
+    //sem_t ec_sem; /* signaling semaphore to co-ordinate between mainthread and early copy thread*/
+    pthread_mutex_t mtx; /* mutex to protect shared variables between, main thread, destage thread and ec thread */
+    pthread_cond_t cond; /* use to singaling between destage and ec threads */
     struct log_t_ *nvlog;
     struct dlog_t_ *dlog;
     struct var_t_ *varmap;

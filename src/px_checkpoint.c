@@ -5,6 +5,8 @@
 #include <mpi.h>
 #include <pthread.h>
 #include <dirent.h>
+#include <semaphore.h>
+#include <unistd.h>
 
 #include "phoenix.h"
 #include "px_log.h"
@@ -56,13 +58,25 @@ int init(int proc_id, int nproc){
     nvlog.runtime_context = &runtime_context;
     dlog.runtime_context = &runtime_context;
 
-    gettimeofday(&(runtime_context.px_start_time),NULL);
+
 	if(lib_initialized){
 		printf("Error: the library already initialized.");
 		exit(1);
 	}
 	runtime_context.process_id = proc_id;
     runtime_context.nproc = nproc;
+    runtime_context.ec_abort = 0;
+    runtime_context.ec_finished = 0;
+
+    status = pthread_mutex_init(&runtime_context.mtx,NULL);
+    if(status != 0){
+        log_err("mutex init error");
+    }
+    status = pthread_cond_init(&runtime_context.cond,NULL);
+    if(status != 0){
+        log_err("mutex init error");
+    }
+
 
 //if TIMING is defined , we create log files, so that we can output the timings to them
 #ifdef TIMING
@@ -110,7 +124,7 @@ int init(int proc_id, int nproc){
     runtime_context.thread_pool = threadpool_create(THREAD_COUNT,QUEUE_SIZE,
                                                     config_context.helper_cores,config_context.helper_core_size);
 
-    gettimeofday(&(runtime_context.lchk_time),NULL);
+    gettimeofday(&(runtime_context.px_start_time),NULL);
     if(isDebugEnabled()){
         printf("phoenix initializing completed\n");
     }
@@ -156,6 +170,8 @@ void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){
 int checkpoint_size_printed=0;
 void chkpt_all(int process_id) {
 
+    gettimeofday(&(runtime_context.lchk_start_time),NULL); // recording the last checkpoint start time.
+
     ulong  it_elapsed = 0;
     TIMER_END(it,it_elapsed);
     #ifdef  TIMING
@@ -165,18 +181,15 @@ void chkpt_all(int process_id) {
 
     TIMER_START(ct);
     //starting from second iteration
-    /*if (config_context.early_copy_enabled && runtime_context.checkpoint_version > 2) {
-        //signal we are about to checkpoint
-        //debug("[%d] wait on sem1",lib_process_id);
-
-        //debug("[%d] acquired sem1",lib_process_id);
-        //wait for the signal from early copy thread
-        //debug("[%d] wait on sem2",lib_process_id);
-
-        //debug("[%d] acquired sem2",lib_process_id);
-    }*/
-
-
+    if (config_context.early_copy_enabled && runtime_context.checkpoint_iteration > 2) {
+        pthread_mutex_lock(&runtime_context.mtx);
+        if(runtime_context.ec_abort != 0){
+            log_err("invalid execution");
+            exit(1);
+        }
+        runtime_context.ec_abort = 1;
+        pthread_mutex_unlock(&runtime_context.mtx);
+    }
 
     // if this is the max checkpoints, flush the timers and exit
     if(runtime_context.checkpoint_iteration == config_context.max_checkpoints){
@@ -186,7 +199,6 @@ void chkpt_all(int process_id) {
         end_timestamp();
         MPI_Barrier(MPI_COMM_WORLD);
         exit(0);
-        return;
     }
 
     if(config_context.restart_run == 1){
@@ -232,20 +244,60 @@ void chkpt_all(int process_id) {
             decide_checkpoint_split(&runtime_context, varmap, fmem);
         }
     }
-
+    debug("[%d] NVRAM checkpoint start.. ",runtime_context.process_id);
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
     var_t *s;
+    int flag = 0;
     for (s = varmap; s != NULL; s = s->hh.next){
+
+        pthread_mutex_lock(&runtime_context.mtx);
+        debug("about to checkpoint");
         if(s->process_id == process_id && s->type == NVRAM_CHECKPOINT && (!s->early_copied) ){
-            runtime_context.nvram_checkpoint_size+= s->size;
-            log_write(&nvlog,s,process_id,runtime_context.checkpoint_version);
+            if(runtime_context.checkpoint_iteration >= 3) {
+                s->early_copied = 1; // no checkpoint yet. I will checkpoint.
+            }
+            flag = 1; // have to checkpoint this variable
         }
-        if(config_context.early_copy_enabled && s->early_copied){
+        pthread_mutex_unlock(&runtime_context.mtx);
+        if(flag) {
+            runtime_context.nvram_checkpoint_size += s->size;
+            log_write(&nvlog, s, process_id, runtime_context.checkpoint_version);
+            flag = 0;
+        }
+
+    }
+
+    //check if early copy thread exited. if not wait for it. we rarely have to wait on this.
+    if(config_context.early_copy_enabled && runtime_context.checkpoint_iteration >=3) {
+        int status = pthread_mutex_lock(&(runtime_context.mtx));
+        if (status != 0) {
+            log_err("error while acquiring lock");
+            exit(status);
+        }
+        while (!runtime_context.ec_finished) {
+            log_warn("waiting on early copy thread. This should not happen");
+            status = pthread_cond_wait(&runtime_context.cond, &runtime_context.mtx);
+            if (status != 0) {
+                log_err("error while unlock");
+                exit(status);
+            }
+        }
+        runtime_context.ec_finished = 0; // resetting
+        status = pthread_mutex_unlock(&runtime_context.mtx);
+        if (status != 0) {
+            log_err("error while unlock");
+            exit(status);
+        }
+
+        // at this point only one thread executing
+        for (s = varmap; s != NULL; s = s->hh.next) {
             disable_protection(s->ptr, s->size); // resetting the page protection
             s->early_copied = 0; // resetting the flag to next iteration
         }
-    }
+        runtime_context.ec_abort = 0; // reset the flag for next iteration
+    }//end of NVRAM checkpoints
+
 
     int dlog_data=is_dlog_checkpoing_data_present(varmap);
 
@@ -269,8 +321,6 @@ void chkpt_all(int process_id) {
         checkpoint_size_printed = 1;
     }
 
-    gettimeofday(&(runtime_context.lchk_time),NULL); // recording the last checkpoint time.
-
 
     //both destage and early copy will be done by the next checkpoint time.
     //hence we are recycling the structures.
@@ -283,13 +333,17 @@ void chkpt_all(int process_id) {
 
         threadpool_add(runtime_context.thread_pool, &destage_data, (void *) &destage_arg, 0);
     }
+    timersub(&runtime_context.lchk_start_time,&runtime_context.lchk_end_time,&runtime_context.lchk_iteration_time);
+    gettimeofday(&(runtime_context.lchk_end_time),NULL); // recording the last checkpoint end time little early. we feed this to early copy thread
 
+    //scheduling early copy thread of the next iteration
     if(config_context.early_copy_enabled && runtime_context.checkpoint_iteration >= 2) {
 
         ec_arg.nvlog = &nvlog;
         ec_arg.list = varmap;
-
-
+        ec_arg.runtime_context = &runtime_context;
+        ec_arg.checkpoint_end_time = runtime_context.lchk_end_time;
+        ec_arg.next_checkpoint_time = runtime_context.lchk_iteration_time;
         //add the precopy task
         threadpool_add(runtime_context.thread_pool, &start_copy, (void *) &ec_arg, 0);
     }
@@ -307,75 +361,6 @@ void chkpt_all(int process_id) {
     TIMER_START(it);
     return;
 }
-
-
-
-
-void *alloc(unsigned int *n, char *s, int *iid, int *cmtsize) {
-	return alloc_c(s, *n, *cmtsize, *iid);
-}
-
-void afree_(void* ptr) {
-	free(ptr);
-}
-
-
-void afree(void* ptr) {
-	free(ptr);
-}
-
-void chkpt_all_(int *process_id){
-
-	chkpt_all(*process_id);
-}
-int init_(int *proc_id, int *nproc){
-	return init(*proc_id,*nproc);
-}
-
-
-int finalize(){
-    /*//remove semaphores
-    if(sem_destroy(&sem1) == -1){
-        goto err;
-    }
-    if(sem_destroy(&sem2)== -1){
-        goto err;
-    }*/
-
-    ulong  it_elapsed = 0;
-    TIMER_END(it,it_elapsed);
-    #ifdef  TIMING
-        fprintf(itf,"%lu\n",it_elapsed);
-        fflush(itf);
-     #endif
-
-    //close file pointers
-    #ifdef TIMING
-        fclose(ef);
-        fclose(cf);
-        fclose(df);
-    #endif
-
-    threadpool_destroy(runtime_context.thread_pool,threadpool_graceful);
-    return remote_finalize();
-/*
-
-
-
-
-    err:
-        log_err("[%d] program error",runtime_context.process_id);
-        return -1;
-*/
-
-}
-
-int finalize_(){
-    return finalize();
-}
-
-
-
 
 
 
@@ -417,7 +402,7 @@ void destage_data(void *args){
  *
  */
 static void early_copy_handler(int sig, siginfo_t *si, void *unused){
-    /*if(si != NULL && si->si_addr != NULL){
+    if(si != NULL && si->si_addr != NULL){
         var_t *s;
         void *pageptr;
         long offset =0;
@@ -427,20 +412,20 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
             offset = pageptr - s->ptr;
             if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
                 assert(s != NULL);
-                debug("[%d] early copy of %s , invalidated , offset %lu.%lu",lib_process_id, s->varname,
-                s->earlycopy_time_offset.tv_sec,s->earlycopy_time_offset.tv_usec);
+                debug("[%d] early copy of %s , invalidated , offset %lu.%lu",runtime_context.process_id, s->varname,
+                      s->earlycopy_time_offset.tv_sec,s->earlycopy_time_offset.tv_usec);
                 s->early_copied = 0;
                 struct timeval inc;
                 inc.tv_sec = 0;
-                inc.tv_usec = early_copy_offset_add;
+                inc.tv_usec = config_context.ec_offset_add;
                 timeradd(&s->earlycopy_time_offset,&inc,&s->earlycopy_time_offset);
                 disable_protection(s->ptr, s->paligned_size);
                 return;
             }
         }
-        debug("[%d] offending memory access : %p ",lib_process_id,pageptr);
+        debug("[%d] offending memory access : %p ",runtime_context.process_id,pageptr);
         call_oldhandler(sig);
-    }*/
+    }
 
 }
 
@@ -463,7 +448,7 @@ int ascending_time_sort(var_t *a, var_t *b){
 int sorted = 0;
 void start_copy(void *args){
 
-   /* TIMER_START(et);
+    TIMER_START(et);
     earlycopy_t *ecargs = (earlycopy_t *)args;
     var_t *s;
     int sem_ret,status;
@@ -481,93 +466,87 @@ void start_copy(void *args){
 
     struct timeval current_time;
     struct timeval time_since_last_checkpoint;
+    struct timeval time_till_next_checkpoint;
 
     TIMER_PAUSE(et);
 
     //check the signaling semaphore
     //debug("[%d] outside while loop",lib_process_id);
-    while ((sem_ret = sem_trywait(&sem1)) == -1){
-        if(s == NULL){
-            log_warn("[%d] all the variables got early copied..",lib_process_id);
-            sem_wait(&sem1); // TODO this is not the exact behaviour
-            break;
-        }
-        //debug("[%d] outside while loop", lib_process_id);
+    pthread_mutex_lock(&runtime_context.mtx);
+    while (runtime_context.ec_abort == 0 && s != NULL) {
+        pthread_mutex_unlock(&runtime_context.mtx);
         //main MPI process still hasnt reached the checkpoint!
-        if(errno == EAGAIN){ // only when asynchronous wait fail
-            *//*int c = sched_getcpu();
-            log_info("[%d] early copying variables, running on CPU - %d",lib_process_id,c);
-*//*
+        gettimeofday(&current_time, NULL);
+        timersub(&current_time, &(ecargs->checkpoint_end_time), &time_since_last_checkpoint);
+        timersub(&(ecargs->next_checkpoint_time), &current_time, &time_till_next_checkpoint);
 
+        // if the time is greater than variable, start copy
+        if (timercmp(&time_since_last_checkpoint, &(s->earlycopy_time_offset), >)) {
 
-            gettimeofday(&current_time,NULL);
+            if (s->type == NVRAM_CHECKPOINT) {
+                TIMER_RESUME(et);
 
-            timersub(&current_time,&px_lchk_time,&time_since_last_checkpoint);
-            //debug("[%d] variable : %s , offset time -  %ld.%06ld time since lchkpt - %ld.%06ld",
-             //     lib_process_id,s->varname, s->earlycopy_time_offset.tv_sec, s->earlycopy_time_offset.tv_usec,
-             //     time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
-            //printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*//*
-
-            // if the time is greater than variable, start copy
-            if(timercmp(&time_since_last_checkpoint,&(s->earlycopy_time_offset),>)){
-
-                if(s->type == NVRAM_CHECKPOINT) {
-                    TIMER_RESUME(et);
-
-                    //page protect it. We disable the protection in a subsequent write or during checkpoint
-                    // see log_write method
-                    enable_write_protection(s->ptr, s->size);
-                    //copy the variable
-                    status = log_write(ecargs->nvlog, s, lib_process_id,checkpoint_version);
-                    if(status == -1){
-                        log_err("early copying data to nvlog failed");
-                    }
-                    //mark it as copied
+                //page protect it. We disable the protection in a subsequent write or during checkpoint
+                // see log_write method
+                enable_write_protection(s->ptr, s->size);
+                //mark it as copied. lock protected - accessed by the main thread as well.
+                pthread_mutex_lock(&(ecargs->runtime_context->mtx));
+                if (s->early_copied == 0) { //still not copied, i will take care of this
                     s->early_copied = 1;
-                    //log_info("[%d] early copied the variable : %s", lib_process_id, s->varname);
-                    TIMER_PAUSE(et);
                 }
-                //move the iterator forward
+                pthread_mutex_unlock(&(ecargs->runtime_context->mtx));
+                //copy the variable
+                status = log_write(ecargs->nvlog, s, ecargs->runtime_context->process_id,
+                                   ecargs->runtime_context->checkpoint_version);
+                if (status == -1) {
+                    log_err("early copying data to nvlog failed");
+                }
+                //log_info("[%d] early copied the variable : %s", lib_process_id, s->varname);
+                TIMER_PAUSE(et);
+            }
+            //move the iterator forward
+            s = s->hh.next;
+            continue;
+
+        } else {
+
+            if (s->type == DRAM_CHECKPOINT) {
+                //debug("[%d] DRAM variable : %s",lib_process_id, s->varname);
                 s = s->hh.next;
                 continue;
+            }
+            //calculate sleep time
+            //debug("[%d] early copy thread to sleep",lib_process_id);
+            struct timeval sleeptime;
+            timersub(&(s->earlycopy_time_offset), &time_since_last_checkpoint, &sleeptime);
+            //
+            uint64_t micros = (sleeptime.tv_sec * (uint64_t) 1000000) + (sleeptime.tv_usec);
 
-            } else {
+            //if sleep time is greater than time to checkpoint abort
+            if (timercmp(&sleeptime, &time_till_next_checkpoint, >)) {
+                break;
+            }
 
-                if(s->type == DRAM_CHECKPOINT){
-                    //debug("[%d] DRAM variable : %s",lib_process_id, s->varname);
-                    s = s->hh.next;
-                    continue;
-                }
-                //calculate sleep time
-                //debug("[%d] early copy thread to sleep",lib_process_id);
-                struct timeval sleeptime;
-                timersub(&(s->earlycopy_time_offset), &time_since_last_checkpoint, &sleeptime);
-                //
-                uint64_t micros = (sleeptime.tv_sec * (uint64_t) 1000000) + (sleeptime.tv_usec);
+            if (micros > 10) { // TODO check output of timersub
+                uint64_t sleep_offset = 0;
+                //debug("[%d] early copy thread sleeping  : %ld" , lib_process_id, micros+sleep_offset);
+                usleep(micros + sleep_offset);
+                /*printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
+                printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
+                printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*/
 
-                if (micros > 10) { // TODO check output of timersub
-                    uint64_t sleep_offset = 0;
-                    //debug("[%d] early copy thread sleeping  : %ld" , lib_process_id, micros+sleep_offset);
-                    usleep(micros + sleep_offset);
-                    *//*printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
-                    printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
-                    printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*//*
-
-
-                }
 
             }
-        }else{
-                assert(0);
+
         }
     }
+    pthread_mutex_unlock(&runtime_context.mtx);
     TIMER_RESUME(et);
 
-    //debug("[%d] semaphore wait return value : %d", lib_process_id,sem_ret);
-    if(sem_post(&sem2) == -1){
-        log_err("semaphore two increment");
-        exit(-1);
-    }
+    pthread_mutex_lock(&(ecargs->runtime_context->mtx));
+        ecargs->runtime_context->ec_finished = 1;
+    pthread_mutex_unlock(&(ecargs->runtime_context->mtx));
+    pthread_cond_signal(&(ecargs->runtime_context->cond));
 
     ulong elapsed = 0;
     TIMER_END(et,elapsed);
@@ -577,5 +556,71 @@ void start_copy(void *args){
     #endif
 
     //debug("[%d] early copy thread exiting. sem ret value : %d",lib_process_id,sem_ret);
-    return;*/
+    return;
 }
+
+
+
+
+
+
+
+void *alloc(unsigned int *n, char *s, int *iid, int *cmtsize) {
+    return alloc_c(s, *n, *cmtsize, *iid);
+}
+
+void afree_(void* ptr) {
+    free(ptr);
+}
+
+
+void afree(void* ptr) {
+    free(ptr);
+}
+
+void chkpt_all_(int *process_id){
+
+    chkpt_all(*process_id);
+}
+int init_(int *proc_id, int *nproc){
+    return init(*proc_id,*nproc);
+}
+
+
+int finalize(){
+
+    pthread_mutex_destroy(&runtime_context.mtx);
+    pthread_cond_destroy(&runtime_context.cond);
+
+
+    ulong  it_elapsed = 0;
+    TIMER_END(it,it_elapsed);
+#ifdef  TIMING
+    fprintf(itf,"%lu\n",it_elapsed);
+    fflush(itf);
+#endif
+
+    //close file pointers
+#ifdef TIMING
+    fclose(ef);
+    fclose(cf);
+    fclose(df);
+#endif
+
+    threadpool_destroy(runtime_context.thread_pool,threadpool_graceful);
+    return remote_finalize();
+
+    /*err:
+    log_err("[%d] program error",runtime_context.process_id);
+    return -1;
+*/
+
+}
+
+int finalize_(){
+    return finalize();
+}
+
+
+
+

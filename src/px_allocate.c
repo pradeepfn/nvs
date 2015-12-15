@@ -339,8 +339,8 @@ void calc_early_copy_times(rcontext_t *runtime_context){
     var_t *s;
     for (s = varmap; s != NULL; s = s->hh.next) {
         //calculate early copy time if valid
-        if(timercmp(&(s->end_timestamp), &(runtime_context->lchk_time),>)){
-            timersub(&(s->end_timestamp),&(runtime_context->lchk_time),&(s->earlycopy_time_offset));
+        if(timercmp(&(s->end_timestamp), &(runtime_context->lchk_end_time),>)){
+            timersub(&(s->end_timestamp),&(runtime_context->lchk_end_time),&(s->earlycopy_time_offset));
         }
     }
     return;
