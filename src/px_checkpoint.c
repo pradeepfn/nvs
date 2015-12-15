@@ -244,7 +244,6 @@ void chkpt_all(int process_id) {
             decide_checkpoint_split(&runtime_context, varmap, fmem);
         }
     }
-    debug("[%d] NVRAM checkpoint start.. ",runtime_context.process_id);
     /*checkpoint to local NVRAM, local DRAM and remote DRAM
      * we cannot do this parallely, no cores to run*/
     var_t *s;
@@ -252,7 +251,6 @@ void chkpt_all(int process_id) {
     for (s = varmap; s != NULL; s = s->hh.next){
 
         pthread_mutex_lock(&runtime_context.mtx);
-        debug("about to checkpoint");
         if(s->process_id == process_id && s->type == NVRAM_CHECKPOINT && (!s->early_copied) ){
             if(runtime_context.checkpoint_iteration >= 3) {
                 s->early_copied = 1; // no checkpoint yet. I will checkpoint.
@@ -343,7 +341,7 @@ void chkpt_all(int process_id) {
         ec_arg.list = varmap;
         ec_arg.runtime_context = &runtime_context;
         ec_arg.checkpoint_end_time = runtime_context.lchk_end_time;
-        ec_arg.next_checkpoint_time = runtime_context.lchk_iteration_time;
+        timeradd(&runtime_context.lchk_end_time,&runtime_context.lchk_iteration_time,&ec_arg.next_checkpoint_time);
         //add the precopy task
         threadpool_add(runtime_context.thread_pool, &start_copy, (void *) &ec_arg, 0);
     }
@@ -412,7 +410,8 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
             offset = pageptr - s->ptr;
             if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
                 assert(s != NULL);
-                debug("[%d] early copy of %s , invalidated , offset %lu.%lu",runtime_context.process_id, s->varname,
+                debug("[%d] early copy of %s , invalidated , offset %lu.%lu",
+                      runtime_context.process_id, s->varname,
                       s->earlycopy_time_offset.tv_sec,s->earlycopy_time_offset.tv_usec);
                 s->early_copied = 0;
                 struct timeval inc;
@@ -461,9 +460,6 @@ void start_copy(void *args){
     }
     s = varmap;
 
-
-
-
     struct timeval current_time;
     struct timeval time_since_last_checkpoint;
     struct timeval time_till_next_checkpoint;
@@ -471,10 +467,11 @@ void start_copy(void *args){
     TIMER_PAUSE(et);
 
     //check the signaling semaphore
-    //debug("[%d] outside while loop",lib_process_id);
+    //debug("[%d] outside while loop",runtime_context.process_id);
     pthread_mutex_lock(&runtime_context.mtx);
     while (runtime_context.ec_abort == 0 && s != NULL) {
         pthread_mutex_unlock(&runtime_context.mtx);
+        //debug("[%d] inside while loop",runtime_context.process_id);
         //main MPI process still hasnt reached the checkpoint!
         gettimeofday(&current_time, NULL);
         timersub(&current_time, &(ecargs->checkpoint_end_time), &time_since_last_checkpoint);
@@ -496,6 +493,7 @@ void start_copy(void *args){
                 }
                 pthread_mutex_unlock(&(ecargs->runtime_context->mtx));
                 //copy the variable
+                debug("nvram early copy");
                 status = log_write(ecargs->nvlog, s, ecargs->runtime_context->process_id,
                                    ecargs->runtime_context->checkpoint_version);
                 if (status == -1) {
@@ -524,17 +522,19 @@ void start_copy(void *args){
 
             //if sleep time is greater than time to checkpoint abort
             if (timercmp(&sleeptime, &time_till_next_checkpoint, >)) {
+                debug("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);
+                debug("time till next checkpoint %ld.%06ld\n",time_till_next_checkpoint.tv_sec, time_till_next_checkpoint.tv_usec);
+                debug("sleep time greater than time till next checkpoint");
                 break;
             }
 
             if (micros > 10) { // TODO check output of timersub
-                uint64_t sleep_offset = 0;
-                //debug("[%d] early copy thread sleeping  : %ld" , lib_process_id, micros+sleep_offset);
+                uint64_t sleep_offset = 10000; // 10 millis
+                debug("[%d] early copy thread sleeping  : %ld" , runtime_context.process_id, micros+sleep_offset);
                 usleep(micros + sleep_offset);
-                /*printf("pagenode time  %ld.%06ld\n",pagenode->earlycopy_timestamp.tv_sec, pagenode->earlycopy_timestamp.tv_usec);
-                printf("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
-                printf("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);*/
-
+                debug("variable time offset time  %ld.%06ld\n",s->earlycopy_time_offset.tv_sec, s->earlycopy_time_offset.tv_usec);
+                debug("time since last chkpoint %ld.%06ld\n",time_since_last_checkpoint.tv_sec, time_since_last_checkpoint.tv_usec);
+                //debug("sleeptime %ld.%06ld\n",sleeptime.tv_sec, sleeptime.tv_usec);
 
             }
 
@@ -555,7 +555,7 @@ void start_copy(void *args){
         fflush(ef);
     #endif
 
-    //debug("[%d] early copy thread exiting. sem ret value : %d",lib_process_id,sem_ret);
+    //debug("[%d] early copy thread exiting. ",runtime_context.process_id);
     return;
 }
 
