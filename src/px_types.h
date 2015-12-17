@@ -65,7 +65,7 @@ typedef struct rcontext_t_{
     pthread_cond_t cond; /* use to singaling between destage and ec threads */
     struct log_t_ *nvlog;
     struct dlog_t_ *dlog;
-    struct var_t_ *varmap;
+    struct var_t_ **varmap; /* pointer to varmap pointer */
 
 }rcontext_t;
 

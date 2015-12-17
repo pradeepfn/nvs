@@ -177,7 +177,7 @@ int get_mypeer(rcontext_t *rcontext, int myrank){
 char* null_terminate(char *c_string){
     int i;
     for(i=0;i<19;i++){
-        if(c_string[i] == ' '){
+        if(c_string[i] == ' ' || i==10){ // zelectron0 hack for gtc
             c_string[i] = '\0';
             return c_string;
         }

@@ -184,6 +184,7 @@ void broadcast_page_tracking(rcontext_t *runtime_context){
     var_t *s2;
     if(runtime_context->process_id != 0){
       for(j=0;j<n_vars;j++){
+          debug("[%d] variable name : %s", runtime_context->process_id,offset_ary[j].varname);
           HASH_FIND_STR(varmap,offset_ary[j].varname,s2);
           assert(s2 != NULL);
           s2->earlycopy_time_offset.tv_sec = offset_ary[j].seconds;

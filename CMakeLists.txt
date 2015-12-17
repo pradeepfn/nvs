@@ -26,20 +26,21 @@ set(HEADERS
     include/timecount.h
     include/px_remote.h)
 
+
 include_directories("include")
 
 find_package(MPI REQUIRED)
 
 set(MPI_C_COMPILER mpicc)
-#add_definitions(-DNDEBUG)
+add_definitions(-DNDEBUG)
 add_definitions(-DTIMING)
-add_definitions(-DPX_DIGEST)
+#add_definitions(-DPX_DIGEST)
 
 
 include_directories(${MPI_INCLUDE_PATH})
 include_directories("/home1/03528/pradeepf/armci_install/include")
 
-set(CMAKE_C_FLAGS "-Wall -g")
+set(CMAKE_C_FLAGS "-Wall -g -O0")
 
 set(SOURCE_FILES
     src/px_types.h

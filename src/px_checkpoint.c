@@ -54,7 +54,7 @@ int init(int proc_id, int nproc){
 
     //tie up the global variable hieararchy
     runtime_context.config_context = &config_context;
-    runtime_context.varmap = varmap;
+    runtime_context.varmap = &varmap;
     nvlog.runtime_context = &runtime_context;
     dlog.runtime_context = &runtime_context;
 
@@ -171,14 +171,6 @@ int checkpoint_size_printed=0;
 void chkpt_all(int process_id) {
 
     gettimeofday(&(runtime_context.lchk_start_time),NULL); // recording the last checkpoint start time.
-
-    ulong  it_elapsed = 0;
-    TIMER_END(it,it_elapsed);
-    #ifdef  TIMING
-        fprintf(itf,"%lu\n",it_elapsed);
-        fflush(itf);
-    #endif
-
     TIMER_START(ct);
     //starting from second iteration
     if (config_context.early_copy_enabled && runtime_context.checkpoint_iteration > 2) {
@@ -331,6 +323,7 @@ void chkpt_all(int process_id) {
 
         threadpool_add(runtime_context.thread_pool, &destage_data, (void *) &destage_arg, 0);
     }
+    MPI_Barrier(MPI_COMM_WORLD);
     timersub(&runtime_context.lchk_start_time,&runtime_context.lchk_end_time,&runtime_context.lchk_iteration_time);
     gettimeofday(&(runtime_context.lchk_end_time),NULL); // recording the last checkpoint end time little early. we feed this to early copy thread
 
@@ -356,7 +349,7 @@ void chkpt_all(int process_id) {
         fprintf(cf,"%lu\n",elapsed);
         fflush(cf);
     #endif
-    TIMER_START(it);
+
     return;
 }
 
@@ -432,11 +425,11 @@ static void early_copy_handler(int sig, siginfo_t *si, void *unused){
 
 
 int ascending_time_sort(var_t *a, var_t *b){
-    if(timercmp(&(a->end_timestamp),&(b->end_timestamp),<)){ // if a timestamp greater than b
+    if(timercmp(&(a->earlycopy_time_offset),&(b->earlycopy_time_offset),<)){ // if a timestamp greater than b
         return -1;
-    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),==)){
+    }else if(timercmp(&(a->earlycopy_time_offset),&(b->earlycopy_time_offset),==)){
         return 0;
-    }else if(timercmp(&(a->end_timestamp),&(b->end_timestamp),>)){
+    }else if(timercmp(&(a->earlycopy_time_offset),&(b->earlycopy_time_offset),>)){
         return 1;
     }else{
         assert("wrong execution path");
@@ -448,14 +441,21 @@ int sorted = 0;
 void start_copy(void *args){
 
     TIMER_START(et);
-    earlycopy_t *ecargs = (earlycopy_t *)args;
+    earlycopy_t *ecargs = (earlycopy_t *) args;
     var_t *s;
-    int sem_ret,status;
+    int status, n_copied = 0;
+
     //debug("early copy task started");
 
     //sort the access times
     if(!sorted) {
         HASH_SORT(varmap, ascending_time_sort);
+        for(s = varmap; s != NULL; s = s->hh.next) {
+            if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
+                log_info("[%d] %s , %ld.%06ld", runtime_context.process_id, s->varname, s->earlycopy_time_offset.tv_sec,
+                         s->earlycopy_time_offset.tv_usec);
+            }
+        }
         sorted = 1;
     }
     s = varmap;
@@ -468,6 +468,13 @@ void start_copy(void *args){
 
     //check the signaling semaphore
     //debug("[%d] outside while loop",runtime_context.process_id);
+   /* if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
+        log_info("[%d] checkpoint end time %ld.%06ld\n", runtime_context.process_id, ecargs->checkpoint_end_time.tv_sec,
+                 ecargs->checkpoint_end_time.tv_usec);
+        log_info("[%d] next checkpoint time %ld.%06ld\n", runtime_context.process_id,
+                 ecargs->next_checkpoint_time.tv_sec,
+                 ecargs->next_checkpoint_time.tv_usec);
+    }*/
     pthread_mutex_lock(&runtime_context.mtx);
     while (runtime_context.ec_abort == 0 && s != NULL) {
         pthread_mutex_unlock(&runtime_context.mtx);
@@ -477,10 +484,23 @@ void start_copy(void *args){
         timersub(&current_time, &(ecargs->checkpoint_end_time), &time_since_last_checkpoint);
         timersub(&(ecargs->next_checkpoint_time), &current_time, &time_till_next_checkpoint);
 
+        /*if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
+            printf("[%d] name, size, time since and till %s  %ld  %ld.%06ld   %ld.%06ld\n", runtime_context.process_id,
+                     s->varname,s->size,
+                     time_since_last_checkpoint.tv_sec,time_since_last_checkpoint.tv_usec,
+                     time_till_next_checkpoint.tv_sec,time_till_next_checkpoint.tv_usec);
+        }*/
+
         // if the time is greater than variable, start copy
         if (timercmp(&time_since_last_checkpoint, &(s->earlycopy_time_offset), >)) {
 
             if (s->type == NVRAM_CHECKPOINT) {
+                /*if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
+                    printf("[%d] name, size, time since and till %s  %ld  %ld.%06ld   %ld.%06ld\n", runtime_context.process_id,
+                           s->varname,s->size,
+                           time_since_last_checkpoint.tv_sec,time_since_last_checkpoint.tv_usec,
+                           time_till_next_checkpoint.tv_sec,time_till_next_checkpoint.tv_usec);
+                }*/
                 TIMER_RESUME(et);
 
                 //page protect it. We disable the protection in a subsequent write or during checkpoint
@@ -494,6 +514,7 @@ void start_copy(void *args){
                 pthread_mutex_unlock(&(ecargs->runtime_context->mtx));
                 //copy the variable
                 debug("nvram early copy");
+                n_copied++;
                 status = log_write(ecargs->nvlog, s, ecargs->runtime_context->process_id,
                                    ecargs->runtime_context->checkpoint_version);
                 if (status == -1) {
@@ -554,10 +575,12 @@ void start_copy(void *args){
         fprintf(ef,"%lu\n",elapsed);
         fflush(ef);
     #endif
-
+    log_info("[%d] no of variables early copied : %d",ecargs->runtime_context->process_id,n_copied);
     //debug("[%d] early copy thread exiting. ",runtime_context.process_id);
     return;
 }
+
+
 
 
 
@@ -579,8 +602,16 @@ void afree(void* ptr) {
 }
 
 void chkpt_all_(int *process_id){
+    ulong  it_elapsed = 0;
+    TIMER_END(it,it_elapsed);
+#ifdef  TIMING
+    fprintf(itf,"%lu\n",it_elapsed);
+    fflush(itf);
+#endif
 
     chkpt_all(*process_id);
+
+    TIMER_START(it);
 }
 int init_(int *proc_id, int *nproc){
     return init(*proc_id,*nproc);
