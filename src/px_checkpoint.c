@@ -77,6 +77,10 @@ int init(int proc_id, int nproc){
         log_err("mutex init error");
     }
 
+    status = pthread_cond_init(&runtime_context.cond_ec_start,NULL);
+    if(status != 0){
+        log_err("mutex init error");
+    }
 
 //if TIMING is defined , we create log files, so that we can output the timings to them
 #ifdef TIMING
@@ -293,6 +297,7 @@ void chkpt_all(int process_id) {
 
     if(dlog_data) { // nvram checkpoint version updated by destaging thread
         //debug("[%d] dram checkpoint data present", process_id);
+        runtime_context.ec_start = 0;
         dlog_local_write(&dlog, varmap, process_id,runtime_context.checkpoint_version);//local DRAM write
 
         if (config_context.cr_type == ONLINE_CR) {
@@ -300,6 +305,7 @@ void chkpt_all(int process_id) {
             //at this point we have a ONLINE_CR stable checkpoint
         }
     }else{ // pure NVRAM checkpoint
+        runtime_context.ec_start = 1; // early copy can start right away
         log_commitv(&nvlog,runtime_context.checkpoint_version);
         //TODO: msync
     }
@@ -362,9 +368,10 @@ void destage_data(void *args){
     destage_t *ds = (destage_t *)args;
     int status;
     TIMER_START(dt);
-
+    debug("[%d] destaging variables",runtime_context.process_id);
     var_t *s;
-    for(s=ds->dlog->map[NVRAM_CHECKPOINT];s!=NULL;s=s->hh.next){
+    for(s=ds->dlog->map[DOUBLE_IN_MEMORY_LOCAL];s!=NULL;s=s->hh.next){
+        debug("[%d] destaging variable : %s ",runtime_context.process_id,s->varname);
         status = log_write(ds->nvlog,s,runtime_context.process_id,ds->checkpoint_version);
         if(status == -1){
             log_err("nvlog write failed while data destage");
@@ -372,6 +379,13 @@ void destage_data(void *args){
         }
     }
     log_commitv(ds->nvlog,ds->checkpoint_version);
+
+    //notify the early copy thread
+    pthread_mutex_lock(&(runtime_context.mtx));
+    runtime_context.ec_start = 1;
+    pthread_mutex_unlock(&(runtime_context.mtx));
+    pthread_cond_signal(&(runtime_context.cond_ec_start));
+
     ulong elapsed = 0;
     TIMER_END(dt,elapsed);
     #ifdef  TIMING
@@ -439,11 +453,30 @@ int ascending_time_sort(var_t *a, var_t *b){
 
 int sorted = 0;
 void start_copy(void *args){
+    int n_copied = 0;
+    int status = pthread_mutex_lock(&(runtime_context.mtx));
+    if (status != 0) {
+        log_err("error while acquiring lock");
+        exit(status);
+    }
+    while (!runtime_context.ec_start) {
+        debug("waiting on destage thread");
+        status = pthread_cond_wait(&runtime_context.cond_ec_start, &runtime_context.mtx);
+        if (status != 0) {
+            log_err("error while unlock");
+            exit(status);
+        }
+    }
+    runtime_context.ec_start = 0; // resetting
+    status = pthread_mutex_unlock(&runtime_context.mtx);
+    if (status != 0) {
+        log_err("error while unlock");
+        exit(status);
+    }
 
     TIMER_START(et);
     earlycopy_t *ecargs = (earlycopy_t *) args;
     var_t *s;
-    int status, n_copied = 0;
 
     //debug("early copy task started");
 
@@ -451,10 +484,10 @@ void start_copy(void *args){
     if(!sorted) {
         HASH_SORT(varmap, ascending_time_sort);
         for(s = varmap; s != NULL; s = s->hh.next) {
-            if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
+            /*if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
                 log_info("[%d] %s , %ld.%06ld", runtime_context.process_id, s->varname, s->earlycopy_time_offset.tv_sec,
                          s->earlycopy_time_offset.tv_usec);
-            }
+            }*/
         }
         sorted = 1;
     }
@@ -495,12 +528,12 @@ void start_copy(void *args){
         if (timercmp(&time_since_last_checkpoint, &(s->earlycopy_time_offset), >)) {
 
             if (s->type == NVRAM_CHECKPOINT) {
-                /*if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
-                    printf("[%d] name, size, time since and till %s  %ld  %ld.%06ld   %ld.%06ld\n", runtime_context.process_id,
+                if (runtime_context.process_id == 0 || runtime_context.process_id == 1) {
+                    /*printf("[%d] name, size, time since and till %s  %ld  %ld.%06ld   %ld.%06ld\n", runtime_context.process_id,
                            s->varname,s->size,
                            time_since_last_checkpoint.tv_sec,time_since_last_checkpoint.tv_usec,
-                           time_till_next_checkpoint.tv_sec,time_till_next_checkpoint.tv_usec);
-                }*/
+                           time_till_next_checkpoint.tv_sec,time_till_next_checkpoint.tv_usec);*/
+                }
                 TIMER_RESUME(et);
 
                 //page protect it. We disable the protection in a subsequent write or during checkpoint
@@ -575,7 +608,7 @@ void start_copy(void *args){
         fprintf(ef,"%lu\n",elapsed);
         fflush(ef);
     #endif
-    log_info("[%d] no of variables early copied : %d",ecargs->runtime_context->process_id,n_copied);
+    //log_info("[%d] no of variables early copied : %d",ecargs->runtime_context->process_id,n_copied);
     //debug("[%d] early copy thread exiting. ",runtime_context.process_id);
     return;
 }

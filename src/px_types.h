@@ -60,9 +60,11 @@ typedef struct rcontext_t_{
     int nproc;
     int ec_finished; /* flag variable to check if early copy thread finished*/
     int ec_abort; /* flag variable to signal ec thread - stop early copy */
+    int ec_start; /* notify to start early copy. set by destage or main thread */
     //sem_t ec_sem; /* signaling semaphore to co-ordinate between mainthread and early copy thread*/
     pthread_mutex_t mtx; /* mutex to protect shared variables between, main thread, destage thread and ec thread */
-    pthread_cond_t cond; /* use to singaling between destage and ec threads */
+    pthread_cond_t cond; /* use to singaling between ec and main threads */
+    pthread_cond_t cond_ec_start; /* signal between destage and ec threads */
     struct log_t_ *nvlog;
     struct dlog_t_ *dlog;
     struct var_t_ **varmap; /* pointer to varmap pointer */

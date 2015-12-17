@@ -20,8 +20,8 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
  */
 
 void dlog_init(dlog_t *dlog){
-    dlog->map[NVRAM_CHECKPOINT] = NULL; // data destined to NVRAM
-    dlog->map[DRAM_CHECKPOINT] = NULL;   // data destined to remote DRAM
+    dlog->map[DOUBLE_IN_MEMORY_LOCAL] = NULL; // data destined to NVRAM
+    dlog->map[DOUBLE_IN_MEMORY_REMOTE] = NULL;   // data destined to remote DRAM
 }
 /*
  * writes the selected (marked as REMOTE) variables to remote buddy nodes
@@ -86,17 +86,13 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
             if (type == DOUBLE_IN_MEMORY_LOCAL) {
                 void *data_ptr = malloc(np->size);// allocate local DRAM memory
                 s->ptr = data_ptr;
-                if(isDebugEnabled()){
-                    printf("[%d] new DRAM memory location for : %s \n",dlog->runtime_context->process_id, s->varname);
-                }
+                debug("[%d] new DRAM memory location for : %s \n",dlog->runtime_context->process_id, s->varname);
                 dlog->runtime_context->local_dram_checkpoint_size+=s->size;
 
             } else if (type == DOUBLE_IN_MEMORY_REMOTE) {
                 s->ptr = np->local_remote_ptr;// we use the group allocated memory directly
-                if(isDebugEnabled()){
-                    printf("[%d] remote variable mapped to ARMCI group allocated pointer for : "
+                debug("[%d] remote variable mapped to ARMCI group allocated pointer for : "
                                    "%s \n",dlog->runtime_context->process_id, s->varname);
-                }
                 dlog->runtime_context->remote_dram_checkpoint_size+=s->size;
             }
             HASH_ADD_STR(dlog->map[type], varname, s); //now we have a complete data entry for a variable.add it!
@@ -106,10 +102,8 @@ int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type t
 
         if(type == DOUBLE_IN_MEMORY_LOCAL){
             memcpy(s->ptr, np->ptr, np->size);
-            if(isDebugEnabled()){
-                printf("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %ld ,size : %ld , "
-                               "pointer : %p \n",dlog->runtime_context->process_id, s->varname, process_id, s->version, s->size, s->ptr);
-            }
+                debug("[%d] dram local checkpoint : varname : %s , process_id :  %d , version : %ld ,size : %ld , "
+                               "pointer : %p ",dlog->runtime_context->process_id, s->varname, process_id, s->version, s->size, s->ptr);
         }
         if(type == DOUBLE_IN_MEMORY_REMOTE){ // nothing to do. we have already set the group pointer
 
