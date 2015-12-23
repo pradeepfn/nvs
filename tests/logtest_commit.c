@@ -12,7 +12,7 @@ log_t nvlog;
 
 char *test_loginit(){
     log_info("log init test\n");
-    c_context.log_size = 300;
+    c_context.log_size = 180;
     snprintf(c_context.pfile_location,32,"/home/pradeep/temp");
 
     r_context.config_context = &c_context;
@@ -26,7 +26,7 @@ char *test_logwrite(){
     int i;
     char data[50];
     log_info("writing to log file");
-    for(i=0;i<4;i++){
+    for(i=0;i<100;i++){
         var_t var;
         var.size = 50;
         snprintf(var.varname,20,"var%d",i);
@@ -37,6 +37,10 @@ char *test_logwrite(){
             return -1;
         }
         log_commitv(&nvlog,i);
+        log_info("linear log tail and head , %ld   %ld" ,
+                 nvlog.ring_buffer.log_tail,nvlog.ring_buffer.log_head);
+        log_info("ring buffer indexes , %d  %d", nvlog.ring_buffer.head->tail,
+        nvlog.ring_buffer.head->head);
     }
     return 0;
 }
@@ -45,7 +49,7 @@ char *test_logread(){
     log_info("reading from log file");
     char varname[20];
     int i;
-    for(i=3;i>=0;i--){
+    for(i=99;i>=96;i--){
         snprintf(varname,20,"var%d",i);
         checkpoint_t *checkpoint = log_read(&nvlog,varname,PROCESS_ID,i);
         if(checkpoint == NULL){

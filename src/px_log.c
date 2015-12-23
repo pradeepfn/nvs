@@ -39,7 +39,7 @@ int log_init(log_t *log , int proc_id){
 //update the current latest version of the log buffer and move the tail forward
 int log_commitv(log_t *log,ulong version){
 
-    if(version < 2){ //start GC after 2nd version
+    if(version < 1){ //start GC after 2nd version
         return 1;
     };
 
@@ -48,9 +48,9 @@ int log_commitv(log_t *log,ulong version){
     //TODO: flush to fs
     //iterate starting from the tail and select a new tail
     checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
-    while(rb_elem->version < (version-1)){ //less than two versions of current version
+    while(rb_elem->version <= (version-1)){ //less than two versions of current version
         log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
-        log->ring_buffer.log_tail = rb_elem->start_offset;
+        log->ring_buffer.log_tail = rb_elem->end_offset+1;
         rb_elem = ringb_element(log,log->ring_buffer.head->tail);
     }
     pthread_mutex_unlock(&log->plock);
@@ -76,7 +76,7 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
     if(log_isfull(log)){
         log_err("no slots left in the ring buffer");
         pthread_mutex_unlock(&(log->plock));
-        return -1;
+        exit(1);
     }
 
     ulong dhead_offset = log->ring_buffer.log_head; // data head offset , point to the next free head element to write
@@ -93,7 +93,15 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
         }else{
             log_err("not enough space left in the linear log");
             pthread_mutex_unlock(&(log->plock));
-            return -1;
+            log_info("[%d]linear log tail and head , %ld   %ld" ,
+                     log->runtime_context->process_id,
+                     log->ring_buffer.log_tail,
+                     log->ring_buffer.log_head);
+            log_info("[%d]ring buffer indexes , %ld  %ld",
+                     log->runtime_context->process_id,
+                     log->ring_buffer.head->tail,
+                     log->ring_buffer.head->head);
+            exit(1);
         }
 
     }else if(dtail_offset > dhead_offset){  // head is behind
@@ -103,7 +111,15 @@ int log_write(log_t *log, var_t *variable, int process_id,long version){
         }else{
             log_err("not enough space in the linear log");
             pthread_mutex_unlock(&(log->plock));
-            return -1;
+            log_info("[%d]linear log tail and head , %ld   %ld" ,
+                     log->runtime_context->process_id,
+                     log->ring_buffer.log_tail,
+                     log->ring_buffer.log_head);
+            log_info("[%d]ring buffer indexes , %ld  %ld",
+                     log->runtime_context->process_id,
+                     log->ring_buffer.head->tail,
+                     log->ring_buffer.head->head);
+            exit(1);
         }
     }
     // we are good to do the final reserve...
