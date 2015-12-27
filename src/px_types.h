@@ -90,7 +90,7 @@ typedef struct var_t_ {
     offset_t paligned_size;
     UT_hash_handle hh;         /* makes this structure hashable */
     volatile int early_copied; // get accesed by signal handler
-    int started_tracking;
+    int started_tracking;  /* used the flag to find the very first access time, to update the start access time var*/
     int process_id;
     checkpoint_type type;
     //struct timeval start_timestamp; /* start and end time stamp to monitor access patterns */

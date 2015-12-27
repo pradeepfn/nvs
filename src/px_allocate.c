@@ -99,11 +99,7 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
                     printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
                 }*/
                 if(s != NULL) {
-                    if (!s->started_tracking) {
-                        s->started_tracking = 1;
-                    } else {
-                        gettimeofday(&(s->end_timestamp), NULL);
-                    }
+                    gettimeofday(&(s->end_timestamp), NULL);
                     disable_protection(s->ptr, page_size);
                     protect_all_other_pages(s->varname);
                 }
@@ -115,10 +111,21 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
 }
 
 
-
+FILE *fp;
 void start_page_tracking(){
     var_t *s;
-
+    char file_name[50];
+    DIR* dir = opendir("stats");
+    struct timeval ct;
+    gettimeofday(&ct,NULL);
+    if(dir) {
+        snprintf(file_name, sizeof(file_name), "stats/variable_access.log");
+        fp = fopen(file_name, "a+");
+        fprintf(fp, "starting time : %lu.%lu\n", ct.tv_sec, ct.tv_usec);
+    }else{ // directory does not exist
+        printf("Error: no stats directory found.\n\n");
+        exit(1);
+    }
     for(s=varmap;s!=NULL;s=s->hh.next){
 
         if (!sig_handler_installed) {
@@ -133,6 +140,13 @@ void start_page_tracking(){
 }
 
 
+void reset_trackers(){
+    var_t *s;
+    for(s=varmap;s!=NULL;s=s->hh.next){
+        s->end_timestamp = (struct timeval) {0,0};
+    }
+}
+
 /*
  * remove page protection on monitored chunks and
  * restore original SIGSEGV signal handler
@@ -142,10 +156,40 @@ void stop_page_tracking(){
     for(s=varmap;s!=NULL;s=s->hh.next){
         disable_protection(s->ptr,page_size);
     }
+    fclose(fp);
     debug("memory tracking disabled\n");
     install_old_handler();
     return;
 }
+
+
+
+/*
+ *  1. write the current values to a log file
+ *  2. rest the timing fields
+ *  3. re-enable memory protection
+ *
+ *  we want to capture the timings of the next iterations of the computation
+ */
+
+void flush_access_times(){
+
+    var_t *s;
+
+    struct timeval ct;
+
+
+        for(s=varmap;s!=NULL;s=s->hh.next){
+            fprintf(fp,"%s ,%lu,%lu.%lu\n",s->varname,s->size,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
+            //enable_write_protection(s->pageptr,page_size);
+            //s->started_tracking = 0;
+        }
+        gettimeofday(&ct,NULL);
+        fprintf(fp,"checkpoint time : %lu.%lu\n",ct.tv_sec,ct.tv_usec);
+        fflush(fp);
+
+}
+
 
 void broadcast_page_tracking(rcontext_t *runtime_context){
     timeoffset_t offset_ary[100];
@@ -219,36 +263,7 @@ void protect_all_other_pages(char *varname) {
 
 
 
-/*
- *  1. write the current values to a log file
- *  2. rest the timing fields
- *  3. re-enable memory protection
- *
- *  we want to capture the timings of the next iterations of the computation
- */
-FILE *fp;
-void flush_access_times(){
-    char file_name[50];
-    var_t *s;
-    DIR* dir = opendir("stats");
-    struct timeval ct;
 
-    if(dir){
-        snprintf(file_name,sizeof(file_name),"stats/variable_access.log");
-        fp=fopen(file_name,"a+");
-        for(s=varmap;s!=NULL;s=s->hh.next){
-            fprintf(fp,"%s ,%lu,%lu ,%lu\n",s->varname,s->size,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
-            //enable_write_protection(s->pageptr,page_size);
-            //s->started_tracking = 0;
-        }
-        gettimeofday(&ct,NULL);
-        fprintf(fp,"checkpoint time : %lu , %lu\n",ct.tv_sec,ct.tv_usec);
-        fflush(fp);
-    }else{ // directory does not exist
-        printf("Error: no stats directory found.\n\n");
-        assert(0);
-    }
-}
 
 
 
