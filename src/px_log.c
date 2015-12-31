@@ -39,7 +39,7 @@ int log_init(log_t *log , int proc_id){
 //update the current latest version of the log buffer and move the tail forward
 int log_commitv(log_t *log,ulong version){
 
-    if(version < 1){ //start GC after 2nd version
+    if(version < 1){ //start GC after 1st version
         return 1;
     };
 
@@ -48,7 +48,7 @@ int log_commitv(log_t *log,ulong version){
     //TODO: flush to fs
     //iterate starting from the tail and select a new tail
     checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
-    while(rb_elem->version <= (version-1)){ //less than two versions of current version
+    while(rb_elem->version <= (version-1)){ 
         log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
         log->ring_buffer.log_tail = rb_elem->end_offset+1;
         rb_elem = ringb_element(log,log->ring_buffer.head->tail);

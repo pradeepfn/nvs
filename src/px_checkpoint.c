@@ -314,14 +314,14 @@ void chkpt_all(int process_id) {
         runtime_context.ec_start = 1; // early copy can start right away
         //printf("[%d] log commit",runtime_context.process_id);
         log_commitv(&nvlog,runtime_context.checkpoint_version);
-        log_info("[%d]linear log tail and head , %ld   %ld" ,
+        /*log_info("[%d]linear log tail and head , %ld   %ld" ,
                  process_id,
                  nvlog.ring_buffer.log_tail,
                  nvlog.ring_buffer.log_head);
         log_info("[%d]ring buffer indexes , %ld  %ld",
                  process_id,
                  nvlog.ring_buffer.head->tail,
-                 nvlog.ring_buffer.head->head);
+                 nvlog.ring_buffer.head->head);*/
 
         //TODO: msync
     }
