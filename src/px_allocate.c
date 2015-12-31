@@ -99,11 +99,7 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
                     printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
                 }*/
                 if(s != NULL) {
-                    if (!s->started_tracking) {
-                        s->started_tracking = 1;
-                    } else {
-                        gettimeofday(&(s->end_timestamp), NULL);
-                    }
+                    gettimeofday(&(s->end_timestamp), NULL);
                     disable_protection(s->ptr, page_size);
                     protect_all_other_pages(s->varname);
                 }
