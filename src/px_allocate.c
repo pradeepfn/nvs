@@ -175,7 +175,7 @@ void broadcast_page_tracking(rcontext_t *runtime_context){
 
     //broadcast
     MPI_Bcast((void*)&n_vars,1,MPI_INT,0,MPI_COMM_WORLD);
-    MPI_Bcast((void*)offset_ary,n_vars*sizeof(offset_t),timeoffset,0,MPI_COMM_WORLD);
+    MPI_Bcast((void*)offset_ary,n_vars,timeoffset,0,MPI_COMM_WORLD);
 
     var_t *s2;
     if(runtime_context->process_id != 0){

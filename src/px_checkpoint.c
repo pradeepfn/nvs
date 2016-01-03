@@ -389,7 +389,7 @@ void destage_data(void *args){
     debug("[%d] destaging variables",runtime_context.process_id);
     var_t *s;
     for(s=ds->dlog->map[DOUBLE_IN_MEMORY_LOCAL];s!=NULL;s=s->hh.next){
-        log_info("[%d] destaging variable : %s ",runtime_context.process_id,s->varname);
+        //log_info("[%d] destaging variable : %s ",runtime_context.process_id,s->varname);
         status = log_write(ds->nvlog,s,runtime_context.process_id,ds->checkpoint_version);
         if(status == -1){
             log_err("nvlog write failed while data destage");
@@ -397,14 +397,14 @@ void destage_data(void *args){
         }
     }
     log_commitv(ds->nvlog,ds->checkpoint_version);
-    log_info("[%d]linear log tail and head , %ld   %ld" ,
+    /*log_info("[%d]linear log tail and head , %ld   %ld" ,
              runtime_context.process_id,
              nvlog.ring_buffer.log_tail,
              nvlog.ring_buffer.log_head);
     log_info("[%d]ring buffer indexes , %ld  %ld",
              runtime_context.process_id,
              nvlog.ring_buffer.head->tail,
-             nvlog.ring_buffer.head->head);
+             nvlog.ring_buffer.head->head);*/
 
     //notify the early copy thread
     pthread_mutex_lock(&(runtime_context.mtx));
