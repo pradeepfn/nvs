@@ -32,7 +32,7 @@ include_directories("include")
 find_package(MPI REQUIRED)
 
 set(MPI_C_COMPILER mpicc)
-#add_definitions(-DNDEBUG)
+add_definitions(-DNDEBUG)
 add_definitions(-DTIMING)
 #add_definitions(-DPX_DIGEST)
 
