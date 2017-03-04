@@ -3,28 +3,29 @@
 !_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
-!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
-BUDDY_OFFSET	./px_checkpoint.c	41;"	d	file:
-CHUNK_SIZE	./px_checkpoint.c	33;"	d	file:
-CONFIG_FILE_NAME	./px_checkpoint.c	29;"	d	file:
-COPY_STRATEGY	./px_checkpoint.c	34;"	d	file:
-CR_TYPE	./px_checkpoint.c	43;"	d	file:
-DEBUG_ENABLE	./px_checkpoint.c	35;"	d	file:
+!_TAG_PROGRAM_VERSION	5.8	//
+BUDDY_OFFSET	./px_constants.h	26;"	d
+CHUNK_SIZE	./px_constants.h	17;"	d
+CONFIG_FILE_NAME	./px_constants.h	13;"	d
+COPY_STRATEGY	./px_constants.h	18;"	d
+CR_TYPE	./px_constants.h	28;"	d
+DEBUG_ENABLE	./px_constants.h	19;"	d
 DECLTYPE	./uthash.h	37;"	d
 DECLTYPE	./uthash.h	40;"	d
 DECLTYPE	./uthash.h	44;"	d
 DECLTYPE	./uthash.h	46;"	d
 DECLTYPE_ASSIGN	./uthash.h	50;"	d
 DECLTYPE_ASSIGN	./uthash.h	56;"	d
-DOUBLE_IN_MEMORY_LOCAL	./px_dlog.h	/^    DOUBLE_IN_MEMORY_LOCAL,$/;"	e	enum:__anon6
-DOUBLE_IN_MEMORY_REMOTE	./px_dlog.h	/^    DOUBLE_IN_MEMORY_REMOTE$/;"	e	enum:__anon6
-DRAM_CHECKPOINT	./px_checkpoint.h	/^    DRAM_CHECKPOINT,$/;"	e	enum:__anon3
+DOUBLE_IN_MEMORY_LOCAL	./px_dlog.h	/^    DOUBLE_IN_MEMORY_LOCAL,$/;"	e	enum:__anon1
+DOUBLE_IN_MEMORY_REMOTE	./px_dlog.h	/^    DOUBLE_IN_MEMORY_REMOTE$/;"	e	enum:__anon1
+DRAM_CHECKPOINT	./px_types.h	/^    DRAM_CHECKPOINT,$/;"	e	enum:__anon6
+EARLY_COPY_ENABLED	./px_constants.h	32;"	d
+EARLY_COPY_OFFSET	./px_constants.h	33;"	d
 ELMT_FROM_HH	./uthash.h	101;"	d
-FAULT_COPY	./px_checkpoint.c	51;"	d	file:
 FAULT_COPY_WAIT	./px_constants.h	4;"	d
-FILE_PATH_ONE	./px_log.c	17;"	d	file:
-FILE_PATH_TWO	./px_log.c	18;"	d	file:
-FREE_MEMORY	./px_checkpoint.c	44;"	d	file:
+FILE_PATH_ONE	./px_log.c	14;"	d	file:
+FILE_PATH_TWO	./px_log.c	15;"	d	file:
+FREE_MEMORY	./px_constants.h	29;"	d
 HASH_ADD	./uthash.h	169;"	d
 HASH_ADD_INT	./uthash.h	269;"	d
 HASH_ADD_KEYPTR	./uthash.h	182;"	d
@@ -89,28 +90,16 @@ HASH_SIGNATURE	./uthash.h	912;"	d
 HASH_SORT	./uthash.h	729;"	d
 HASH_SRT	./uthash.h	730;"	d
 HASH_TO_BKT	./uthash.h	207;"	d
-LIST_FOREACH	./px_list.h	41;"	d
-List	./px_list.h	/^typedef struct List {$/;"	s
-List	./px_list.h	/^} List;$/;"	t	typeref:struct:List
-ListNode	./px_list.h	/^typedef struct ListNode {$/;"	s
-ListNode	./px_list.h	/^} ListNode;$/;"	t	typeref:struct:ListNode
-List_clear	./px_list.c	/^void List_clear(List *list)$/;"	f
-List_clear_destroy	./px_list.c	/^void List_clear_destroy(List *list)$/;"	f
-List_count	./px_list.h	29;"	d
-List_create	./px_list.c	/^List *List_create()$/;"	f
-List_destroy	./px_list.c	/^void List_destroy(List *list)$/;"	f
-List_first	./px_list.h	30;"	d
-List_last	./px_list.h	31;"	d
-List_pop	./px_list.c	/^void *List_pop(List *list)$/;"	f
-List_push	./px_list.c	/^void List_push(List *list, void *value)$/;"	f
-List_remove	./px_list.c	/^void *List_remove(List *list, ListNode *node)$/;"	f
-List_shift	./px_list.c	/^void *List_shift(List *list)$/;"	f
-List_unshift	./px_list.c	/^void List_unshift(List *list, void *value)$/;"	f
-MAX_CHECKPOINTS	./px_checkpoint.c	46;"	d	file:
+HELPER_CORES	./px_constants.h	34;"	d
+MAGIC_VALUE	./px_constants.h	10;"	d
+MAX_CHECKPOINTS	./px_constants.h	31;"	d
 MAX_QUEUE	./px_threadpool.h	45;"	d
 MAX_THREADS	./px_threadpool.h	44;"	d
-MICROSEC	./px_util.h	11;"	d
+MD5_LENGTH	./px_constants.h	11;"	d
+MICROSEC	./px_util.h	12;"	d
 MICROSEC	./timecount.c	9;"	d	file:
+MICROSECONDS	./px_timer.h	/^    MICROSECONDS,$/;"	e	enum:answerUnit_t
+MILLISECONDS	./px_timer.h	/^    MILLISECONDS,$/;"	e	enum:answerUnit_t
 MUR_FMIX	./uthash.h	556;"	d
 MUR_GETBLOCK	./uthash.h	534;"	d
 MUR_GETBLOCK	./uthash.h	550;"	d
@@ -125,31 +114,51 @@ MUR_THREE_ONE	./uthash.h	542;"	d
 MUR_THREE_ONE	./uthash.h	546;"	d
 MUR_TWO_TWO	./uthash.h	543;"	d
 MUR_TWO_TWO	./uthash.h	547;"	d
-NAIVE_COPY	./px_checkpoint.c	50;"	d	file:
+NAIVE_COPY	./px_constants.h	35;"	d
+NANOSECONDS	./px_timer.h	/^    NANOSECONDS$/;"	e	enum:answerUnit_t
 NO_DECLTYPE	./uthash.h	39;"	d
 NO_DECLTYPE	./uthash.h	43;"	d
 NO_WAIT	./px_constants.h	5;"	d
-NVM_SIZE	./px_checkpoint.c	32;"	d	file:
-NVRAM_CHECKPOINT	./px_checkpoint.h	/^    NVRAM_CHECKPOINT$/;"	e	enum:__anon3
-NVRAM_WBW	./px_checkpoint.c	37;"	d	file:
+NVM_SIZE	./px_constants.h	16;"	d
+NVRAM_CHECKPOINT	./px_types.h	/^    NVRAM_CHECKPOINT$/;"	e	enum:__anon6
+NVRAM_EARLY_COPY_WBW	./px_constants.h	22;"	d
+NVRAM_WBW	./px_constants.h	21;"	d
 ONLINE_CR	./px_constants.h	7;"	d
-PAGE_ALIGNED_COPY	./px_checkpoint.c	53;"	d	file:
-PFILE_LOCATION	./px_checkpoint.c	36;"	d	file:
-PHOENIX_DESTAGER_H	./px_destager.h	6;"	d
-PHOENIX_EARLYCOPY_H	./px_earlycopy.h	6;"	d
-PHOENIX_PX_ALLOCATE_H	./px_allocate.h	9;"	d
-PHOENIX_PX_DLOG_H	./px_dlog.h	6;"	d
-PHOENIX_PX_LIST_H	./px_list.h	6;"	d
-PHOENIX_PX_SAMPLER_H	./px_sampler.h	6;"	d
-PRE_COPY	./px_checkpoint.c	52;"	d	file:
-REMOTE_CHECKPOINT_ENABLE	./px_checkpoint.c	39;"	d	file:
-REMOTE_COPY	./px_checkpoint.c	54;"	d	file:
-REMOTE_FAULT_COPY	./px_checkpoint.c	55;"	d	file:
-REMOTE_PRE_COPY	./px_checkpoint.c	56;"	d	file:
-REMOTE_RESTART_ENABLE	./px_checkpoint.c	40;"	d	file:
-RSTART	./px_checkpoint.c	38;"	d	file:
-SPLIT_RATIO	./px_checkpoint.c	42;"	d	file:
-THRESHOLD_SIZE	./px_checkpoint.c	45;"	d	file:
+PFILE_LOCATION	./px_constants.h	20;"	d
+PHOENIX_EARLYCOPY_H	./px_earlycopy.h	2;"	d
+PHOENIX_PX_ALLOCATE_H	./px_allocate.h	7;"	d
+PHOENIX_PX_DLOG_H	./px_dlog.h	2;"	d
+PHOENIX_PX_SAMPLER_H	./px_sampler.h	2;"	d
+PHOENIX_PX_TYPES_H	./px_types.h	3;"	d
+PX_REMOTE_H	./px_remote.h	2;"	d
+REMOTE_CHECKPOINT_ENABLE	./px_constants.h	24;"	d
+REMOTE_RESTART_ENABLE	./px_constants.h	25;"	d
+RING_BUFFER_SLOTS	./px_constants.h	8;"	d
+RSTART	./px_constants.h	23;"	d
+SECONDS	./px_timer.h	/^    SECONDS,$/;"	e	enum:answerUnit_t
+SPLIT_RATIO	./px_constants.h	27;"	d
+THRESHOLD_SIZE	./px_constants.h	30;"	d
+TIMERMSG_PREFIX	./px_timer.h	25;"	d
+TIMER_ACCURACY	./px_timer.h	27;"	d
+TIMER_CLEAR	./px_timer.h	67;"	d
+TIMER_CLEAR	./px_timer.h	81;"	d
+TIMER_DECLARE1	./px_timer.h	50;"	d
+TIMER_DECLARE1	./px_timer.h	74;"	d
+TIMER_DECLARE2	./px_timer.h	52;"	d
+TIMER_DECLARE2	./px_timer.h	75;"	d
+TIMER_DECLARE3	./px_timer.h	54;"	d
+TIMER_DECLARE3	./px_timer.h	76;"	d
+TIMER_DECLARE4	./px_timer.h	56;"	d
+TIMER_DECLARE4	./px_timer.h	77;"	d
+TIMER_END	./px_timer.h	70;"	d
+TIMER_END	./px_timer.h	82;"	d
+TIMER_H_	./px_timer.h	13;"	d
+TIMER_PAUSE	./px_timer.h	65;"	d
+TIMER_PAUSE	./px_timer.h	79;"	d
+TIMER_RESUME	./px_timer.h	66;"	d
+TIMER_RESUME	./px_timer.h	80;"	d
+TIMER_START	./px_timer.h	59;"	d
+TIMER_START	./px_timer.h	78;"	d
 TRADITIONAL_CR	./px_constants.h	6;"	d
 UTHASH_H	./uthash.h	25;"	d
 UTHASH_VERSION	./uthash.h	76;"	d
@@ -159,142 +168,144 @@ UT_hash_handle	./uthash.h	/^typedef struct UT_hash_handle {$/;"	s
 UT_hash_handle	./uthash.h	/^} UT_hash_handle;$/;"	t	typeref:struct:UT_hash_handle
 UT_hash_table	./uthash.h	/^typedef struct UT_hash_table {$/;"	s
 UT_hash_table	./uthash.h	/^} UT_hash_table;$/;"	t	typeref:struct:UT_hash_table
-VAR_SIZE	./px_checkpoint.h	7;"	d
+VAR_SIZE	./px_constants.h	9;"	d
 WP	./uthash.h	540;"	d
-_GNU_SOURCE	./px_checkpoint.c	1;"	d	file:
 _GNU_SOURCE	./px_threadpool.c	33;"	d	file:
+_RMTCHKPT_H	./rmtchkpt.h	2;"	d
 _THREADPOOL_H_	./px_threadpool.h	31;"	d
 __CONSTANTS_H	./px_constants.h	2;"	d
-__PX_CHECKPOINT_H	./px_checkpoint.h	2;"	d
 __PX_DEBUG_H	./px_debug.h	2;"	d
 __PX_LOG_H	./px_log.h	2;"	d
 __PX_READ_H	./px_read.h	2;"	d
 __PX_UITL_H	./px_util.h	2;"	d
 __nsleep	./px_util.c	/^int __nsleep(const struct timespec *req, struct timespec *rem)$/;"	f
 access_monitor_handler	./px_allocate.c	/^static void access_monitor_handler(int sig, siginfo_t *si, void *unused){$/;"	f	file:
-access_monitor_handler	./px_checkpoint.c	/^static void access_monitor_handler(int sig, siginfo_t *si, void *unused){$/;"	f	file:
-addr	./px_checkpoint.h	/^	void *addr;$/;"	m	struct:tcontext_t_
+accum	./px_timer.h	/^    struct timespec accum;$/;"	m	struct:timer	typeref:struct:timer::timespec
 afree	./px_checkpoint.c	/^void afree(void* ptr) {$/;"	f
 afree_	./px_checkpoint.c	/^void afree_(void* ptr) {$/;"	f
 alloc	./px_checkpoint.c	/^void *alloc(unsigned int *n, char *s, int *iid, int *cmtsize) {$/;"	f
-alloc_c	./px_checkpoint.c	/^void *alloc_c(char *var_name, size_t size, size_t commit_size,int process_id){$/;"	f
+alloc_c	./px_checkpoint.c	/^void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){$/;"	f
 alloc_remote	./rmtchkpt.c	/^void* alloc_remote(entry_t *chunk){$/;"	f
 alloc_struct	./px_allocate.c	/^allocate_t alloc_struct;$/;"	v
 allocate_t	./px_allocate.h	/^} allocate_t;$/;"	t	typeref:struct:allocate_t_
 allocate_t_	./px_allocate.h	/^typedef struct allocate_t_{$/;"	s
-argument	./px_threadpool.c	/^    void *argument;$/;"	m	struct:__anon5	file:
+answerUnit_t	./px_timer.h	/^enum answerUnit_t {$/;"	g
+argument	./px_threadpool.c	/^    void *argument;$/;"	m	struct:__anon3	file:
 armci_remote_memcpy	./rmtchkpt.c	/^int armci_remote_memcpy(int myrank, int my_peer,$/;"	f
 bloom_bv	./uthash.h	/^   uint8_t *bloom_bv;$/;"	m	struct:UT_hash_table
 bloom_nbits	./uthash.h	/^   char bloom_nbits;$/;"	m	struct:UT_hash_table
 bloom_sig	./uthash.h	/^   uint32_t bloom_sig; \/* used only to test bloom exists in external analysis *\/$/;"	m	struct:UT_hash_table
+broadcast_page_tracking	./px_allocate.c	/^void broadcast_page_tracking(rcontext_t *runtime_context){$/;"	f
 buckets	./uthash.h	/^   UT_hash_bucket *buckets;$/;"	m	struct:UT_hash_table
-buddy_offset	./px_checkpoint.c	/^int buddy_offset = 1;  \/\/ offset used during buddy checkpointing.$/;"	v
+buddy_offset	./px_types.h	/^    int buddy_offset;$/;"	m	struct:ccontext_t_
 calc_delay_ns	./px_util.c	/^unsigned long calc_delay_ns(size_t datasize,int bandwidth){$/;"	f
+calc_early_copy_times	./px_allocate.c	/^void calc_early_copy_times(rcontext_t *runtime_context){$/;"	f
 call_oldhandler	./px_util.c	/^void call_oldhandler(int signo){$/;"	f
-chdlog	./px_checkpoint.c	/^dlog_t chdlog;$/;"	v
+ccontext_t	./px_types.h	/^} ccontext_t;$/;"	t	typeref:struct:ccontext_t_
+ccontext_t_	./px_types.h	/^typedef struct ccontext_t_{$/;"	s
+cf	./px_checkpoint.c	/^FILE *ef,*cf,*df,*itf;$/;"	v
 check	./px_debug.h	24;"	d
 check_debug	./px_debug.h	30;"	d
 check_mem	./px_debug.h	28;"	d
-checkpoint	./px_log.c	/^static void checkpoint(log_t *log, char *var_name, int process_id, int version, size_t size, void *data){$/;"	f	file:
-checkpoint1	./px_log.c	/^static void checkpoint1(log_t *log, void *start_addr, checkpoint_t *chkpt, void *data){$/;"	f	file:
-checkpoint_iteration	./px_checkpoint.c	/^long checkpoint_iteration = 1; \/\/ keeping track of iterations, for running sampling$/;"	v
-checkpoint_size_printed	./px_checkpoint.c	/^int  checkpoint_size_printed = 0; \/\/ flag variable$/;"	v
+checkpoint_end_time	./px_earlycopy.h	/^    struct timeval checkpoint_end_time;$/;"	m	struct:earlycopy_t_	typeref:struct:earlycopy_t_::timeval
+checkpoint_iteration	./px_types.h	/^    ulong checkpoint_iteration;$/;"	m	struct:rcontext_t_
+checkpoint_size_printed	./px_checkpoint.c	/^int checkpoint_size_printed=0;$/;"	v
 checkpoint_t	./px_log.h	/^}checkpoint_t;$/;"	t	typeref:struct:checkpoint_t_
 checkpoint_t_	./px_log.h	/^typedef struct checkpoint_t_{$/;"	s
-checkpoint_type	./px_checkpoint.h	/^}checkpoint_type;$/;"	t	typeref:enum:__anon3
-checkpoint_version	./px_checkpoint.c	/^long checkpoint_version; \/\/ keeping track of the latest checkpoint version$/;"	v
-checkpoint_version	./px_destager.h	/^    long checkpoint_version;$/;"	m	struct:destage_t_
+checkpoint_type	./px_types.h	/^}checkpoint_type;$/;"	t	typeref:enum:__anon6
+checkpoint_version	./px_types.h	/^    long checkpoint_version;$/;"	m	struct:destage_t_
+checkpoint_version	./px_types.h	/^    ulong checkpoint_version;$/;"	m	struct:rcontext_t_
 chkpt_all	./px_checkpoint.c	/^void chkpt_all(int process_id) {$/;"	f
 chkpt_all_	./px_checkpoint.c	/^void chkpt_all_(int *process_id){$/;"	f
-chlog	./px_checkpoint.c	/^log_t chlog;$/;"	v
-chunk_size	./px_checkpoint.c	/^int chunk_size = 4096;$/;"	v
-chunk_size	./px_checkpoint.h	/^	int chunk_size;$/;"	m	struct:tcontext_t_
+chunk_size	./px_types.h	/^    int chunk_size;$/;"	m	struct:ccontext_t_
 clean_errno	./px_debug.h	16;"	d
+cond	./px_types.h	/^    pthread_cond_t cond; \/* use to singaling between ec and main threads *\/$/;"	m	struct:rcontext_t_
+cond_ec_start	./px_types.h	/^    pthread_cond_t cond_ec_start; \/* signal between destage and ec threads *\/$/;"	m	struct:rcontext_t_
+config_context	./px_checkpoint.c	/^ccontext_t config_context;$/;"	v
+config_context	./px_types.h	/^    ccontext_t *config_context;$/;"	m	struct:rcontext_t_
 coordinate_chunk	./rmtchkpt.c	/^int coordinate_chunk(int chunk, int mypeer, int myrank) {$/;"	f
-copied	./px_read.h	/^	int copied;$/;"	m	struct:pagemap_t_
-copy_chunks	./px_util.c	/^void copy_chunks(pagemap_t **page_map_ptr){$/;"	f
-copy_read	./px_read.c	/^void *copy_read(log_t *log, char *var_name,int process_id, long version){$/;"	f
-copy_remote_chunks	./px_util.c	/^void copy_remote_chunks(pagemap_t **page_map_ptr){$/;"	f
-copy_strategy	./px_checkpoint.c	/^int copy_strategy = 1;$/;"	v
+copy_read	./px_read.c	/^var_t *copy_read(log_t *log, char *var_name,int process_id, long version){$/;"	f
+copy_strategy	./px_types.h	/^    int copy_strategy;$/;"	m	struct:ccontext_t_
 copy_to_remote	./rmtchkpt.c	/^int copy_to_remote(entry_t *chunk){$/;"	f
-count	./px_list.h	/^    int count;$/;"	m	struct:List
 count	./px_threadpool.c	/^    int count;$/;"	m	struct:threadpool_t	file:
 count	./uthash.h	/^   unsigned count;$/;"	m	struct:UT_hash_bucket
-cr_type	./px_checkpoint.c	/^int cr_type = TRADITIONAL_CR;  \/\/ a flag for traditional checkpoint restart and online checkpoint restart usage$/;"	v
+cpu_ary_size	./px_threadpool.c	/^    int cpu_ary_size;$/;"	m	struct:threadpool_t	file:
+cr_type	./px_types.h	/^    int cr_type;$/;"	m	struct:ccontext_t_
 create_group	./px_remote.c	/^int create_group ( int *members, int nmembers, int myrank,  int numrank) {$/;"	f
 create_group	./rmtchkpt.c	/^int create_group ( int *members, int cnt, int myrank,  int numrank) {$/;"	f
 create_memory	./rmtchkpt.c	/^void** create_memory(int numranks, int myrank, size_t bytes) {$/;"	f
-current	./px_log.h	/^	memmap_t *current;$/;"	m	struct:log_t_
-current_version	./px_log.h	/^    long current_version; \/\/ new atomic flag that uses checkpoint version$/;"	m	struct:headmeta_t_
-data_ptr	./px_dlog.h	/^    void *data_ptr;$/;"	m	struct:dcheckpoint_map_entry_t_
-data_size	./px_log.h	/^    offset_t data_size;$/;"	m	struct:checkpoint_t_
-dcheckpoint_map_entry_t	./px_dlog.h	/^}dcheckpoint_map_entry_t;$/;"	t	typeref:struct:dcheckpoint_map_entry_t_
-dcheckpoint_map_entry_t_	./px_dlog.h	/^typedef struct dcheckpoint_map_entry_t_{$/;"	s
+current_version	./px_log.h	/^    ulong current_version; \/\/ new atomic flag that uses checkpoint version$/;"	m	struct:headmeta_t_
+data_log	./px_log.h	/^    logdata_t data_log;$/;"	m	struct:log_t_
 debug	./px_debug.h	11;"	d
 debug	./px_debug.h	13;"	d
 debug_enabled	./px_debug.c	/^int debug_enabled = 0;$/;"	v
-decide_checkpoint_split	./px_allocate.c	/^void decide_checkpoint_split(listhead_t *head, long long freemem) {$/;"	f
-destage_data	./px_checkpoint.c	/^void destage_data(void *args){$/;"	f
-destage_data_log_write	./px_log.c	/^int destage_data_log_write(log_t *log,dcheckpoint_map_entry_t *map,int process_id){$/;"	f
-destage_t	./px_destager.h	/^}destage_t;$/;"	t	typeref:struct:destage_t_
-destage_t_	./px_destager.h	/^typedef struct destage_t_{$/;"	s
-dim_type	./px_dlog.h	/^} dim_type;$/;"	t	typeref:enum:__anon6
+decending_time_sort	./px_allocate.c	/^int decending_time_sort(var_t *a, var_t *b){$/;"	f
+decide_checkpoint_split	./px_allocate.c	/^void decide_checkpoint_split(rcontext_t *runtime_context, var_t *list, long long freemem) {$/;"	f
+destage_arg	./px_checkpoint.c	/^destage_t destage_arg;$/;"	v
+destage_t	./px_types.h	/^}destage_t;$/;"	t	typeref:struct:destage_t_
+destage_t_	./px_types.h	/^typedef struct destage_t_{$/;"	s
+df	./px_checkpoint.c	/^FILE *ef,*cf,*df,*itf;$/;"	v
+dim_type	./px_dlog.h	/^} dim_type;$/;"	t	typeref:enum:__anon1
 disable_debug	./px_debug.c	/^void disable_debug(){$/;"	f
 disable_protection	./px_util.c	/^long disable_protection(void *page_start_addr,size_t aligned_size){$/;"	f
-dlog	./px_destager.h	/^    dlog_t *dlog;$/;"	m	struct:destage_t_
+dlog	./px_checkpoint.c	/^dlog_t dlog;$/;"	v
+dlog	./px_types.h	/^    struct dlog_t_ *dlog;$/;"	m	struct:destage_t_	typeref:struct:destage_t_::dlog_t_
+dlog	./px_types.h	/^    struct dlog_t_ *dlog;$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::dlog_t_
 dlog_checkpoint_version	./px_dlog.h	/^    long dlog_checkpoint_version; \/\/current version no of the checkpoint$/;"	m	struct:dlog_t_
 dlog_init	./px_dlog.c	/^void dlog_init(dlog_t *dlog){$/;"	f
-dlog_local_write	./px_dlog.c	/^int dlog_local_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version){$/;"	f
-dlog_read	./px_dlog.c	/^dcheckpoint_map_entry_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, long version, checkpoint_type type) {$/;"	f
+dlog_local_write	./px_dlog.c	/^int dlog_local_write(dlog_t *dlog, var_t *list,int process_id,long version){$/;"	f
+dlog_read	./px_dlog.c	/^var_t *dlog_read(dlog_t *dlog, char *var_name, int process_id, long version, checkpoint_type type) {$/;"	f
 dlog_remote_checkpoint_version	./px_dlog.h	/^    long dlog_remote_checkpoint_version; \/\/ track version and validity of remote checkpoint$/;"	m	struct:dlog_t_
-dlog_remote_write	./px_dlog.c	/^int dlog_remote_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version) {$/;"	f
+dlog_remote_write	./px_dlog.c	/^int dlog_remote_write(dlog_t *dlog, var_t *list,int process_id,long version) {$/;"	f
 dlog_t	./px_dlog.h	/^}dlog_t;$/;"	t	typeref:struct:dlog_t_
 dlog_t_	./px_dlog.h	/^typedef struct dlog_t_{$/;"	s
-dlog_write	./px_dlog.c	/^int dlog_write(dlog_t *dlog, listhead_t *lhead,int process_id,long version, dim_type type) {$/;"	f
+dlog_write	./px_dlog.c	/^int dlog_write(dlog_t *dlog, var_t *list,int process_id,long version, dim_type type) {$/;"	f
 done_tracking	./px_allocate.c	/^volatile int done_tracking = 0;$/;"	v
 dummy	./px_sampler.c	/^    int dummy;$/;"	m	struct:pthread_data	file:
+e	./px_timer.h	/^    struct timespec s, e; \/\/ start, end$/;"	m	struct:timer	typeref:struct:timer::
+early_copied	./px_types.h	/^    volatile int early_copied; \/\/ get accesed by signal handler$/;"	m	struct:var_t_
+early_copy_enabled	./px_types.h	/^    int early_copy_enabled;$/;"	m	struct:ccontext_t_
 earlycopy_t	./px_earlycopy.h	/^}earlycopy_t;$/;"	t	typeref:struct:earlycopy_t_
 earlycopy_t_	./px_earlycopy.h	/^typedef struct earlycopy_t_{$/;"	s
+earlycopy_time_offset	./px_types.h	/^    struct timeval earlycopy_time_offset; \/* time offset since checkpoint, before starting early copy *\/$/;"	m	struct:var_t_	typeref:struct:var_t_::timeval
+ec_abort	./px_types.h	/^    int ec_abort; \/* flag variable to signal ec thread - stop early copy *\/$/;"	m	struct:rcontext_t_
+ec_arg	./px_checkpoint.c	/^earlycopy_t ec_arg;$/;"	v
+ec_finished	./px_types.h	/^    int ec_finished; \/* flag variable to check if early copy thread finished*\/$/;"	m	struct:rcontext_t_
+ec_offset_add	./px_types.h	/^    ulong ec_offset_add;$/;"	m	struct:ccontext_t_
+ec_start	./px_types.h	/^    int ec_start; \/* notify to start early copy. set by destage or main thread *\/$/;"	m	struct:rcontext_t_
+ef	./px_checkpoint.c	/^FILE *ef,*cf,*df,*itf;$/;"	v
+elem_start_ptr	./px_log.h	/^    checkpoint_t *elem_start_ptr;$/;"	m	struct:ringbuffer_t_
 enable_debug	./px_debug.c	/^void enable_debug(){$/;"	f
 enable_protection	./px_util.c	/^void enable_protection(void *ptr, size_t size) {$/;"	f
-enable_write_protection	./px_allocate.c	/^void enable_write_protection(void *ptr, size_t size) {$/;"	f
+enable_write_protection	./px_util.c	/^void enable_write_protection(void *ptr, size_t size) {$/;"	f
+end_offset	./px_log.h	/^    long end_offset;   \/\/ end offset in linear log$/;"	m	struct:checkpoint_t_
 end_time_	./timecount.c	/^void end_time_(){$/;"	f
-end_time_sort	./px_allocate.c	/^int end_time_sort(pagemap_t * a, pagemap_t *b){$/;"	f
-end_timestamp	./px_read.h	/^    struct timeval end_timestamp;$/;"	m	struct:pagemap_t_	typeref:struct:pagemap_t_::timeval
+end_timestamp	./px_types.h	/^    struct timeval end_timestamp; \/*last access time of the variable*\/$/;"	m	struct:var_t_	typeref:struct:var_t_::timeval
 end_timestamp	./timecount.c	/^void end_timestamp(){$/;"	f
 end_timestamp_	./timecount.c	/^void end_timestamp_(){$/;"	f
-entries	./px_checkpoint.h	/^    LIST_ENTRY(entry) entries;$/;"	m	struct:entry
-entries	./px_checkpoint.h	/^    LIST_ENTRY(thread_t_) entries;$/;"	m	struct:thread_t_
-entry	./px_checkpoint.h	/^struct entry {$/;"	s
-entry_t	./px_checkpoint.h	/^typedef struct entry entry_t;$/;"	t	typeref:struct:entry
 expand_mult	./uthash.h	/^   unsigned expand_mult;$/;"	m	struct:UT_hash_bucket
-file_name	./px_log.h	/^	char file_name[256];$/;"	m	struct:memmap_t_
+file_name	./px_log.h	/^	char file_name[256];$/;"	m	struct:ringbuffer_t_
+file_name	./px_log.h	/^    char file_name[256];$/;"	m	struct:logdata_t_
 finalize	./px_checkpoint.c	/^int finalize(){$/;"	f
 finalize_	./px_checkpoint.c	/^int finalize_(){$/;"	f
-first	./px_list.h	/^    ListNode *first;$/;"	m	struct:List
-first_run	./px_log.c	/^int first_run=0;$/;"	v
-flag	./px_checkpoint.h	/^	volatile sig_atomic_t flag;$/;"	m	struct:thread_t_
 flush_access_times	./px_allocate.c	/^void flush_access_times(){$/;"	f
 fp	./px_allocate.c	/^FILE *fp;$/;"	v
 fp	./timecount.c	/^FILE *fp;$/;"	v
 fp2	./timecount.c	/^FILE *fp2;$/;"	v
-free_memory	./px_checkpoint.c	/^long free_memory = -1; \/\/ the memory budget passed as program config for derived from runtime$/;"	v
-function	./px_threadpool.c	/^    void (*function)(void *);$/;"	m	struct:__anon5	file:
+free_memory	./px_types.h	/^    long free_memory;$/;"	m	struct:rcontext_t_
+free_memory	./px_types.h	/^    ulong free_memory;$/;"	m	struct:ccontext_t_
+function	./px_threadpool.c	/^    void (*function)(void *);$/;"	m	struct:__anon3	file:
 g_world	./px_remote.c	/^ARMCI_Group  g_world, my_grp;$/;"	v
 g_world	./rmtchkpt.c	/^ARMCI_Group  g_world, my_grp;$/;"	v
 get16bits	./uthash.h	469;"	d
 get16bits	./uthash.h	472;"	d
 get16bits	./uthash.h	476;"	d
-get_data_addr	./px_util.c	/^void *get_data_addr(void *base_addr, checkpoint_t *chkptr){$/;"	f
 get_elapsed_time	./timecount.c	/^unsigned long get_elapsed_time(struct timeval *end, struct timeval *start){$/;"	f
 get_free_memory	./px_sampler.c	/^long long get_free_memory(){$/;"	f
 get_free_ram	./px_sampler.c	/^long long get_free_ram(){$/;"	f
-get_latest_mapfile	./px_log.c	/^static memmap_t *get_latest_mapfile(log_t *log){$/;"	f	file:
-get_meta	./px_log.c	/^static checkpoint_t *get_meta(void *base_addr,size_t offset){$/;"	f	file:
-get_mypeer	./px_util.c	/^int get_mypeer(int myrank){$/;"	f
+get_mypeer	./px_util.c	/^int get_mypeer(rcontext_t *rcontext, int myrank){$/;"	f
 get_mypeer_group	./px_remote.c	/^int get_mypeer_group(int grp_my_rank){$/;"	f
-get_start_addr	./px_log.c	/^static void *get_start_addr(void *base_addr,checkpoint_t *last_meta){$/;"	f	file:
-graceful_shutdown	./px_threadpool.c	/^    graceful_shutdown  = 2$/;"	e	enum:__anon4	file:
+graceful_shutdown	./px_threadpool.c	/^    graceful_shutdown  = 2$/;"	e	enum:__anon2	file:
 group_create_memory	./px_remote.c	/^void** group_create_memory(int nranks, size_t size) {$/;"	f
 group_create_memory	./rmtchkpt.c	/^void** group_create_memory(int numranks, int myrank, size_t bytes) {$/;"	f
 grp_my_rank	./px_remote.c	/^int grp_my_rank, myrank, mypeer;$/;"	v
@@ -302,23 +313,26 @@ grp_my_rank	./rmtchkpt.c	/^int grp_my_rank, myrank, mypeer;$/;"	v
 grp_nproc	./px_remote.c	/^int grp_nproc;$/;"	v
 grp_nproc	./rmtchkpt.c	/^int grp_nproc;$/;"	v
 handle_error	./px_allocate.c	16;"	d	file:
-handle_error	./px_read.c	17;"	d	file:
-handle_error	./px_util.c	24;"	d	file:
+handle_error	./px_read.c	10;"	d	file:
+handle_error	./px_util.c	23;"	d	file:
+hash	./px_log.h	/^    unsigned char hash[MD5_LENGTH]; \/\/ 64 bit hash value$/;"	m	struct:checkpoint_t_
+hash	./px_types.h	/^    unsigned char hash[MD5_LENGTH]; \/\/ used for md5 digest store$/;"	m	struct:var_t_
 hashv	./uthash.h	/^   unsigned hashv;                   \/* result of hash-fcn(key)        *\/$/;"	m	struct:UT_hash_handle
-head	./px_checkpoint.c	/^listhead_t head;$/;"	v
-head	./px_log.h	/^    headmeta_t *head;$/;"	m	struct:memmap_t_
+head	./px_log.h	/^    headmeta_t *head;$/;"	m	struct:ringbuffer_t_
+head	./px_log.h	/^    ulong head; \/\/ head index of the ringbuffer$/;"	m	struct:headmeta_t_
 head	./px_threadpool.c	/^    int head;$/;"	m	struct:threadpool_t	file:
 headmeta_t	./px_log.h	/^}headmeta_t;$/;"	t	typeref:struct:headmeta_t_
 headmeta_t_	./px_log.h	/^typedef struct headmeta_t_{$/;"	s
-hh	./px_dlog.h	/^    UT_hash_handle hh;        \/* makes this structure hashtable *\/$/;"	m	struct:dcheckpoint_map_entry_t_
-hh	./px_read.h	/^    UT_hash_handle hh;         \/* makes this structure hashable *\/$/;"	m	struct:pagemap_t_
+helper_core_size	./px_types.h	/^    int helper_core_size;$/;"	m	struct:ccontext_t_
+helper_cores	./px_types.h	/^    int helper_cores[5];$/;"	m	struct:ccontext_t_
+hh	./px_types.h	/^    UT_hash_handle hh;         \/* makes this structure hashable *\/$/;"	m	struct:var_t_
 hh_head	./uthash.h	/^   struct UT_hash_handle *hh_head;$/;"	m	struct:UT_hash_bucket	typeref:struct:UT_hash_bucket::UT_hash_handle
 hh_next	./uthash.h	/^   struct UT_hash_handle *hh_next;   \/* next hh in bucket order        *\/$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_handle
 hh_prev	./uthash.h	/^   struct UT_hash_handle *hh_prev;   \/* previous hh in bucket order    *\/$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_handle
 hho	./uthash.h	/^   ptrdiff_t hho; \/* hash handle offset (byte pos of hash handle in element *\/$/;"	m	struct:UT_hash_table
-id	./px_checkpoint.h	/^    int id;$/;"	m	struct:entry
+id	./px_timer.h	/^    clockid_t id;$/;"	m	struct:timer
 ideal_chain_maxlen	./uthash.h	/^   unsigned ideal_chain_maxlen;$/;"	m	struct:UT_hash_table
-immediate_shutdown	./px_threadpool.c	/^    immediate_shutdown = 1,$/;"	e	enum:__anon4	file:
+immediate_shutdown	./px_threadpool.c	/^    immediate_shutdown = 1,$/;"	e	enum:__anon2	file:
 ineff_expands	./uthash.h	/^   unsigned ineff_expands, noexpand;$/;"	m	struct:UT_hash_table
 init	./px_checkpoint.c	/^int init(int proc_id, int nproc){$/;"	f
 init_	./px_checkpoint.c	/^int init_(int *proc_id, int *nproc){$/;"	f
@@ -328,126 +342,135 @@ install_sighandler	./px_util.c	/^void install_sighandler(void (*sighandler)(int,
 invoke_barrier	./rmtchkpt.c	/^int invoke_barrier() {$/;"	f
 irun	./timecount.c	/^int irun;$/;"	v
 isDebugEnabled	./px_debug.c	/^int isDebugEnabled(){$/;"	f
+isPaused	./px_timer.h	/^    bool isPaused;$/;"	m	struct:timer
 is_chkpoint_present	./px_log.c	/^int is_chkpoint_present(log_t *log){$/;"	f
-is_dlog_checkpoing_data_present	./px_util.c	/^int is_dlog_checkpoing_data_present(listhead_t *head){$/;"	f
+is_dlog_checkpoing_data_present	./px_util.c	/^int is_dlog_checkpoing_data_present(var_t *list){$/;"	f
 is_dlog_remote_valid	./px_dlog.h	/^    int is_dlog_remote_valid;$/;"	m	struct:dlog_t_
 is_dlog_valid	./px_dlog.h	/^    int is_dlog_valid; \/\/ used for atomic udate the buffer$/;"	m	struct:dlog_t_
-is_remaining_space_enough	./px_log.c	/^static int is_remaining_space_enough(log_t *log, listhead_t *lhead){$/;"	f	file:
-is_remaining_space_enough2	./px_log.c	/^static int is_remaining_space_enough2(log_t *log, dcheckpoint_map_entry_t *map){$/;"	f	file:
 is_stop_issued	./px_sampler.c	/^int is_stop_issued(void) {$/;"	f
+itf	./px_checkpoint.c	/^FILE *ef,*cf,*df,*itf;$/;"	v
 key	./uthash.h	/^   void *key;                        \/* ptr to enclosing struct's key  *\/$/;"	m	struct:UT_hash_handle
 keylen	./uthash.h	/^   unsigned keylen;                  \/* enclosing struct's key len     *\/$/;"	m	struct:UT_hash_handle
-last	./px_list.h	/^    ListNode *last;$/;"	m	struct:List
+lchk_end_time	./px_types.h	/^    struct timeval lchk_end_time; \/\/ end time of las checkpoint$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::timeval
+lchk_iteration_time	./px_types.h	/^    struct timeval lchk_iteration_time; \/\/ last iteration time$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::timeval
+lchk_start_time	./px_types.h	/^    struct timeval lchk_start_time; \/\/ last checkpoint time$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::timeval
 lib_initialized	./px_checkpoint.c	/^int lib_initialized = 0;$/;"	v
-lib_process_id	./px_checkpoint.c	/^int lib_process_id = -1;$/;"	v
-list	./px_earlycopy.h	/^    listhead_t *list; \/\/ current data$/;"	m	struct:earlycopy_t_
-listhead_t	./px_checkpoint.h	/^typedef struct listhead listhead_t;$/;"	t	typeref:struct:listhead
-local_dram_checkpoint_size	./px_checkpoint.c	/^long local_dram_checkpoint_size =0;$/;"	v
+list	./px_earlycopy.h	/^    var_t *list; \/\/ current data$/;"	m	struct:earlycopy_t_
+local_dram_checkpoint_size	./px_types.h	/^    ulong local_dram_checkpoint_size;$/;"	m	struct:rcontext_t_
 local_dram_read	./px_read.c	/^void* local_dram_read(dlog_t *dlog, char *var_name,int process_id, int version){$/;"	f
-local_ptr	./px_checkpoint.h	/^	void *local_ptr;  \/* local pointer out of memory grid *\/$/;"	m	struct:entry
+local_remote_ptr	./px_types.h	/^    void *local_remote_ptr;  \/* local pointer out of memory grid *\/$/;"	m	struct:var_t_
 lock	./px_threadpool.c	/^    pthread_mutex_t lock;$/;"	m	struct:threadpool_t	file:
 log2_num_buckets	./uthash.h	/^   unsigned num_buckets, log2_num_buckets;$/;"	m	struct:UT_hash_table
+log_commitv	./px_log.c	/^int log_commitv(log_t *log,ulong version){$/;"	f
 log_err	./px_debug.h	18;"	d
+log_head	./px_log.h	/^    ulong log_head; \/\/ head offset of the linear log, caching purposes$/;"	m	struct:ringbuffer_t_
 log_info	./px_debug.h	22;"	d
-log_init	./px_log.c	/^void log_init(log_t *log , long log_size, int process_id){$/;"	f
+log_init	./px_log.c	/^int log_init(log_t *log , int proc_id){$/;"	f
+log_isempty	./px_log.c	/^int log_isempty(log_t *log){$/;"	f
+log_isfull	./px_log.c	/^int log_isfull(log_t *log){$/;"	f
+log_ptr	./px_log.c	/^void* log_ptr(log_t *log,ulong offset){$/;"	f
 log_read	./px_log.c	/^checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){$/;"	f
-log_size	./px_checkpoint.c	/^long log_size = 2*1024*1024;$/;"	v
-log_size	./px_log.h	/^	offset_t log_size;$/;"	m	struct:log_t_
+log_size	./px_log.h	/^    ulong log_size; \/\/ size of the linear log$/;"	m	struct:headmeta_t_
+log_size	./px_log.h	/^    ulong log_size;$/;"	m	struct:logdata_t_
+log_size	./px_types.h	/^    long log_size;$/;"	m	struct:ccontext_t_
 log_t	./px_log.h	/^}log_t;$/;"	t	typeref:struct:log_t_
 log_t_	./px_log.h	/^typedef struct log_t_{$/;"	s
+log_tail	./px_log.h	/^    ulong log_tail; \/\/ tail offset of the linear log, caching purposes$/;"	m	struct:ringbuffer_t_
 log_warn	./px_debug.h	20;"	d
-log_write	./px_log.c	/^int log_write(log_t *log, listhead_t *lhead, int process_id,long version){$/;"	f
-m	./px_log.h	/^	memmap_t m[2];$/;"	m	struct:log_t_
+log_write	./px_log.c	/^int log_write(log_t *log, var_t *variable, int process_id,long version){$/;"	f
+logdata_t	./px_log.h	/^}logdata_t;$/;"	t	typeref:struct:logdata_t_
+logdata_t_	./px_log.h	/^typedef struct logdata_t_{$/;"	s
 make_timestamp_	./timecount.c	/^void make_timestamp_(){$/;"	f
-map	./px_dlog.h	/^    dcheckpoint_map_entry_t *map[2];$/;"	m	struct:dlog_t_
-map	./px_earlycopy.h	/^    pagemap_t *map; \/\/ timing data$/;"	m	struct:earlycopy_t_
-map_file_ptr	./px_log.h	/^    void *map_file_ptr;$/;"	m	struct:memmap_t_
-max_checkpoints	./px_checkpoint.c	/^long max_checkpoints = -1; \/\/ termination checkpoint iteration.$/;"	v
-mb	./px_constants.h	10;"	d
-memmap_t	./px_log.h	/^}memmap_t;$/;"	t	typeref:struct:memmap_t_
-memmap_t_	./px_log.h	/^typedef struct memmap_t_{$/;"	s
-meta	./px_log.h	/^    checkpoint_t *meta;$/;"	m	struct:memmap_t_
+map	./px_dlog.h	/^    var_t *map[2];$/;"	m	struct:dlog_t_
+max_checkpoints	./px_types.h	/^    long max_checkpoints;$/;"	m	struct:ccontext_t_
+mb	./px_constants.h	40;"	d
+md5_digest	./px_util.c	/^void md5_digest(unsigned char *digest,void *data, ulong length){$/;"	f
+micro	./px_types.h	/^    ulong micro;$/;"	m	struct:timeoffset_t_
 min_free_mem	./px_sampler.c	/^long long min_free_mem = -1;$/;"	v
 msleep	./px_util.c	/^int msleep(unsigned long nanosec)$/;"	f
+mtx	./px_types.h	/^    pthread_mutex_t mtx; \/* mutex to protect shared variables between, main thread, destage thread and ec thread *\/$/;"	m	struct:rcontext_t_
 my_grp	./px_remote.c	/^ARMCI_Group  g_world, my_grp;$/;"	v
 my_grp	./rmtchkpt.c	/^ARMCI_Group  g_world, my_grp;$/;"	v
 mypeer	./px_remote.c	/^int grp_my_rank, myrank, mypeer;$/;"	v
 mypeer	./rmtchkpt.c	/^int grp_my_rank, myrank, mypeer;$/;"	v
 myrank	./px_remote.c	/^int grp_my_rank, myrank, mypeer;$/;"	v
 myrank	./rmtchkpt.c	/^int grp_my_rank, myrank, mypeer;$/;"	v
-n_processes	./px_checkpoint.c	/^int n_processes = -1;  \/\/ number of processes assigned for this MPI job$/;"	v
-next	./px_list.h	/^    struct ListNode *next;$/;"	m	struct:ListNode	typeref:struct:ListNode::ListNode
+nelements	./px_log.h	/^    uint nelements; \/\/ number of buffer slots in ring buffer$/;"	m	struct:headmeta_t_
 next	./uthash.h	/^   void *next;                       \/* next element in app order      *\/$/;"	m	struct:UT_hash_handle
+next_checkpoint_time	./px_earlycopy.h	/^    struct timeval next_checkpoint_time;$/;"	m	struct:earlycopy_t_	typeref:struct:earlycopy_t_::timeval
 noexpand	./uthash.h	/^   unsigned ineff_expands, noexpand;$/;"	m	struct:UT_hash_table
 nonideal_items	./uthash.h	/^   unsigned nonideal_items;$/;"	m	struct:UT_hash_table
 notify	./px_threadpool.c	/^    pthread_cond_t notify;$/;"	m	struct:threadpool_t	file:
+nproc	./px_types.h	/^    int nproc;$/;"	m	struct:rcontext_t_
 nranks	./px_remote.c	/^int nranks;$/;"	v
 nranks	./rmtchkpt.c	/^int nranks;$/;"	v
 null_terminate	./px_util.c	/^char* null_terminate(char *c_string){$/;"	f
 num_buckets	./uthash.h	/^   unsigned num_buckets, log2_num_buckets;$/;"	m	struct:UT_hash_table
 num_items	./uthash.h	/^   unsigned num_items;$/;"	m	struct:UT_hash_table
-nvlog	./px_destager.h	/^    log_t *nvlog;$/;"	m	struct:destage_t_
+nvlog	./px_checkpoint.c	/^log_t nvlog;$/;"	v
 nvlog	./px_earlycopy.h	/^    log_t *nvlog; \/\/nvram$/;"	m	struct:earlycopy_t_
-nvmmemcpy_read	./px_util.c	/^int nvmmemcpy_read(void *dest, void *src, size_t len) {$/;"	f
-nvmmemcpy_write	./px_util.c	/^int nvmmemcpy_write(void *dest, void *src, size_t len) {$/;"	f
-nvpageptr	./px_read.h	/^    void *nvpageptr;            $/;"	m	struct:pagemap_t_
-nvram_checkpoint_size	./px_checkpoint.c	/^long nvram_checkpoint_size = 0;$/;"	v
-nvram_wbw	./px_checkpoint.c	/^int nvram_wbw = -1;$/;"	v
-offset	./px_log.h	/^	offset_t offset;$/;"	m	struct:log_t_
-offset	./px_log.h	/^    offset_t offset; \/\/ record the offest, and i used it as atomic checkpoint flag$/;"	m	struct:headmeta_t_
-offset	./px_log.h	/^    offset_t offset;$/;"	m	struct:checkpoint_t_
-offset_t	./px_log.h	/^typedef long offset_t;$/;"	t
+nvlog	./px_types.h	/^    struct log_t_ *nvlog;$/;"	m	struct:destage_t_	typeref:struct:destage_t_::log_t_
+nvlog	./px_types.h	/^    struct log_t_ *nvlog;$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::log_t_
+nvmmemcpy_read	./px_util.c	/^int nvmmemcpy_read(void *dest, void *src, size_t len, int rbw) {$/;"	f
+nvmmemcpy_write	./px_util.c	/^int nvmmemcpy_write(void *dest, void *src, size_t len, int wbw) {$/;"	f
+nvptr	./px_types.h	/^    void *nvptr;   \/*this get used in the pre-copy in the restart execution*\/$/;"	m	struct:var_t_
+nvram_checkpoint_size	./px_types.h	/^    ulong nvram_checkpoint_size;$/;"	m	struct:rcontext_t_
+nvram_wbw	./px_types.h	/^    int nvram_wbw;$/;"	m	struct:ccontext_t_
+offset_t	./px_types.h	/^typedef ulong offset_t;$/;"	t
 old_sa	./px_util.c	/^struct sigaction old_sa; $/;"	v	typeref:struct:sigaction
 online_copy	./px_read.c	/^void *online_copy(log_t *log,dlog_t *dlog, char *var_name, int process_id , int failed_process){$/;"	f
-online_version	./px_log.h	/^    long online_version; \/\/ online stable checkpoint version achieved when we double checkpoint data.$/;"	m	struct:headmeta_t_
 page_size	./px_allocate.c	/^int page_size;$/;"	v
 page_size	./px_allocate.h	/^    long page_size;$/;"	m	struct:allocate_t_
-page_tracking_map	./px_allocate.c	/^pagemap_t *page_tracking_map = NULL;$/;"	v
-pagemap	./px_allocate.h	/^    pagemap_t *pagemap;$/;"	m	struct:allocate_t_
-pagemap	./px_read.c	/^pagemap_t *pagemap = NULL;$/;"	v
-pagemap_get	./px_util.c	/^pagemap_t *pagemap_get(pagemap_t **pagemapptr, void *pageptr){$/;"	f
-pagemap_put	./px_util.c	/^void pagemap_put(pagemap_t **pagemapptr, char *varname, void *pageptr, void *nvpageptr, offset_t size, offset_t asize,$/;"	f
-pagemap_t	./px_read.h	/^} pagemap_t;$/;"	t	typeref:struct:pagemap_t_
-pagemap_t_	./px_read.h	/^typedef struct pagemap_t_ {$/;"	s
-pageptr	./px_read.h	/^    void *pageptr;                    \/* key *\/$/;"	m	struct:pagemap_t_
-paligned_size	./px_read.h	/^	offset_t paligned_size;$/;"	m	struct:pagemap_t_
+pagemap	./px_allocate.h	/^    var_t *pagemap;$/;"	m	struct:allocate_t_
+paligned_size	./px_types.h	/^    offset_t paligned_size;$/;"	m	struct:var_t_
 pause_time_	./timecount.c	/^void pause_time_(){$/;"	f
-pfile_location	./px_checkpoint.c	/^char pfile_location[32];$/;"	v
-prev	./px_list.h	/^    struct ListNode *prev;$/;"	m	struct:ListNode	typeref:struct:ListNode::ListNode
+pfile_location	./px_types.h	/^    char pfile_location[32];$/;"	m	struct:ccontext_t_
+plock	./px_log.h	/^    pthread_mutex_t plock;$/;"	m	struct:log_t_
+preamble_t	./px_log.h	/^}preamble_t;$/;"	t	typeref:struct:preamble_t_
+preamble_t_	./px_log.h	/^typedef struct preamble_t_{$/;"	s
 prev	./uthash.h	/^   void *prev;                       \/* prev element in app order      *\/$/;"	m	struct:UT_hash_handle
-process_id	./px_checkpoint.h	/^    int process_id;$/;"	m	struct:entry
-process_id	./px_destager.h	/^    int process_id;$/;"	m	struct:destage_t_
-process_id	./px_dlog.h	/^    int process_id;$/;"	m	struct:dcheckpoint_map_entry_t_
 process_id	./px_log.h	/^    int process_id;$/;"	m	struct:checkpoint_t_
+process_id	./px_types.h	/^    int process_id;$/;"	m	struct:destage_t_
+process_id	./px_types.h	/^    int process_id;$/;"	m	struct:rcontext_t_
+process_id	./px_types.h	/^    int process_id;$/;"	m	struct:var_t_
 process_id	./timecount.c	/^int process_id;$/;"	v
 protect_all_other_pages	./px_allocate.c	/^void protect_all_other_pages(char *varname) {$/;"	f
-prv_offset	./px_log.h	/^    offset_t prv_offset;$/;"	m	struct:checkpoint_t_
 pthread_data	./px_sampler.c	/^struct pthread_data{$/;"	s	file:
-pthreadid	./px_checkpoint.h	/^	pthread_t pthreadid;$/;"	m	struct:thread_t_
-ptr	./px_checkpoint.h	/^    void *ptr;$/;"	m	struct:entry
-px_alighned_allocate	./px_allocate.c	/^void *px_alighned_allocate(size_t size , char *varname) {$/;"	f
-px_start_time	./px_checkpoint.c	/^struct timeval px_start_time;$/;"	v	typeref:struct:timeval
+ptr	./px_types.h	/^    void *ptr;       \/* memory address of the variable*\/$/;"	m	struct:var_t_
+px_alighned_allocate	./px_allocate.c	/^var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {$/;"	f
+px_start_time	./px_types.h	/^    struct timeval px_start_time;$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::timeval
 queue	./px_threadpool.c	/^    threadpool_task_t *queue;$/;"	m	struct:threadpool_t	file:
 queue_size	./px_threadpool.c	/^    int queue_size;$/;"	m	struct:threadpool_t	file:
+rcontext_t	./px_types.h	/^}rcontext_t;$/;"	t	typeref:struct:rcontext_t_
+rcontext_t_	./px_types.h	/^typedef struct rcontext_t_{$/;"	s
+read_configs	./px_util.c	/^void read_configs(ccontext_t *config_context,char *file_path){$/;"	f
 remote_alloc	./px_remote.c	/^void* remote_alloc(void ***memory_grid, size_t size){$/;"	f
 remote_barrier	./px_remote.c	/^int remote_barrier() {$/;"	f
-remote_checkpoint	./px_checkpoint.c	/^int remote_checkpoint = 0;$/;"	v
-remote_dram_checkpoint_size	./px_checkpoint.c	/^long remote_dram_checkpoint_size=0;$/;"	v
+remote_checkpoint	./px_types.h	/^    int remote_checkpoint;$/;"	m	struct:ccontext_t_
+remote_dram_checkpoint_size	./px_types.h	/^    ulong remote_dram_checkpoint_size;$/;"	m	struct:rcontext_t_
 remote_finalize	./px_remote.c	/^int remote_finalize(void){$/;"	f
 remote_finalize	./rmtchkpt.c	/^int remote_finalize(void){$/;"	f
 remote_free	./px_remote.c	/^int remote_free(void *ptr){$/;"	f
-remote_init	./px_remote.c	/^int remote_init(int my_rank, int n_rank) {$/;"	f
+remote_init	./px_remote.c	/^int remote_init(int my_rank, int n_rank,int buddy_offset) {$/;"	f
 remote_init	./rmtchkpt.c	/^int remote_init(void) {$/;"	f
-remote_ptr	./px_read.h	/^	void **remote_ptr;$/;"	m	struct:pagemap_t_
+remote_ptr	./px_types.h	/^    void **remote_ptr; \/*pointer grid of memory group *\/$/;"	m	struct:var_t_
 remote_read	./px_remote.c	/^int remote_read(void *dest, void **memory_grid, size_t size){$/;"	f
-remote_restart	./px_checkpoint.c	/^int remote_restart = 0;$/;"	v
+remote_restart	./px_types.h	/^    int remote_restart;$/;"	m	struct:ccontext_t_
 remote_write	./px_remote.c	/^int remote_write(void *src,void **memory_grid, size_t size){$/;"	f
+reset_trackers	./px_allocate.c	/^void reset_trackers(){$/;"	f
+restart_run	./px_types.h	/^    int restart_run;$/;"	m	struct:ccontext_t_
 resume_time_	./timecount.c	/^void resume_time_(){$/;"	f
-rmt_ptr	./px_checkpoint.h	/^    void **rmt_ptr;   \/*pointer grid of memory group *\/$/;"	m	struct:entry
-rstart	./px_checkpoint.c	/^int rstart = 0;$/;"	v
-run_on_cpu	./px_threadpool.c	/^    int run_on_cpu;$/;"	m	struct:threadpool_t	file:
-sem1	./px_checkpoint.c	/^static sem_t sem1;$/;"	v	file:
-sem2	./px_checkpoint.c	/^static sem_t sem2;$/;"	v	file:
+ring_buffer	./px_log.h	/^	ringbuffer_t ring_buffer;$/;"	m	struct:log_t_
+ringb_element	./px_log.c	/^checkpoint_t* ringb_element(log_t *log, ulong index){$/;"	f
+ringbuffer_t	./px_log.h	/^}ringbuffer_t;$/;"	t	typeref:struct:ringbuffer_t_
+ringbuffer_t_	./px_log.h	/^typedef struct ringbuffer_t_{$/;"	s
+run_on_cpu	./px_threadpool.c	/^    int *run_on_cpu;$/;"	m	struct:threadpool_t	file:
+runtime_context	./px_checkpoint.c	/^rcontext_t runtime_context;$/;"	v
+runtime_context	./px_dlog.h	/^    rcontext_t *runtime_context;$/;"	m	struct:dlog_t_
+runtime_context	./px_earlycopy.h	/^    rcontext_t *runtime_context;$/;"	m	struct:earlycopy_t_
+runtime_context	./px_log.h	/^    rcontext_t *runtime_context;$/;"	m	struct:log_t_
+s	./px_timer.h	/^    struct timespec s, e; \/\/ start, end$/;"	m	struct:timer	typeref:struct:timer::timespec
+seconds	./px_types.h	/^    ulong seconds;$/;"	m	struct:timeoffset_t_
 send_cnt	./rmtchkpt.c	/^int send_cnt = 0;$/;"	v
 sentinel	./px_debug.h	26;"	d
 set	./px_threadpool.c	/^    cpu_set_t set;$/;"	m	struct:threadpool_t	file:
@@ -455,63 +478,67 @@ set_stop_issued	./px_sampler.c	/^void set_stop_issued(void) {$/;"	f
 shutdown	./px_threadpool.c	/^    int shutdown;$/;"	m	struct:threadpool_t	file:
 sig_handler_installed	./px_allocate.c	/^int sig_handler_installed = 0;$/;"	v
 signature	./uthash.h	/^   uint32_t signature; \/* used only to find hash tables in external analysis *\/$/;"	m	struct:UT_hash_table
-size	./px_checkpoint.h	/^    size_t size;$/;"	m	struct:entry
-size	./px_dlog.h	/^    size_t size;$/;"	m	struct:dcheckpoint_map_entry_t_
-size	./px_read.h	/^    offset_t size;$/;"	m	struct:pagemap_t_
-split_checkpoint_data	./px_util.c	/^void split_checkpoint_data(listhead_t *head) {$/;"	f
-split_ratio	./px_checkpoint.c	/^int split_ratio = 0;  \/\/ controls what portions of variables get checkpointed NVRAM vs DRAM$/;"	v
-start_copy	./px_checkpoint.c	/^void start_copy(void *args){$/;"	f
+size	./px_log.h	/^    ulong size;$/;"	m	struct:checkpoint_t_
+size	./px_types.h	/^    offset_t size;$/;"	m	struct:var_t_
+split_checkpoint_data	./px_mpiutil.c	/^void split_checkpoint_data(rcontext_t *rcontext, var_t *list) {$/;"	f
+split_ratio	./px_types.h	/^    int split_ratio;$/;"	m	struct:ccontext_t_
 start_memory_sampling_thread	./px_sampler.c	/^void start_memory_sampling_thread(){$/;"	f
+start_offset	./px_log.h	/^    long start_offset;  \/\/ start offset in linear log$/;"	m	struct:checkpoint_t_
+start_page_tracking	./px_allocate.c	/^void start_page_tracking(){$/;"	f
+start_ptr	./px_log.h	/^    void *start_ptr;$/;"	m	struct:logdata_t_
 start_time_	./timecount.c	/^void start_time_(int *mype){$/;"	f
-start_timestamp	./px_read.h	/^    struct timeval start_timestamp; \/* start and end time stamp to monitor access patterns *\/$/;"	m	struct:pagemap_t_	typeref:struct:pagemap_t_::timeval
 start_timestamp_	./timecount.c	/^void start_timestamp_(int *mype){$/;"	f
 started	./px_threadpool.c	/^    int started;$/;"	m	struct:threadpool_t	file:
-started_tracking	./px_read.h	/^    int started_tracking;$/;"	m	struct:pagemap_t_
-status	./px_checkpoint.c	/^int status; \/\/ error status register$/;"	v
-stick_this_thread_to_core	./px_threadpool.c	/^int stick_this_thread_to_core(int core_id) {$/;"	f
+started_tracking	./px_types.h	/^    int started_tracking;  \/* used the flag to find the very first access time, to update the start access time var*\/$/;"	m	struct:var_t_
+stick_this_thread_to_core	./px_threadpool.c	/^int stick_this_thread_to_core(int *core_array,int array_size) {$/;"	f
 stopIssued	./px_sampler.c	/^int stopIssued = 0; \/\/ less than cache line size. Atomic update$/;"	v
 stopMutex	./px_sampler.c	/^pthread_mutex_t stopMutex; \/\/ instead of memory barrier we are using a mutex here$/;"	v
 stop_memory_sampling_thread	./px_sampler.c	/^void stop_memory_sampling_thread(){$/;"	f
 stop_page_tracking	./px_allocate.c	/^void stop_page_tracking(){$/;"	f
 t_end	./timecount.c	/^struct timeval t_end;$/;"	v	typeref:struct:timeval
 t_start	./timecount.c	/^struct timeval t_start;$/;"	v	typeref:struct:timeval
+tail	./px_log.h	/^    ulong tail; \/\/ tail index$/;"	m	struct:headmeta_t_
 tail	./px_threadpool.c	/^    int tail;$/;"	m	struct:threadpool_t	file:
 tail	./uthash.h	/^   struct UT_hash_handle *tail; \/* tail hh in app order, for fast append    *\/$/;"	m	struct:UT_hash_table	typeref:struct:UT_hash_table::UT_hash_handle
 tbl	./uthash.h	/^   struct UT_hash_table *tbl;$/;"	m	struct:UT_hash_handle	typeref:struct:UT_hash_handle::UT_hash_table
-tcontext_t	./px_checkpoint.h	/^}tcontext_t;$/;"	t	typeref:struct:tcontext_t_
-tcontext_t_	./px_checkpoint.h	/^typedef struct tcontext_t_{$/;"	s
-thread	./px_checkpoint.c	/^thread_t thread;$/;"	v
 thread	./px_sampler.c	/^pthread_t thread;$/;"	v
 thread_count	./px_threadpool.c	/^    int thread_count;$/;"	m	struct:threadpool_t	file:
 thread_function	./px_sampler.c	/^void* thread_function(void *tdata){$/;"	f
-thread_pool	./px_checkpoint.c	/^threadpool_t *thread_pool; \/\/ threadpool for destaging and earlycopy$/;"	v
-thread_t	./px_checkpoint.h	/^typedef struct thread_t_ thread_t;$/;"	t	typeref:struct:thread_t_
-thread_t_	./px_checkpoint.h	/^struct thread_t_{$/;"	s
+thread_pool	./px_types.h	/^    threadpool_t *thread_pool;$/;"	m	struct:rcontext_t_
 threadpool_add	./px_threadpool.c	/^int threadpool_add(threadpool_t *pool, void (*function)(void *),$/;"	f
-threadpool_create	./px_threadpool.c	/^threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)$/;"	f
+threadpool_create	./px_threadpool.c	/^threadpool_t *threadpool_create(int thread_count, int queue_size, int *cores, int core_size)$/;"	f
 threadpool_destroy	./px_threadpool.c	/^int threadpool_destroy(threadpool_t *pool, int flags)$/;"	f
-threadpool_destroy_flags_t	./px_threadpool.h	/^} threadpool_destroy_flags_t;$/;"	t	typeref:enum:__anon2
-threadpool_error_t	./px_threadpool.h	/^} threadpool_error_t;$/;"	t	typeref:enum:__anon1
+threadpool_destroy_flags_t	./px_threadpool.h	/^} threadpool_destroy_flags_t;$/;"	t	typeref:enum:__anon5
+threadpool_error_t	./px_threadpool.h	/^} threadpool_error_t;$/;"	t	typeref:enum:__anon4
 threadpool_free	./px_threadpool.c	/^int threadpool_free(threadpool_t *pool)$/;"	f
-threadpool_graceful	./px_threadpool.h	/^    threadpool_graceful       = 1$/;"	e	enum:__anon2
-threadpool_invalid	./px_threadpool.h	/^    threadpool_invalid        = -1,$/;"	e	enum:__anon1
-threadpool_lock_failure	./px_threadpool.h	/^    threadpool_lock_failure   = -2,$/;"	e	enum:__anon1
-threadpool_queue_full	./px_threadpool.h	/^    threadpool_queue_full     = -3,$/;"	e	enum:__anon1
-threadpool_shutdown	./px_threadpool.h	/^    threadpool_shutdown       = -4,$/;"	e	enum:__anon1
-threadpool_shutdown_t	./px_threadpool.c	/^} threadpool_shutdown_t;$/;"	t	typeref:enum:__anon4	file:
+threadpool_graceful	./px_threadpool.h	/^    threadpool_graceful       = 1$/;"	e	enum:__anon5
+threadpool_invalid	./px_threadpool.h	/^    threadpool_invalid        = -1,$/;"	e	enum:__anon4
+threadpool_lock_failure	./px_threadpool.h	/^    threadpool_lock_failure   = -2,$/;"	e	enum:__anon4
+threadpool_queue_full	./px_threadpool.h	/^    threadpool_queue_full     = -3,$/;"	e	enum:__anon4
+threadpool_shutdown	./px_threadpool.h	/^    threadpool_shutdown       = -4,$/;"	e	enum:__anon4
+threadpool_shutdown_t	./px_threadpool.c	/^} threadpool_shutdown_t;$/;"	t	typeref:enum:__anon2	file:
 threadpool_t	./px_threadpool.c	/^struct threadpool_t {$/;"	s	file:
 threadpool_t	./px_threadpool.h	/^typedef struct threadpool_t threadpool_t;$/;"	t	typeref:struct:threadpool_t
-threadpool_task_t	./px_threadpool.c	/^} threadpool_task_t;$/;"	t	typeref:struct:__anon5	file:
+threadpool_task_t	./px_threadpool.c	/^} threadpool_task_t;$/;"	t	typeref:struct:__anon3	file:
 threadpool_thread	./px_threadpool.c	/^static void *threadpool_thread(void *threadpool)$/;"	f	file:
-threadpool_thread_failure	./px_threadpool.h	/^    threadpool_thread_failure = -5$/;"	e	enum:__anon1
+threadpool_thread_failure	./px_threadpool.h	/^    threadpool_thread_failure = -5$/;"	e	enum:__anon4
 threads	./px_threadpool.c	/^    pthread_t *threads;$/;"	m	struct:threadpool_t	file:
-threshold_size	./px_checkpoint.c	/^int threshold_size = 4096; \/\/ threshold size when deciding on moving to DRAM$/;"	v
-time_sort	./px_checkpoint.c	/^int time_sort(pagemap_t *a , pagemap_t *b){$/;"	f
-timestamp	./px_log.h	/^    struct timeval timestamp;$/;"	m	struct:headmeta_t_	typeref:struct:headmeta_t_::timeval
+threshold_size	./px_types.h	/^    int threshold_size;$/;"	m	struct:ccontext_t_
+timeoffset_t	./px_types.h	/^} timeoffset_t;$/;"	t	typeref:struct:timeoffset_t_
+timeoffset_t_	./px_types.h	/^typedef struct timeoffset_t_{$/;"	s
+timer	./px_timer.h	/^struct timer {$/;"	s
+timer_destroy	./px_timer.h	/^timer_destroy(struct timer *tm)$/;"	f
+timer_end	./px_timer.h	/^timer_end(struct timer *tm, enum answerUnit_t unit)$/;"	f
+timer_getTime	./px_timer.h	/^timer_getTime(struct timer *tm, enum answerUnit_t unit)$/;"	f
+timer_getTimeSpec	./px_timer.h	/^timer_getTimeSpec(struct timer *tm)$/;"	f
+timer_init	./px_timer.h	/^timer_init(clockid_t id_, struct timer *tm)$/;"	f
+timer_init_alloc	./px_timer.h	/^timer_init_alloc(clockid_t id_)$/;"	f
+timer_pause	./px_timer.h	/^timer_pause(struct timer *tm, enum answerUnit_t unit)$/;"	f
+timer_resume	./px_timer.h	/^timer_resume(struct timer *tm) {$/;"	f
+timer_start	./px_timer.h	/^timer_start(struct timer *tm)$/;"	f
 timeval_subtract	./px_util.c	/^int timeval_subtract (struct timeval *result, struct timeval *x, struct timeval *y) $/;"	f
-tlisthead_t	./px_checkpoint.h	/^typedef struct tlisthead tlisthead_t;$/;"	t	typeref:struct:tlisthead
 tot_etime	./timecount.c	/^unsigned long tot_etime;$/;"	v
-type	./px_checkpoint.h	/^    checkpoint_type type;$/;"	m	struct:entry
+type	./px_types.h	/^    checkpoint_type type;$/;"	m	struct:var_t_
 uint32_t	./uthash.h	/^typedef unsigned int uint32_t;$/;"	t
 uint8_t	./uthash.h	/^typedef unsigned char uint8_t;$/;"	t
 uthash_expand_fyi	./uthash.h	92;"	d
@@ -519,11 +546,13 @@ uthash_fatal	./uthash.h	79;"	d
 uthash_free	./uthash.h	85;"	d
 uthash_malloc	./uthash.h	82;"	d
 uthash_noexpand_fyi	./uthash.h	89;"	d
-value	./px_list.h	/^    void *value;$/;"	m	struct:ListNode
-var_name	./px_checkpoint.h	/^    char var_name[VAR_SIZE];$/;"	m	struct:entry
-var_name	./px_dlog.h	/^    char var_name[20];    \/* key *\/$/;"	m	struct:dcheckpoint_map_entry_t_
+value	./px_log.h	/^    long value;$/;"	m	struct:preamble_t_
 var_name	./px_log.h	/^    char var_name[20];$/;"	m	struct:checkpoint_t_
-varname	./px_read.h	/^	char varname[20];$/;"	m	struct:pagemap_t_
-version	./px_checkpoint.h	/^    int version;$/;"	m	struct:entry
-version	./px_dlog.h	/^    long version;$/;"	m	struct:dcheckpoint_map_entry_t_
-version	./px_log.h	/^    long version;$/;"	m	struct:checkpoint_t_
+var_t	./px_types.h	/^} var_t;$/;"	t	typeref:struct:var_t_
+var_t_	./px_types.h	/^typedef struct var_t_ {$/;"	s
+varmap	./px_checkpoint.c	/^var_t *varmap = NULL;$/;"	v
+varmap	./px_types.h	/^    struct var_t_ **varmap; \/* pointer to varmap pointer *\/$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::var_t_
+varname	./px_types.h	/^    char varname[20];  \/* key *\/$/;"	m	struct:var_t_
+varname	./px_types.h	/^    char varname[20];$/;"	m	struct:timeoffset_t_
+version	./px_log.h	/^    ulong version;$/;"	m	struct:checkpoint_t_
+version	./px_types.h	/^    ulong version; \/\/ use in dlog hash structure.$/;"	m	struct:var_t_

@@ -69,6 +69,11 @@ typedef struct rcontext_t_{
     struct dlog_t_ *dlog;
     struct var_t_ **varmap; /* pointer to varmap pointer */
 
+	//counters for de-duplicaiton
+    ulong total_pages;
+	ulong mod_pages;
+	ulong umod_pages;
+
 }rcontext_t;
 
 

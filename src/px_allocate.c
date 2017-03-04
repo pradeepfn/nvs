@@ -70,6 +70,7 @@ var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {
     s->earlycopy_time_offset.tv_usec = 0;
     strncpy(s->varname,varname,sizeof(char)*20);
 
+
     return s;
 
 
@@ -83,6 +84,7 @@ var_t *px_alighned_allocate(size_t size ,int process_id, char *varname) {
  * 4. apply write protection on other chunks
  */
 extern var_t *varmap;
+extern rcontext_t runtime_context;
 
 static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
     if(si != NULL && si->si_addr != NULL){
@@ -90,19 +92,20 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
         void *pageptr;
         long offset =0;
         pageptr = si->si_addr;
+		int pagesize = 4096;
 
 
         for(s=varmap;s != NULL;s=s->hh.next) {
             offset = pageptr - s->ptr;
-            if(offset >=0 && offset <= s->size){ // the adress belong to this chunk.
+            if(offset >=0 && offset <= s->paligned_size){ // the adress belong to this chunk.
                /* if(isDebugEnabled()){
                     printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
                 }*/
-                if(s != NULL) {
-                    gettimeofday(&(s->end_timestamp), NULL);
-                    disable_protection(s->ptr, page_size);
-                    protect_all_other_pages(s->varname);
-                }
+				//get the page start
+				pageptr = (void *)((long)si->si_addr & ~(pagesize-1));
+                disable_protection(pageptr, page_size);
+				// hopefully we dont acess this while signal handler being called
+				runtime_context.mod_pages++; 
                 return;
             }
         }
@@ -111,40 +114,18 @@ static void access_monitor_handler(int sig, siginfo_t *si, void *unused){
 }
 
 
-FILE *fp;
 void start_page_tracking(){
     var_t *s;
-    char file_name[50];
-    DIR* dir = opendir("stats");
-    struct timeval ct;
-    gettimeofday(&ct,NULL);
-    if(dir) {
-        snprintf(file_name, sizeof(file_name), "stats/variable_access.log");
-        fp = fopen(file_name, "a+");
-        fprintf(fp, "starting time : %lu.%lu\n", ct.tv_sec, ct.tv_usec);
-    }else{ // directory does not exist
-        printf("Error: no stats directory found.\n\n");
-        exit(1);
-    }
     for(s=varmap;s!=NULL;s=s->hh.next){
 
         if (!sig_handler_installed) {
             install_sighandler(access_monitor_handler);
             sig_handler_installed = 1;
         }
-        enable_write_protection(s->ptr, page_size); // only protect one page
+        enable_write_protection(s->ptr, s->paligned_size);
     }
-
     debug("memory tracking started\n");
     return;
-}
-
-
-void reset_trackers(){
-    var_t *s;
-    for(s=varmap;s!=NULL;s=s->hh.next){
-        s->end_timestamp = (struct timeval) {0,0};
-    }
 }
 
 /*
@@ -154,41 +135,13 @@ void reset_trackers(){
 void stop_page_tracking(){
     var_t *s;
     for(s=varmap;s!=NULL;s=s->hh.next){
-        disable_protection(s->ptr,page_size);
+        disable_protection(s->ptr,s->paligned_size);
     }
-    fclose(fp);
     debug("memory tracking disabled\n");
-    install_old_handler();
+    //install_old_handler();
     return;
 }
 
-
-
-/*
- *  1. write the current values to a log file
- *  2. rest the timing fields
- *  3. re-enable memory protection
- *
- *  we want to capture the timings of the next iterations of the computation
- */
-
-void flush_access_times(){
-
-    var_t *s;
-
-    struct timeval ct;
-
-
-        for(s=varmap;s!=NULL;s=s->hh.next){
-            fprintf(fp,"%s ,%lu,%lu.%lu\n",s->varname,s->size,s->end_timestamp.tv_sec, s->end_timestamp.tv_usec);
-            //enable_write_protection(s->pageptr,page_size);
-            //s->started_tracking = 0;
-        }
-        gettimeofday(&ct,NULL);
-        fprintf(fp,"checkpoint time : %lu.%lu\n",ct.tv_sec,ct.tv_usec);
-        fflush(fp);
-
-}
 
 
 void broadcast_page_tracking(rcontext_t *runtime_context){

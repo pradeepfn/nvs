@@ -7,6 +7,7 @@
 #include <dirent.h>
 #include <semaphore.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "phoenix.h"
 #include "px_log.h"
@@ -36,11 +37,11 @@ dlog_t dlog;
 /* local variables */
 int lib_initialized = 0;
 
-
+FILE *fp_ptr;
 //declare file pointers
 #ifdef TIMING
-    FILE *ef,*cf,*df,*itf;
-    TIMER_DECLARE4(et,ct,dt,it); // declaring earycopy_timer, checkpoint_timer,destage_timer
+FILE *ef,*cf,*df,*itf;
+TIMER_DECLARE4(et,ct,dt,it); // declaring earycopy_timer, checkpoint_timer,destage_timer
 #endif
 
 
@@ -49,14 +50,16 @@ int lib_initialized = 0;
 static void early_copy_handler(int sig, siginfo_t *si, void *unused);
 void destage_data(void *args);
 
-int init(int proc_id, int nproc){
-    int status;
+int px_init(int proc_id, int nproc){
+    debug("initializing phx with my proc : %d and nproc : %d",proc_id, nproc);	
+	int status;
+    char file_name[50];
 
-    //tie up the global variable hieararchy
-    runtime_context.config_context = &config_context;
-    runtime_context.varmap = &varmap;
-    nvlog.runtime_context = &runtime_context;
-    dlog.runtime_context = &runtime_context;
+	//tie up the global variable hieararchy
+	runtime_context.config_context = &config_context;
+	runtime_context.varmap = &varmap;
+	nvlog.runtime_context = &runtime_context;
+	dlog.runtime_context = &runtime_context;
 
 
 	if(lib_initialized){
@@ -64,105 +67,97 @@ int init(int proc_id, int nproc){
 		exit(1);
 	}
 	runtime_context.process_id = proc_id;
-    runtime_context.nproc = nproc;
-    runtime_context.ec_abort = 0;
-    runtime_context.ec_finished = 0;
+	runtime_context.nproc = nproc;
+	runtime_context.ec_abort = 0;
+	runtime_context.ec_finished = 0;
+	runtime_context.total_pages = 0;
+	runtime_context.mod_pages=0;
+	runtime_context.umod_pages=0;
+
+	//state file
+    DIR* dir = opendir("stats");
+    if(dir) {
+        snprintf(file_name, sizeof(file_name), "stats/pt%d.log",proc_id);
+        fp_ptr = fopen(file_name, "w+");
+    }else{ // directory does not exist
+        printf("Error: no stats directory found.\n\n");
+        exit(1);
+    }
+    debug("exiting init routine of phx");	
 	return 0;
 }
 
+void flush_access_times(rcontext_t *rctxt){
+        fprintf(fp_ptr,"%lu, %lu, %lu\n",rctxt->total_pages,rctxt->mod_pages, rctxt->umod_pages);
+        fflush(fp_ptr);
+}
 
-void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id){
-    var_t *s;
-    varname = null_terminate(varname);
-    if(is_chkpoint_present(&nvlog)){
-		if(isDebugEnabled()){
-			printf("retrieving from the checkpointed memory : %s\n", varname);
-		}
-	/*Different copy methods*/
-		switch(config_context.copy_strategy){
-			case NAIVE_COPY:
-				s = copy_read(&nvlog, varname,process_id,runtime_context.checkpoint_version);
-				break;
-			default:
-				printf("wrong copy strategy specified. please check the configuration\n");
-				exit(1);
-		}
-	}else{
-		if(isDebugEnabled()){
-			printf("[%d] allocating from the heap space : %s\n",runtime_context.process_id, varname);
-		}
-        s = px_alighned_allocate(size, process_id,varname);
 
+
+void *alloc_c(char *varname, size_t size, size_t commit_size, int process_id){
+	var_t *s;
+	varname = null_terminate(varname); // no need for c programs, fix this
+	assert(runtime_context.process_id == process_id);
+	if(isDebugEnabled()){
+		printf("[%d] allocating from the heap space : %s\n",runtime_context.process_id, varname);
 	}
-    s->type = NVRAM_CHECKPOINT; // default checkpoint location is NVRAM
-    s->started_tracking = 0;
-    s->end_timestamp = (struct timeval) {0,0};
+	s = px_alighned_allocate(size, process_id,varname);
+	int page_size = sysconf(_SC_PAGESIZE);
 
-    HASH_ADD_STR(varmap, varname, s );
-    return s->ptr;
+	int npages = s->paligned_size / page_size;
+	runtime_context.total_pages += npages;
+
+	s->type = NVRAM_CHECKPOINT; // default checkpoint location is NVRAM
+	s->started_tracking = 0;
+	s->end_timestamp = (struct timeval) {0,0};
+
+	HASH_ADD_STR(varmap, varname, s );
+	return s->ptr;
 }
 
 
-
-
-
-int checkpoint_size_printed=0;
-void chkpt_all(int process_id) {
-    //stop memory sampling thread after first iteration
-    if(process_id == 0 && runtime_context.checkpoint_iteration == 1){
-        start_page_tracking();
-    }
-
-
-
-    if(process_id == 0 && runtime_context.checkpoint_iteration >1 && runtime_context.checkpoint_iteration <=3){
-        flush_access_times();
-        reset_trackers();
-    }
-
-    //get the access time value after second iteration
-    if(process_id == 0 && runtime_context.checkpoint_iteration == 3){
-        stop_page_tracking(); //tracking started during alloc() calls
-    }
-
-    runtime_context.checkpoint_iteration++;
-    return;
-
-
+void app_snapshot() {
+	debug("creating app snapshot %d", runtime_context.process_id);
+	//collect stats and print them to file
+	runtime_context.umod_pages = runtime_context.total_pages - runtime_context.mod_pages;
+	flush_access_times(&runtime_context);
+	//reset modified counter
+	runtime_context.mod_pages=0;
+	//write protect pages and reset counters
+	start_page_tracking();
+	debug("done creating snapshot %d", runtime_context.process_id);
+	return;
 }
-
-
-
-
-
 
 void *alloc(unsigned int *n, char *s, int *iid, int *cmtsize) {
-    return alloc_c(s, *n, *cmtsize, *iid);
+	return alloc_c(s, *n, *cmtsize, *iid);
 }
 
 void afree_(void* ptr) {
-    free(ptr);
+	free(ptr);
 }
 
 
 void afree(void* ptr) {
-    free(ptr);
+	free(ptr);
 }
 
-void chkpt_all_(int *process_id){
-    chkpt_all(*process_id);
+void app_snapshot_(){
+	app_snapshot();
 }
 int init_(int *proc_id, int *nproc){
-    return init(*proc_id,*nproc);
+	return px_init(*proc_id,*nproc);
 }
 
 
-int finalize(){
-    return 0;
+int px_finalize(){
+	stop_page_tracking(); //tracking started during alloc() calls
+	fclose(fp_ptr);
+	return 0;
 }
 
 int finalize_(){
-    return finalize();
+	return px_finalize();
 }
 
 
