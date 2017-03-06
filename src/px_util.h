@@ -5,7 +5,6 @@
 #include <assert.h>
 #include <signal.h>
 
-#include "px_read.h"
 #include "px_log.h"
 #include "px_types.h"
 
@@ -13,15 +12,7 @@
 
 int nvmmemcpy_read(void * dest, void * src, size_t size,int rbw);
 int nvmmemcpy_write(void * dest, void * src, size_t size,int wbw);
-long disable_protection(void *addr, size_t size);
-void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
-void call_oldhandler(int signo);
-int get_mypeer(rcontext_t *rcontext, int myrank);
-void split_checkpoint_data(rcontext_t *rcontext, var_t *list);
-void install_old_handler();
-int is_dlog_checkpoing_data_present(var_t *list);
-void enable_write_protection(void *ptr, size_t size);
-char* null_terminate(char *c_string);
+var_t *px_alighned_allocate(size_t size, char *key);
 void read_configs(ccontext_t *config_context,char *file_path);
 void md5_digest(unsigned char *digest,void *data,ulong length);
 

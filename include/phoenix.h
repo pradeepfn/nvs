@@ -1,17 +1,20 @@
 #ifndef __PHOENIX_H
 #define __PHOENIX_H
 
-int init(int proc_id, int nproc);
-int finalize(void);
-void *alloc_c(char *varname, size_t size, size_t commit_size,int process_id);
-void afree(void *ptr);
-void chkpt_all(int process_id);
+#include <stdint.h>
 
-/*interface for FORTRAN binding*/
-int init_(int *proc_id, int *nproc);
-int finalize_(void);
-void* alloc(unsigned int* n, char *s, int *iid, int *cmtsize);
-void afree_(void* ptr); 
-void chkpt_all_(int *process_id);
+typedef struct px_obj_{
+	void *data;
+	unsigned long size;
+}px_obj;
+
+int px_init(int proc_id);
+int px_create(char *key1, unsigned long size,px_obj *retobj);
+int px_get(char *key1, uint64_t version, px_obj *retobj);
+int px_commit(char *key1,int version);
+int px_snapshot();
+int px_delete(char *key1);
+int px_finalize();
+
 
 #endif

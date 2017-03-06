@@ -6,7 +6,6 @@
 #include <sys/types.h>
 #include <semaphore.h>
 
-#include "px_threadpool.h"
 #include "uthash.h"
 #include "px_constants.h"
 
@@ -37,6 +36,7 @@ typedef struct ccontext_t_{
     int helper_core_size;
     int cr_type;
     ulong ec_offset_add;
+	char lckfile[50];
 
 } ccontext_t;
 
@@ -49,7 +49,7 @@ typedef struct rcontext_t_{
     struct timeval lchk_end_time; // end time of las checkpoint
     struct timeval lchk_iteration_time; // last iteration time
     ulong checkpoint_version;
-    threadpool_t *thread_pool;
+    //threadpool_t *thread_pool;
     long free_memory;
     ulong checkpoint_iteration;
     struct timeval px_start_time;
@@ -98,7 +98,7 @@ typedef struct var_t_ {
     struct timeval earlycopy_time_offset; /* time offset since checkpoint, before starting early copy */
     ulong version; // use in dlog hash structure.
     unsigned char hash[MD5_LENGTH]; // used for md5 digest store
-    char varname[20];  /* key */
+    char key1[20];  /* key */
 
 } var_t;
 
