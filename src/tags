@@ -4,13 +4,12 @@
 !_TAG_PROGRAM_NAME	Exuberant Ctags	//
 !_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
 !_TAG_PROGRAM_VERSION	5.8	//
-BUDDY_OFFSET	./px_constants.h	28;"	d
+BUDDY_OFFSET	./px_constants.h	25;"	d
 CHUNK_SIZE	./px_constants.h	19;"	d
 CONFIG_FILE_NAME	./px_constants.h	7;"	d
 COPY_STRATEGY	./px_constants.h	20;"	d
-CR_TYPE	./px_constants.h	30;"	d
+CR_TYPE	./px_constants.h	27;"	d
 DEBUG_ENABLE	./px_constants.h	11;"	d
-DEBUG_ENABLE	./px_constants.h	21;"	d
 DECLTYPE	./uthash.h	37;"	d
 DECLTYPE	./uthash.h	40;"	d
 DECLTYPE	./uthash.h	44;"	d
@@ -20,12 +19,12 @@ DECLTYPE_ASSIGN	./uthash.h	56;"	d
 DOUBLE_IN_MEMORY_LOCAL	./px_dlog.h	/^    DOUBLE_IN_MEMORY_LOCAL,$/;"	e	enum:__anon1
 DOUBLE_IN_MEMORY_REMOTE	./px_dlog.h	/^    DOUBLE_IN_MEMORY_REMOTE$/;"	e	enum:__anon1
 DRAM_CHECKPOINT	./px_types.h	/^    DRAM_CHECKPOINT,$/;"	e	enum:__anon2
-EARLY_COPY_ENABLED	./px_constants.h	34;"	d
-EARLY_COPY_OFFSET	./px_constants.h	35;"	d
+EARLY_COPY_ENABLED	./px_constants.h	30;"	d
+EARLY_COPY_OFFSET	./px_constants.h	31;"	d
 ELMT_FROM_HH	./uthash.h	101;"	d
 FILE_PATH_ONE	./px_log.c	15;"	d	file:
 FILE_PATH_TWO	./px_log.c	16;"	d	file:
-FREE_MEMORY	./px_constants.h	31;"	d
+FREE_MEMORY	./px_constants.h	28;"	d
 HASH_ADD	./uthash.h	169;"	d
 HASH_ADD_INT	./uthash.h	269;"	d
 HASH_ADD_KEYPTR	./uthash.h	182;"	d
@@ -90,11 +89,11 @@ HASH_SIGNATURE	./uthash.h	912;"	d
 HASH_SORT	./uthash.h	729;"	d
 HASH_SRT	./uthash.h	730;"	d
 HASH_TO_BKT	./uthash.h	207;"	d
-HELPER_CORES	./px_constants.h	36;"	d
+HELPER_CORES	./px_constants.h	32;"	d
 KEY_LENGTH	./px_constants.h	5;"	d
-MAX_CHECKPOINTS	./px_constants.h	14;"	d
-MAX_CHECKPOINTS	./px_constants.h	33;"	d
-MD5_LENGTH	./px_constants.h	15;"	d
+LCKFILE_LOCATION	./px_constants.h	13;"	d
+MAX_CHECKPOINTS	./px_constants.h	15;"	d
+MD5_LENGTH	./px_constants.h	16;"	d
 MICROSEC	./px_util.h	11;"	d
 MUR_FMIX	./uthash.h	556;"	d
 MUR_GETBLOCK	./uthash.h	534;"	d
@@ -110,25 +109,22 @@ MUR_THREE_ONE	./uthash.h	542;"	d
 MUR_THREE_ONE	./uthash.h	546;"	d
 MUR_TWO_TWO	./uthash.h	543;"	d
 MUR_TWO_TWO	./uthash.h	547;"	d
-NAIVE_COPY	./px_constants.h	37;"	d
+NAIVE_COPY	./px_constants.h	33;"	d
 NO_DECLTYPE	./uthash.h	39;"	d
 NO_DECLTYPE	./uthash.h	43;"	d
 NVM_SIZE	./px_constants.h	10;"	d
-NVM_SIZE	./px_constants.h	18;"	d
 NVRAM_CHECKPOINT	./px_types.h	/^    NVRAM_CHECKPOINT$/;"	e	enum:__anon2
-NVRAM_EARLY_COPY_WBW	./px_constants.h	24;"	d
-NVRAM_WBW	./px_constants.h	13;"	d
-NVRAM_WBW	./px_constants.h	23;"	d
+NVRAM_EARLY_COPY_WBW	./px_constants.h	21;"	d
+NVRAM_WBW	./px_constants.h	14;"	d
 PFILE_LOCATION	./px_constants.h	12;"	d
-PFILE_LOCATION	./px_constants.h	22;"	d
 PHOENIX_PX_DLOG_H	./px_dlog.h	2;"	d
 PHOENIX_PX_TYPES_H	./px_types.h	3;"	d
-REMOTE_CHECKPOINT_ENABLE	./px_constants.h	26;"	d
-REMOTE_RESTART_ENABLE	./px_constants.h	27;"	d
+REMOTE_CHECKPOINT_ENABLE	./px_constants.h	23;"	d
+REMOTE_RESTART_ENABLE	./px_constants.h	24;"	d
 RING_BUFFER_SLOTS	./px_constants.h	4;"	d
-RSTART	./px_constants.h	25;"	d
-SPLIT_RATIO	./px_constants.h	29;"	d
-THRESHOLD_SIZE	./px_constants.h	32;"	d
+RSTART	./px_constants.h	22;"	d
+SPLIT_RATIO	./px_constants.h	26;"	d
+THRESHOLD_SIZE	./px_constants.h	29;"	d
 UTHASH_H	./uthash.h	25;"	d
 UTHASH_VERSION	./uthash.h	76;"	d
 UT_hash_bucket	./uthash.h	/^typedef struct UT_hash_bucket {$/;"	s
@@ -244,6 +240,7 @@ local_dram_checkpoint_size	./px_types.h	/^    ulong local_dram_checkpoint_size;$
 local_remote_ptr	./px_types.h	/^    void *local_remote_ptr;  \/* local pointer out of memory grid *\/$/;"	m	struct:var_t_
 log2_num_buckets	./uthash.h	/^   unsigned num_buckets, log2_num_buckets;$/;"	m	struct:UT_hash_table
 log_commitv	./px_log.c	/^int log_commitv(log_t *log,ulong version){$/;"	f
+log_end_offset	./px_log.c	/^ulong log_end_offset(log_t *log, ulong rb_index){$/;"	f
 log_err	./px_debug.h	18;"	d
 log_info	./px_debug.h	22;"	d
 log_init	./px_log.c	/^int log_init(log_t *log , int proc_id){$/;"	f
@@ -255,6 +252,7 @@ log_read	./px_log.c	/^checkpoint_t *log_read(log_t *log, char *var_name, int pro
 log_size	./px_log.h	/^    ulong log_size; \/\/ size of the linear log$/;"	m	struct:headmeta_t_
 log_size	./px_log.h	/^    ulong log_size;$/;"	m	struct:logdata_t_
 log_size	./px_types.h	/^    long log_size;$/;"	m	struct:ccontext_t_
+log_start_offset	./px_log.c	/^ulong log_start_offset(log_t *log,ulong rb_index){$/;"	f
 log_t	./px_log.h	/^}log_t;$/;"	t	typeref:struct:log_t_
 log_t_	./px_log.h	/^typedef struct log_t_{$/;"	s
 log_warn	./px_debug.h	20;"	d
@@ -262,9 +260,10 @@ log_write	./px_log.c	/^int log_write(log_t *log, var_t *variable, long version){
 logdata_t	./px_log.h	/^}logdata_t;$/;"	t	typeref:struct:logdata_t_
 logdata_t_	./px_log.h	/^typedef struct logdata_t_{$/;"	s
 main	./format.c	/^int main(int argc, char **argv){$/;"	f
+main	./mpi_format.c	/^int main(int argc, char **argv)$/;"	f
 map	./px_dlog.h	/^    var_t *map[2];$/;"	m	struct:dlog_t_
 max_checkpoints	./px_types.h	/^    long max_checkpoints;$/;"	m	struct:ccontext_t_
-mb	./px_constants.h	41;"	d
+mb	./px_constants.h	37;"	d
 md5_digest	./px_util.c	/^void md5_digest(unsigned char *digest,void *data, ulong length){$/;"	f
 micro	./px_types.h	/^    ulong micro;$/;"	m	struct:timeoffset_t_
 msleep	./px_util.c	/^int msleep(unsigned long nanosec)$/;"	f
@@ -298,16 +297,19 @@ process_id	./px_types.h	/^    int process_id;$/;"	m	struct:rcontext_t_
 process_id	./px_types.h	/^    int process_id;$/;"	m	struct:var_t_
 ptr	./px_types.h	/^    void *ptr;       \/* memory address of the variable*\/$/;"	m	struct:var_t_
 px_alighned_allocate	./px_util.c	/^var_t *px_alighned_allocate(size_t size, char *key) {$/;"	f
-px_commit	./phoenix.c	/^int px_commit(char *key1, char *key2,px_obj *retobj) {$/;"	f
-px_create	./phoenix.c	/^int px_create(char *key1, char *key2, unsigned long size,px_obj *retobj){$/;"	f
-px_delete	./phoenix.c	/^int px_delete(char *key1, char *key2){$/;"	f
+px_commit	./phoenix.c	/^int px_commit(char *key1,int version) {$/;"	f
+px_create	./phoenix.c	/^int px_create(char *key1, unsigned long size,px_obj *retobj){$/;"	f
+px_delete	./phoenix.c	/^int px_delete(char *key1){$/;"	f
 px_finalize	./phoenix.c	/^int px_finalize(){$/;"	f
-px_get	./phoenix.c	/^int px_get(char *key1, char *key2, uint64_t version, px_obj *retobj){$/;"	f
+px_get	./phoenix.c	/^int px_get(char *key1, uint64_t version, px_obj *retobj){$/;"	f
 px_init	./phoenix.c	/^int px_init(int proc_id){$/;"	f
+px_read	./phoenix.c	/^int px_read(){$/;"	f
+px_snapshot	./phoenix.c	/^int px_snapshot(){$/;"	f
 px_start_time	./px_types.h	/^    struct timeval px_start_time;$/;"	m	struct:rcontext_t_	typeref:struct:rcontext_t_::timeval
 rcontext_t	./px_types.h	/^}rcontext_t;$/;"	t	typeref:struct:rcontext_t_
 rcontext_t_	./px_types.h	/^typedef struct rcontext_t_{$/;"	s
 read_configs	./px_util.c	/^void read_configs(ccontext_t *config_context,char *file_path){$/;"	f
+read_watermark	./phoenix.c	/^int read_watermark=0;$/;"	v
 remote_checkpoint	./px_types.h	/^    int remote_checkpoint;$/;"	m	struct:ccontext_t_
 remote_dram_checkpoint_size	./px_types.h	/^    ulong remote_dram_checkpoint_size;$/;"	m	struct:rcontext_t_
 remote_ptr	./px_types.h	/^    void **remote_ptr; \/*pointer grid of memory group *\/$/;"	m	struct:var_t_

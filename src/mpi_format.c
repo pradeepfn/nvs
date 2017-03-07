@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     sprintf(data_file,"%s/%s%lu",dir_loc,"mmap.file.data",node_id); 
     log_info("shm file-names : %s , %s\n",index_file, data_file);
     log_info("shm format size : %lu MB\n", size);
-
+	size = size * 1024 * 1024; // converting to bytes
     int ret = create_shm(index_file, data_file, size);  
     check(ret == 0,"error creating shm region");
     log_info("successfully created and formatted shm region");

@@ -69,7 +69,7 @@ typedef struct log_t_{
 	ringbuffer_t ring_buffer;
     logdata_t data_log;
     rcontext_t *runtime_context;
-    pthread_mutex_t *plock; // pointer to actual shared memory lock. TODO
+    pthread_mutex_t *plock;
 }log_t;
 
 int create_shm(char *ishm_name, char *dshm_name,ulong log_size);

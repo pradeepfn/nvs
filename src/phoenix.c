@@ -29,17 +29,16 @@ int px_init(int proc_id){
 	//tie up the global variable hieararchy
 	runtime_context.config_context = &config_context;
 	runtime_context.varmap = &varmap;
+	runtime_context.checkpoint_version=0;
+	runtime_context.process_id = proc_id;
 	nvlog.runtime_context = &runtime_context;
 
 	if(lib_initialized){
 		log_err("Error: the library already initialized.");
 		exit(1);
 	}
-	runtime_context.process_id = proc_id;
-	//runtime_context.nproc = nproc;
 	read_configs(&config_context,CONFIG_FILE_NAME);
 	log_init(&nvlog,proc_id);
-	debug("phoenix initializing completed\n");
 	return 0;
 }
 
@@ -102,6 +101,7 @@ int px_commit(char *key1,int version) {
 
 
 int px_snapshot(){
+	debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
 	var_t *s;
 	for (s = varmap; s != NULL; s = s->hh.next){
 		log_write(&nvlog, s, runtime_context.checkpoint_version);

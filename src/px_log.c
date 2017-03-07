@@ -11,6 +11,7 @@
 #include "px_debug.h"
 #include "px_constants.h"
 #include "px_util.h"
+#include "phoenix.h"
 
 #define FILE_PATH_ONE "/mmap.file.meta" // stores the ring buffer
 #define FILE_PATH_TWO "/mmap.file.data" // stores linear metadata
@@ -21,6 +22,8 @@ static void init_mmap_files(log_t *log);
 
 checkpoint_t* ringb_element(log_t *log, ulong index);
 void* log_ptr(log_t *log,ulong offset);
+ulong log_start_offset(log_t *log,ulong rb_index);
+ulong log_end_offset(log_t *log,ulong rb_index);
 
 int initshmlock(log_t *log, ccontext_t *configctxt){
 	int fd;
@@ -32,11 +35,12 @@ int initshmlock(log_t *log, ccontext_t *configctxt){
 	if(!log->ring_buffer.head->log_initialized){
 		pthread_mutexattr_t mutexAttr;
 		pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
-		pthread_mutex_init(&log->ring_buffer.head->plock,&mutexAttr);
-		debug("shared plock initialized");	
+		pthread_mutex_init(&(log->ring_buffer.head->plock),&mutexAttr);
+		debug("[%d]shared plock initialized",log->runtime_context->process_id);	
 		log->ring_buffer.head->log_initialized = 1;		
 	}
 	check(flock(fd,LOCK_UN) != -1, "error releasing lock");
+	log->plock = &(log->ring_buffer.head->plock); // convenience pointer to shm mutex
 	return 0;		
 error:
 	debug("error while initializing shared mem");
@@ -51,9 +55,6 @@ error:
  */ 
 int log_init(log_t *log , int proc_id){
 	ccontext_t *config_context = log->runtime_context->config_context;
-	if(isDebugEnabled()){
-		printf("initializing the structures... %d \n", proc_id);
-	}
 
 	log->data_log.log_size = config_context->log_size;
 	snprintf(log->ring_buffer.file_name, sizeof(log->ring_buffer.file_name), "%s%s%d",
@@ -64,21 +65,15 @@ int log_init(log_t *log , int proc_id){
 
 	/* init shared pthread locks */
 	initshmlock(log,config_context);
+
+	debug("[%d] log initialized successfully.", proc_id);
 	return 0;
 }
 
 
 
-
-
-
 //update the current latest version of the log buffer and move the tail forward
 int log_commitv(log_t *log,ulong version){
-
-	if(version < 1){ //start GC after 1st version
-		return 1;
-	};
-
 	pthread_mutex_lock(log->plock);
 	log->ring_buffer.head->current_version = version; // atomic commit
 	//TODO: flush to fs
@@ -86,7 +81,6 @@ int log_commitv(log_t *log,ulong version){
 	checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
 	while(rb_elem->version <= (version-1)){
 		log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
-		log->ring_buffer.head->tail = rb_elem->end_offset+1;
 		rb_elem = ringb_element(log,log->ring_buffer.head->tail);
 	}
 	pthread_mutex_unlock(log->plock);
@@ -97,28 +91,41 @@ int log_commitv(log_t *log,ulong version){
 /* writing to the data to persistent storage*/
 
 int log_write(log_t *log, var_t *variable, long version){
+	debug("[%d] calling log write for variable %s", log->runtime_context->process_id,variable->key1);
 	void *reserved_log_ptr,*preamble_log_ptr;
 	ulong reserved_log_offset;
 	ulong avail_size;
-
-	//debug("[%d] nvram checkpoint  varname : %s , process_id :  %d , version : %ld ", log->runtime_context->process_id,
-	//      variable->key1, version);
+	ulong dhead_offset;
+	ulong dtail_offset;
 
 	ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
 
 	//get the log reservation
-	pthread_mutex_lock(log->plock);
+	//pthread_mutex_lock(log->plock);
 	//check if slots left in the ring buffer
-	if(log_isfull(log)){
+	/*if(log_isfull(log)){
 		log_err("no slots left in the ring buffer");
-		pthread_mutex_unlock(log->plock);
+		//pthread_mutex_unlock(log->plock);
 		exit(1);
+	}*/
+	if(log->ring_buffer.head->head == -1 && log->ring_buffer.head->tail == -1){
+		log->ring_buffer.head->head =0;
+		log->ring_buffer.head->tail =0;
+		dhead_offset = 0;
+		dtail_offset = 0;
+	}else{
+		dhead_offset = log_end_offset(log, log->ring_buffer.head->head - 1); // data head offset , point to the next free head element to write
+		dtail_offset = log_start_offset(log, log->ring_buffer.head->tail); // data tail offset , point to tail of the data log. if equal to head, then empty
 	}
-
-	ulong dhead_offset = log->ring_buffer.head->head; // data head offset , point to the next free head element to write
-	ulong dtail_offset = log->ring_buffer.head->tail; // data tail offset , point to tail of the data log. if equal to head, then empty
 	ulong dlog_size = log->ring_buffer.head->log_size; // data log size
-
+	debug("[%d] writing object : %s  with size : %ld, version: %ld   in to log, head_offset : %ld ,  tail_offset : %ld , log_size : %ld" , 
+						 log->runtime_context->process_id,
+						 variable->key1 , 
+						 variable->size, 
+						 version,
+						 dhead_offset, 
+						 dtail_offset, 
+						 dlog_size);
 
 	if(dhead_offset >= dtail_offset){   //if head is infront,
 		avail_size = dlog_size - dhead_offset;
@@ -127,16 +134,17 @@ int log_write(log_t *log, var_t *variable, long version){
 		}else if(dtail_offset >= checkpoint_size){   // start of the linear log to tail
 			reserved_log_offset = 0;
 		}else{
-			log_err("not enough space left in the linear log");
-			pthread_mutex_unlock(log->plock);
-			log_info("[%d]linear log tail and head , %ld   %ld" ,
+			//pthread_mutex_unlock(log->plock);
+			log_info("[%d]not enought space log tail : %ld ,  head : %ld , available_size : %ld " ,
 					log->runtime_context->process_id,
-					log->ring_buffer.head->tail,
-					log->ring_buffer.head->head);
+					dtail_offset,
+					dhead_offset,
+					avail_size);
 			log_info("[%d]ring buffer indexes , %ld  %ld",
 					log->runtime_context->process_id,
 					log->ring_buffer.head->tail,
 					log->ring_buffer.head->head);
+			sleep(5);
 			exit(1);
 		}
 
@@ -145,16 +153,17 @@ int log_write(log_t *log, var_t *variable, long version){
 		if(avail_size >= checkpoint_size){
 			reserved_log_offset = dhead_offset;
 		}else{
-			log_err("not enough space in the linear log");
-			pthread_mutex_unlock(log->plock);
-			log_info("[%d]linear log tail and head , %ld   %ld" ,
+			//pthread_mutex_unlock(log->plock);
+			log_info("[%d]not enough space: log tail : %ld ,  head : %ld , available_size : %ld " ,
 					log->runtime_context->process_id,
-					log->ring_buffer.head->tail,
-					log->ring_buffer.head->head);
+					dtail_offset,
+					dhead_offset,
+					avail_size);
 			log_info("[%d]ring buffer indexes , %ld  %ld",
 					log->runtime_context->process_id,
 					log->ring_buffer.head->tail,
 					log->ring_buffer.head->head);
+			sleep(5);
 			exit(1);
 		}
 	}
@@ -169,10 +178,11 @@ int log_write(log_t *log, var_t *variable, long version){
 	checkpoint_elem->size = variable->size;
 	checkpoint_elem->start_offset = reserved_log_offset;
 	checkpoint_elem->end_offset = reserved_log_offset + checkpoint_size-1;
+    //debug("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld", 
+	//			checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset); 
 
 	log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; // atomically commit slot reservation
-	log->ring_buffer.head->head = checkpoint_elem->end_offset + 1; // this is a soft state
-	pthread_mutex_unlock(log->plock);
+	//pthread_mutex_unlock(log->plock);
 
 #ifdef PX_DIGEST
 	md5_digest(checkpoint_elem->hash,variable->ptr,variable->size);
@@ -190,6 +200,7 @@ int log_write(log_t *log, var_t *variable, long version){
 	preamble_t preamble;
 	//preamble.value = MAGIC_VALUE;
 	memcpy(preamble_log_ptr,&preamble,sizeof(preamble_t));// atomic commit of the copied data
+	//debug("[%d] done writing the variable %s " , log->runtime_context->process_id, variable->key1);
 	return 1;
 }
 
@@ -235,8 +246,15 @@ void* log_ptr(log_t *log,ulong offset){
 	return ((char *)(log->data_log.start_ptr)+offset);
 }
 
+ulong log_start_offset(log_t *log,ulong rb_index){
+	checkpoint_t *rb_elem = ringb_element(log, rb_index);
+	return rb_elem->start_offset;
+}
 
-
+ulong log_end_offset(log_t *log, ulong rb_index){
+	checkpoint_t *rb_elem = ringb_element(log, rb_index);
+	return rb_elem->end_offset;
+}
 /* check whether our checkpoint init flag file is present */
 int is_chkpoint_present(log_t *log){
 	if(log->runtime_context->config_context->restart_run){
@@ -302,25 +320,13 @@ int create_shm(char *ishm_name, char *dshm_name,ulong log_size){
 		log_err("Runtime Error: error while memory mapping the file\n");
 		exit(1);
 	}
-	debug("mapped the file: %s \n", dshm_name);
-
-	debug("formatting the shm memory\n");
 	headmeta_t head;
-	head.head = 0; // use the index to see if log is empty
-	head.tail = 0;
+	head.head = -1; // we identify the start condition from initial value
+	head.tail = -1;
 	head.nelements = RING_BUFFER_SLOTS;
 	head.log_size = log_size;
 	head.log_initialized = 0;
 	memcpy(iptr, &head, sizeof(headmeta_t));
-
-	//initialize the shared pthread_lock. re-fractor out later
-	pthread_mutexattr_t attrmutex;
-
-	/* Initialise attribute to mutex. */
-	pthread_mutexattr_init(&attrmutex);
-	pthread_mutexattr_setpshared(&attrmutex, PTHREAD_PROCESS_SHARED);
-
-	pthread_mutex_init(&(((headmeta_t *)iptr)->plock), &attrmutex);
 
 	return 0;
 }
@@ -360,6 +366,5 @@ static void init_mmap_files(log_t *log){
 	log->data_log.start_ptr = addr;
 	close (fd);
 
-	log->plock = &(log->ring_buffer.head->plock); // convenience pointer to shm mutex
 
 }
