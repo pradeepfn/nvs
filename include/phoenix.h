@@ -13,6 +13,7 @@ int px_create(char *key1, unsigned long size,px_obj *retobj);
 int px_get(char *key1, uint64_t version, px_obj *retobj);
 int px_commit(char *key1,int version);
 int px_snapshot();
+int px_get_snapshot();
 int px_delete(char *key1);
 int px_finalize();
 

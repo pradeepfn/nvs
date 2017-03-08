@@ -113,10 +113,9 @@ int px_snapshot(){
 int read_watermark=0;
 
 /*read the next most recent snapshot */
-int px_read(){
+int px_get_snapshot(ulong version){
 
 
- return 0;
 }
 
 /**
