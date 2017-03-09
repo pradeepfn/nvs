@@ -20,7 +20,6 @@
 int is_chkpoint_present(log_t *log);
 static void init_mmap_files(log_t *log);
 
-checkpoint_t* ringb_element(log_t *log, ulong index);
 void* log_ptr(log_t *log,ulong offset);
 ulong log_start_offset(log_t *log,ulong rb_index);
 ulong log_end_offset(log_t *log,ulong rb_index);
@@ -33,14 +32,14 @@ int initshmlock(log_t *log, ccontext_t *configctxt){
 
 	check(flock(fd,LOCK_EX) != -1 , "error aquiring lock");
 	if(!log->ring_buffer.head->log_initialized){
-		pthread_mutexattr_t mutexAttr;
-		pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
-		pthread_mutex_init(&(log->ring_buffer.head->plock),&mutexAttr);
-		debug("[%d]shared plock initialized",log->runtime_context->process_id);	
+		//pthread_mutexattr_t mutexAttr;
+		//pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
+		//pthread_mutex_init(&(log->ring_buffer.head->plock),&mutexAttr);
+		sem_init(&log->ring_buffer.head->sem,2,1); 
+		debug("[%d]shared semaphore initialized",log->runtime_context->process_id);	
 		log->ring_buffer.head->log_initialized = 1;		
 	}
 	check(flock(fd,LOCK_UN) != -1, "error releasing lock");
-	log->plock = &(log->ring_buffer.head->plock); // convenience pointer to shm mutex
 	return 0;		
 error:
 	debug("error while initializing shared mem");
@@ -74,7 +73,7 @@ int log_init(log_t *log , int proc_id){
 
 //update the current latest version of the log buffer and move the tail forward
 int log_commitv(log_t *log,ulong version){
-	pthread_mutex_lock(log->plock);
+//TODO: lock
 	log->ring_buffer.head->current_version = version; // atomic commit
 	//TODO: flush to fs
 	//iterate starting from the tail and select a new tail
@@ -83,7 +82,6 @@ int log_commitv(log_t *log,ulong version){
 		log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
 		rb_elem = ringb_element(log,log->ring_buffer.head->tail);
 	}
-	pthread_mutex_unlock(log->plock);
 	return 1;
 }
 
@@ -108,6 +106,10 @@ int log_write(log_t *log, var_t *variable, long version){
 		//pthread_mutex_unlock(log->plock);
 		exit(1);
 	}*/
+    if(sem_wait(&log->ring_buffer.head->sem)== -1){
+				log_err("error while sem wait");
+				exit(1);
+	}
 	if(log->ring_buffer.head->head == -1 && log->ring_buffer.head->tail == -1){
 		log->ring_buffer.head->head =0;
 		log->ring_buffer.head->tail =0;
@@ -135,6 +137,10 @@ int log_write(log_t *log, var_t *variable, long version){
 			reserved_log_offset = 0;
 		}else{
 			//pthread_mutex_unlock(log->plock);
+			if(sem_post(&log->ring_buffer.head->sem) == -1){
+				log_err("error while sem post");
+				exit(1);
+			}
 			log_info("[%d]not enought space log tail : %ld ,  head : %ld , available_size : %ld " ,
 					log->runtime_context->process_id,
 					dtail_offset,
@@ -144,8 +150,7 @@ int log_write(log_t *log, var_t *variable, long version){
 					log->runtime_context->process_id,
 					log->ring_buffer.head->tail,
 					log->ring_buffer.head->head);
-			sleep(5);
-			exit(1);
+			return -1;
 		}
 
 	}else if(dtail_offset > dhead_offset){  // head is behind
@@ -154,6 +159,10 @@ int log_write(log_t *log, var_t *variable, long version){
 			reserved_log_offset = dhead_offset;
 		}else{
 			//pthread_mutex_unlock(log->plock);
+			if(sem_post(&log->ring_buffer.head->sem) == -1){
+				log_err("error while sem post");
+				exit(1);
+			}
 			log_info("[%d]not enough space: log tail : %ld ,  head : %ld , available_size : %ld " ,
 					log->runtime_context->process_id,
 					dtail_offset,
@@ -163,8 +172,7 @@ int log_write(log_t *log, var_t *variable, long version){
 					log->runtime_context->process_id,
 					log->ring_buffer.head->tail,
 					log->ring_buffer.head->head);
-			sleep(5);
-			exit(1);
+			return -1;
 		}
 	}
 	// we are good to do the final reserve...
@@ -183,6 +191,10 @@ int log_write(log_t *log, var_t *variable, long version){
 
 	log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; // atomically commit slot reservation
 	//pthread_mutex_unlock(log->plock);
+			if(sem_post(&log->ring_buffer.head->sem) == -1){
+				log_err("error while sem post");
+				exit(1);
+			}
 
 #ifdef PX_DIGEST
 	md5_digest(checkpoint_elem->hash,variable->ptr,variable->size);
@@ -214,10 +226,10 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
 		return NULL;
 	}
 
-	pthread_mutex_lock(log->plock);
+	//pthread_mutex_lock(log->plock);
 	ulong iter_index = log->ring_buffer.head->head;
 	ulong tail_index = log->ring_buffer.head->tail;
-	pthread_mutex_unlock(log->plock);
+	//pthread_mutex_unlock(log->plock);
 
 	do{
 		iter_index = (iter_index == 0)?(RING_BUFFER_SLOTS-1):(iter_index-1); // head point to next available slot. hence subtract first
@@ -269,12 +281,24 @@ int is_chkpoint_present(log_t *log){
  */
 int log_isempty(log_t *log){
 
-	pthread_mutex_lock(log->plock);
+	//pthread_mutex_lock(log->plock);
+    if(sem_wait(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem wait");
+		exit(1);
+    }
 	if(log->ring_buffer.head->tail == log->ring_buffer.head->head){
-		pthread_mutex_unlock(log->plock);
+		//pthread_mutex_unlock(log->plock);
+		if(sem_post(&log->ring_buffer.head->sem) == -1){
+			log_err("error in sem wait");
+			exit(1);
+		}
 		return 1;
 	}
-	pthread_mutex_unlock(log->plock);
+	//pthread_mutex_unlock(log->plock);
+    if(sem_post(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem wait");
+		exit(1);
+    }
 	return 0;
 }
 
@@ -283,12 +307,12 @@ int log_isempty(log_t *log){
  *        0 - not full
  */
 int log_isfull(log_t *log){
-	pthread_mutex_lock(log->plock);
+	//pthread_mutex_lock(log->plock);
 	if(log->ring_buffer.head->tail == ((log->ring_buffer.head->head +1)%RING_BUFFER_SLOTS)){
-		pthread_mutex_unlock(log->plock);
+		//pthread_mutex_unlock(log->plock);
 		return 1;
 	}
-	pthread_mutex_unlock(log->plock);
+	//pthread_mutex_unlock(log->plock);
 	return 0;
 }
 

@@ -18,7 +18,7 @@ typedef struct checkpoint_t_{
 }checkpoint_t;
 
 typedef struct headmeta_t_{
-    pthread_mutex_t plock;
+    sem_t sem; // anonymous semaphore placed on shared memory
     ulong head; // head index of the ringbuffer
     ulong tail; // tail index
     ulong current_version; // new atomic flag that uses checkpoint version
@@ -69,7 +69,7 @@ typedef struct log_t_{
 	ringbuffer_t ring_buffer;
     logdata_t data_log;
     rcontext_t *runtime_context;
-    pthread_mutex_t *plock;
+//    pthread_mutex_t *plock;
 }log_t;
 
 int create_shm(char *ishm_name, char *dshm_name,ulong log_size);
@@ -81,5 +81,6 @@ int is_chkpoint_present(log_t *log);
 void* log_ptr(log_t *log,ulong offset);
 int log_isfull(log_t *log);
 int log_isempty(log_t *log);
+checkpoint_t* ringb_element(log_t *log, ulong index);
 #endif
 

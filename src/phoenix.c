@@ -9,7 +9,6 @@
 
 #include "phoenix.h"
 #include "px_log.h"
-#include "px_dlog.h"
 #include "px_debug.h"
 #include "px_util.h"
 #include "px_constants.h"
@@ -104,7 +103,9 @@ int px_snapshot(){
 	debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
 	var_t *s;
 	for (s = varmap; s != NULL; s = s->hh.next){
-		log_write(&nvlog, s, runtime_context.checkpoint_version);
+		while(log_write(&nvlog, s, runtime_context.checkpoint_version) == -1){ //not enough space
+			sleep(0.1);
+	    };
 	}
 	runtime_context.checkpoint_version ++;
 	return 0;
@@ -114,7 +115,27 @@ int read_watermark=0;
 
 /*read the next most recent snapshot */
 int px_get_snapshot(ulong version){
+    log_t *log = &nvlog;
 
+
+	// check if log empty
+	while(log_isempty(log)){ sleep(0.5);};
+
+    if(sem_wait(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem wait");
+		exit(1);
+    }
+    checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
+
+	while(rb_elem->version <= version){ 
+        log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
+        rb_elem = ringb_element(log,log->ring_buffer.head->tail);
+    }
+
+    if(sem_post(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem wait");
+		exit(1);
+    }
 
 }
 
