@@ -120,23 +120,26 @@ int px_get_snapshot(ulong version){
 
 	// check if log empty
 	while(log_isempty(log)){ sleep(0.5);};
-
+	debug("waiting for semaphore");
     if(sem_wait(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
     }
     checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
-
+	//truncating log
+	debug("traversing log");
 	while(rb_elem->version <= version){ 
         log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
         rb_elem = ringb_element(log,log->ring_buffer.head->tail);
     }
 
+	debug("posting to semaphore");
     if(sem_post(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
     }
-
+	debug("snapshot data returned version : %ld" , version);
+	return 0;
 }
 
 /**
@@ -156,7 +159,6 @@ int px_delete(char *key1){
 
 
 int px_finalize(){
-
-	// TODO: implement
+	log_finalize(&nvlog);
 	return 0;
 }

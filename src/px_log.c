@@ -38,6 +38,8 @@ int initshmlock(log_t *log, ccontext_t *configctxt){
 		sem_init(&log->ring_buffer.head->sem,2,1); 
 		debug("[%d]shared semaphore initialized",log->runtime_context->process_id);	
 		log->ring_buffer.head->log_initialized = 1;		
+	}else{
+		debug("shared semaphore already initialized");
 	}
 	check(flock(fd,LOCK_UN) != -1, "error releasing lock");
 	return 0;		
@@ -391,4 +393,24 @@ static void init_mmap_files(log_t *log){
 	close (fd);
 
 
+}
+
+/* perform cleanup */
+int log_finalize(log_t *log){
+	
+    if(sem_wait(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem wait");
+		exit(1);
+    }
+	log->ring_buffer.head->log_initialized = 1;		
+    if(sem_post(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem post");
+		exit(1);
+    }
+	//destroy semaphore
+    if(sem_destroy(&log->ring_buffer.head->sem) == -1){
+		log_err("error in sem destroy");
+		exit(1);
+    }
+	return 0;
 }

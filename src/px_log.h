@@ -74,6 +74,7 @@ typedef struct log_t_{
 
 int create_shm(char *ishm_name, char *dshm_name,ulong log_size);
 int log_init(log_t *log, int proc_id);
+int log_finalize(log_t *log);
 int log_write(log_t *,var_t *,long);
 checkpoint_t *log_read(log_t *, char *, int , long);
 int log_commitv(log_t *log,ulong version);
