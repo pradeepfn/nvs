@@ -91,7 +91,7 @@ int log_commitv(log_t *log,ulong version){
 /* writing to the data to persistent storage*/
 
 int log_write(log_t *log, var_t *variable, long version){
-	debug("[%d] calling log write for variable %s", log->runtime_context->process_id,variable->key1);
+	//debug("[%d] calling log write for variable %s", log->runtime_context->process_id,variable->key1);
 	void *reserved_log_ptr,*preamble_log_ptr;
 	ulong reserved_log_offset;
 	ulong avail_size;
@@ -122,14 +122,14 @@ int log_write(log_t *log, var_t *variable, long version){
 		dtail_offset = log_start_offset(log, log->ring_buffer.head->tail); // data tail offset , point to tail of the data log. if equal to head, then empty
 	}
 	ulong dlog_size = log->ring_buffer.head->log_size; // data log size
-	debug("[%d] writing object : %s  with size : %ld, version: %ld   in to log, head_offset : %ld ,  tail_offset : %ld , log_size : %ld" , 
+	/*debug("[%d] writing object : %s  with size : %ld, version: %ld   in to log, head_offset : %ld ,  tail_offset : %ld , log_size : %ld" , 
 						 log->runtime_context->process_id,
 						 variable->key1 , 
 						 variable->size, 
 						 version,
 						 dhead_offset, 
 						 dtail_offset, 
-						 dlog_size);
+						 dlog_size); */
 
 	if(dhead_offset >= dtail_offset){   //if head is infront,
 		avail_size = dlog_size - dhead_offset;
@@ -143,7 +143,7 @@ int log_write(log_t *log, var_t *variable, long version){
 				log_err("error while sem post");
 				exit(1);
 			}
-			log_info("[%d]not enought space log tail : %ld ,  head : %ld , available_size : %ld " ,
+			/*log_info("[%d]not enought space log tail : %ld ,  head : %ld , available_size : %ld " ,
 					log->runtime_context->process_id,
 					dtail_offset,
 					dhead_offset,
@@ -151,7 +151,7 @@ int log_write(log_t *log, var_t *variable, long version){
 			log_info("[%d]ring buffer indexes , %ld  %ld",
 					log->runtime_context->process_id,
 					log->ring_buffer.head->tail,
-					log->ring_buffer.head->head);
+					log->ring_buffer.head->head);*/
 			return -1;
 		}
 
@@ -165,7 +165,7 @@ int log_write(log_t *log, var_t *variable, long version){
 				log_err("error while sem post");
 				exit(1);
 			}
-			log_info("[%d]not enough space: log tail : %ld ,  head : %ld , available_size : %ld " ,
+			/*log_info("[%d]not enough space: log tail : %ld ,  head : %ld , available_size : %ld " ,
 					log->runtime_context->process_id,
 					dtail_offset,
 					dhead_offset,
@@ -173,7 +173,7 @@ int log_write(log_t *log, var_t *variable, long version){
 			log_info("[%d]ring buffer indexes , %ld  %ld",
 					log->runtime_context->process_id,
 					log->ring_buffer.head->tail,
-					log->ring_buffer.head->head);
+					log->ring_buffer.head->head);*/
 			return -1;
 		}
 	}

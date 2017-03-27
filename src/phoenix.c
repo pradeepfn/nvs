@@ -100,11 +100,11 @@ int px_commit(char *key1,int version) {
 
 
 int px_snapshot(){
-	debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
+	//debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
 	var_t *s;
 	for (s = varmap; s != NULL; s = s->hh.next){
 		while(log_write(&nvlog, s, runtime_context.checkpoint_version) == -1){ //not enough space
-			sleep(0.1);
+			sleep(0.5);
 	    };
 	}
 	runtime_context.checkpoint_version ++;
@@ -128,7 +128,7 @@ int px_get_snapshot(ulong version){
     checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
 	//truncating log
 	debug("traversing log");
-	while(rb_elem->version <= version){ 
+	while(log->ring_buffer.head->tail != log->ring_buffer.head->head && rb_elem->version <= version){ 
         log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
         rb_elem = ringb_element(log,log->ring_buffer.head->tail);
     }
