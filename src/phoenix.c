@@ -62,24 +62,23 @@ int px_create(char *key1, unsigned long size,px_obj *retobj){
 
 
 /**
- * return the data pointed by the key. If the data is not found in fast memory,
- * then move the data to fast memory from slow memory before returning the pointer.
+ * we search the object in persistence store/ NVRAM as this get operation is 
+ * for consumers.
  */
 int px_get(char *key1, uint64_t version, px_obj *retobj){
-	var_t *s;
-	// return from the in-memory store
-	for(s=varmap; s != NULL; s=s->hh.next){
-		if(!strncmp(s->key1, key1, KEY_LENGTH)){
-			retobj->data = s->ptr;
-			retobj->size = s->size;
-			return 0;
-		}
+	checkpoint_t *objmeta = log_read(&nvlog, key1, version);	
+    if(objmeta != NULL){
+	  void *ptr = log_ptr(&nvlog,objmeta->start_offset);	
+	  void *rptr = malloc(objmeta->size);
+	  // application is responsible for freeing up object
+      memcpy(rptr,ptr,objmeta->size);	
+	  retobj->data = rptr;
+	  retobj->size = objmeta->size;
+      return 0;
+	}else{
+		log_err("key not found : %s", key1);
+		return -1;
 	}
-
-	// if a specific version specified, then get it from the nv-store
-	retobj->data = NULL;
-	retobj->size = 0;
-	return 0;
 }
 
 
@@ -93,9 +92,11 @@ int px_commit(char *key1,int version) {
 	for (s = varmap; s != NULL; s = s->hh.next){
 		if(!strncmp(s->key1,key1,KEY_LENGTH)){
 			log_write(&nvlog, s, version);
+			return 0;
 		}
 	}
-	return 0;
+	log_err("key not found\n");
+	return -1;
 }
 
 

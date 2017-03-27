@@ -220,7 +220,7 @@ int log_write(log_t *log, var_t *variable, long version){
 
 
 //iterate the buffer backwards and retrieve elements
-checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
+checkpoint_t *log_read(log_t *log, char *key, long version){
 	checkpoint_t *rb_elem;
 
 	if(log_isempty(log)){
@@ -236,16 +236,14 @@ checkpoint_t *log_read(log_t *log, char *var_name, int process_id,long version){
 	do{
 		iter_index = (iter_index == 0)?(RING_BUFFER_SLOTS-1):(iter_index-1); // head point to next available slot. hence subtract first
 		rb_elem = ringb_element(log,iter_index);
-		if(!strncmp(rb_elem->var_name,var_name,KEY_LENGTH) && rb_elem->version == version &&
-				rb_elem->process_id == process_id){
+		if(!strncmp(rb_elem->var_name,key,KEY_LENGTH) && rb_elem->version == version){
 			return rb_elem;
 		}
 
 	}while(tail_index != iter_index);
 
-	log_warn("[%d] no checkpointed data found %s, %lu ",log->runtime_context->process_id,var_name,version);
+	log_warn("[%d] no checkpointed data found %s, %lu ",log->runtime_context->process_id,key,version);
 	return NULL;
-
 }
 
 
