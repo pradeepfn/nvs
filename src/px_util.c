@@ -107,6 +107,15 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	s->earlycopy_time_offset.tv_usec = 0;
 	strncpy(s->key1,key,sizeof(char)*20);
 
+#ifdef DEDUP
+	s->dv_size= page_aligned_size/page_size;
+	void *tmpptr = (int *) malloc(s->dv_size);
+	memset(tmpptr,0,s->dv_size);
+	s->dedup_vector = tmpptr;
+	/*install dedup handler and enable write protection*/
+
+#endif
+
 	return s;
 }
 

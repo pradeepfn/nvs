@@ -64,6 +64,9 @@ int px_create(char *key1, unsigned long size,px_obj *retobj){
 /**
  * we search the object in persistence store/ NVRAM as this get operation is 
  * for consumers.
+ * 1. we write protect the object before return
+ * 2. remember the return object and version
+ * 3. apply the diff for next version
  */
 int px_get(char *key1, uint64_t version, px_obj *retobj){
 	checkpoint_t *objmeta = log_read(&nvlog, key1, version);	
@@ -82,6 +85,16 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
 }
 
 
+/* apply the diff to given version
+ *  -- currently we only support consercative version
+ */
+int px_deltaget(char *key1,uinit64_t version, px_obj *retobj){
+
+
+
+
+
+}
 
 /*
  * Move the data from volatile memory to non volatile log structured memory.
@@ -92,6 +105,11 @@ int px_commit(char *key1,int version) {
 	for (s = varmap; s != NULL; s = s->hh.next){
 		if(!strncmp(s->key1,key1,KEY_LENGTH)){
 			log_write(&nvlog, s, version);
+#ifdef DEDUP
+			//memset the dedup vector and mprotect pages
+
+
+#endif
 			return 0;
 		}
 	}

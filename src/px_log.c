@@ -98,8 +98,12 @@ int log_write(log_t *log, var_t *variable, long version){
 	ulong dhead_offset;
 	ulong dtail_offset;
 
+#ifdef DEDUP
+	long dedup_varsize = get_varsize(variable->dedup_vector);
+	ulong checkpoint_size = dedup_varsize + sizeof(struct preamble_t_) + variable->dv_size*sizeof(int);
+#else
 	ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
-
+#endif
 	//get the log reservation
 	//pthread_mutex_lock(log->plock);
 	//check if slots left in the ring buffer
@@ -208,9 +212,17 @@ int log_write(log_t *log, var_t *variable, long version){
 	ulong preamble_offset = reserved_log_offset + variable->size;
 	preamble_log_ptr = log_ptr(log,preamble_offset);
 
+
+#ifdef DEDUP
+	// 1. write the dedup vector
+	// 2. write the data in to persistent log after in page chunks
+
+
+#else
 	// write to log on the granted log boundry and update the commit bit
 	// valid_bit followed by data. we use the valid bit to atomically copy the checkpoint data.
 	nvmmemcpy_write(reserved_log_ptr,variable->ptr,variable->size,log->runtime_context->config_context->nvram_wbw);
+#endif
 	preamble_t preamble;
 	//preamble.value = MAGIC_VALUE;
 	memcpy(preamble_log_ptr,&preamble,sizeof(preamble_t));// atomic commit of the copied data
