@@ -212,7 +212,7 @@ int log_write(log_t *log, var_t *variable, long version){
 
 #ifdef DEDUP
 	reserved_log_ptr = log_ptr(log,reserved_log_offset);
-	ulong data_offset = reserved_log_offset + variable->dv_size*sizeof(int); 
+	ulong data_offset = reserved_log_offset + variable->dv_size*sizeof(int);
 	void *data_ptr = log_ptr(log,data_offset);
 	ulong preamble_offset = data_offset + variable->size;
 	preamble_log_ptr = log_ptr(log,preamble_offset);
@@ -226,6 +226,32 @@ int log_write(log_t *log, var_t *variable, long version){
 #ifdef DEDUP
 	// 1. write the dedup vector
 	// 2. write the data in to persistent log after in page chunks
+	nvmmemcpy_write(reserved_log_ptr,variable->dedup_vector,variable->dv_size*sizeof(int),
+			log->runtime_context->config_context->nvram_wbw);
+
+	int i;
+	int chunk_started=0;
+	int chunk_ended=0;
+	long chunk_size=0;
+	for(i=0; i<variable->dv_size;i++){
+		if(!chunk_started){
+			if(variable->dedup_vector[i]){
+				chunk_started =1;
+				chunk_size++;
+			}else{
+				continue;
+			}
+
+		}else if(chunk_started){
+			if(variable->dedup_vector[i]){
+				chunk_size++;
+			}else{ // write the chunk
+				chunk_started=0;
+				chunk_size=0;
+				nvmmemcpy_write(data_ptr,variable);
+			}
+		}
+	}
 
 
 #else
