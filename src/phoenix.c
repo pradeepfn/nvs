@@ -62,22 +62,22 @@ int px_create(char *key1, unsigned long size,px_obj *retobj){
 
 
 /**
- * we search the object in persistence store/ NVRAM as this get operation is 
+ * we search the object in persistence store/ NVRAM as this get operation is
  * for consumers.
  * 1. we write protect the object before return
  * 2. remember the return object and version
  * 3. apply the diff for next version
  */
 int px_get(char *key1, uint64_t version, px_obj *retobj){
-	checkpoint_t *objmeta = log_read(&nvlog, key1, version);	
-    if(objmeta != NULL){
-	  void *ptr = log_ptr(&nvlog,objmeta->start_offset);	
-	  void *rptr = malloc(objmeta->size);
-	  // application is responsible for freeing up object
-      memcpy(rptr,ptr,objmeta->size);	
-	  retobj->data = rptr;
-	  retobj->size = objmeta->size;
-      return 0;
+	checkpoint_t *objmeta = log_read(&nvlog, key1, version);
+	if(objmeta != NULL){
+		void *ptr = log_ptr(&nvlog,objmeta->start_offset);
+		void *rptr = malloc(objmeta->size);
+		// application is responsible for freeing up object
+		memcpy(rptr,ptr,objmeta->size);
+		retobj->data = rptr;
+		retobj->size = objmeta->size;
+		return 0;
 	}else{
 		log_err("key not found : %s", key1);
 		return -1;
@@ -88,12 +88,25 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
 /* apply the diff to given version
  *  -- currently we only support consercative version
  */
-int px_deltaget(char *key1,uinit64_t version, px_obj *retobj){
+int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
+	void *dataptr, *vectorptr;
+	checkpoint_t *objmeta = log_read(&nvlog, key1, version);
+	if(objmeta != NULL){
+		dataptr = log_ptr(&nvlog,objmeta->start_offset);
+		vectorptr = log_ptr(&nvlog,objmeta->vector_offset);
+	}else{
+		log_err("key not found : %s", key1);
+		return -1;
+	}
+	if(version == 0){
+		// for now we consider this as a case. Fix this later!
+		retobj->data = malloc(objmeta->size);
+	}else{ assert(retobj->version == version -1);}
 
 
-
-
-
+	nvmmemcpy_dedup_apply(retobj->data, retobj->size, dataptr,objmeta->var_size,
+			vectorptr,objmeta->dv_size);
+	return 0;
 }
 
 /*
@@ -124,7 +137,7 @@ int px_snapshot(){
 	for (s = varmap; s != NULL; s = s->hh.next){
 		while(log_write(&nvlog, s, runtime_context.checkpoint_version) == -1){ //not enough space
 			sleep(0.5);
-	    };
+		};
 	}
 	runtime_context.checkpoint_version ++;
 	return 0;
@@ -134,29 +147,29 @@ int read_watermark=0;
 
 /*read the next most recent snapshot */
 int px_get_snapshot(ulong version){
-    log_t *log = &nvlog;
+	log_t *log = &nvlog;
 
 
 	// check if log empty
 	while(log_isempty(log)){ sleep(0.5);};
 	debug("waiting for semaphore");
-    if(sem_wait(&log->ring_buffer.head->sem) == -1){
+	if(sem_wait(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
-    }
-    checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
+	}
+	checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
 	//truncating log
 	debug("traversing log");
-	while(log->ring_buffer.head->tail != log->ring_buffer.head->head && rb_elem->version <= version){ 
-        log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
-        rb_elem = ringb_element(log,log->ring_buffer.head->tail);
-    }
+	while(log->ring_buffer.head->tail != log->ring_buffer.head->head && rb_elem->version <= version){
+		log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
+		rb_elem = ringb_element(log,log->ring_buffer.head->tail);
+	}
 
 	debug("posting to semaphore");
-    if(sem_post(&log->ring_buffer.head->sem) == -1){
+	if(sem_post(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
-    }
+	}
 	debug("snapshot data returned version : %ld" , version);
 	return 0;
 }

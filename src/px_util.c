@@ -288,7 +288,17 @@ int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
 
 
 
+/*
+ * apply diff to a versioned object
+ */
 
+nvmmemcpy_dedup_apply(void *dest,long size, void *var_ptr,long var_size,int *dvector,
+								int dv_size){
+
+
+
+
+}
 
 
 
