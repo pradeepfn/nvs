@@ -228,31 +228,8 @@ int log_write(log_t *log, var_t *variable, long version){
 	// 2. write the data in to persistent log after in page chunks
 	nvmmemcpy_write(reserved_log_ptr,variable->dedup_vector,variable->dv_size*sizeof(int),
 			log->runtime_context->config_context->nvram_wbw);
-
-	int i;
-	int chunk_started=0;
-	int chunk_ended=0;
-	long chunk_size=0;
-	for(i=0; i<variable->dv_size;i++){
-		if(!chunk_started){
-			if(variable->dedup_vector[i]){
-				chunk_started =1;
-				chunk_size++;
-			}else{
-				continue;
-			}
-
-		}else if(chunk_started){
-			if(variable->dedup_vector[i]){
-				chunk_size++;
-			}else{ // write the chunk
-				chunk_started=0;
-				chunk_size=0;
-				nvmmemcpy_write(data_ptr,variable);
-			}
-		}
-	}
-
+	nvmmemcpy_dedupv(data_ptr,variable->ptr,variable->size,variable->dedup_vector,
+			variable->dvector, log->runtime_context->config_context->nvram_wbw);
 
 #else
 	// write to log on the granted log boundry and update the commit bit

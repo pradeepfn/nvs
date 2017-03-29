@@ -246,7 +246,8 @@ long get_varsize(int *vector, long vsize){
  * copy chunks to a destination log given, variable and dedup vector
  */
 
-int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size, int *dvector, int dv_size, int nvram_bw){
+int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size, 
+							int *dvector, int dv_size, int nvram_bw){
 	int i;
 	int chunk_started=0;
 	int chunk_ended=0;
@@ -258,18 +259,24 @@ int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size, int *dvector, i
 				chunk_started =1;
 				src_ptr = var_ptr + PAGE_SIZE*i;
 				chunk_size++;
+				if(i == dv_size-1){
+					nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
+					//we dont need bookkepping anymore
+				}
 			}else{
 				continue;
 			}
-
 		}else if(chunk_started){
 			if(dvector[i]){
 				chunk_size++;
+				if(i == dv_size-1){
+					nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
+					//we dont need bookkepping anymore
+				}
 			}else{ // write the chunk
 				chunk_started=0;
 				chunk_size=0;
-				src_ptr
-					nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
+				nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
 				dest_ptr = dest_ptr + chunk_size*PAGE_SIZE;
 			}
 		}
