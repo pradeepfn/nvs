@@ -107,8 +107,8 @@ int px_commit(char *key1,int version) {
 			log_write(&nvlog, s, version);
 #ifdef DEDUP
 			//memset the dedup vector and mprotect pages
-
-
+			memset(s->dedup_vector,0,s->dv_size*sizeof(int));
+			enable_write_protection(s->ptr, s->paligned_size);
 #endif
 			return 0;
 		}

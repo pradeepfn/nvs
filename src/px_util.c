@@ -113,7 +113,8 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	memset(tmpptr,0,s->dv_size);
 	s->dedup_vector = tmpptr;
 	/*install dedup handler and enable write protection*/
-
+	install_sighandler(dedup_handler);
+	enable_write_protection(s->ptr, s->paligned_size);
 #endif
 
 	return s;
@@ -223,3 +224,21 @@ void md5_digest(unsigned char *digest,void *data, ulong length){
 	MD5_Final(digest,&mdContext);
 	return;
 }
+
+
+
+
+/*
+ * return the number of modifed pages since last commit
+ */
+long get_varsize(int *vector, long vsize){
+	long i;
+	long npages=0;
+	for(i=0; i<vsize;i++){
+		if(vector[i] == 1){ npages++; }
+	}
+	return PAGE_SIZE*npages;
+}
+
+
+

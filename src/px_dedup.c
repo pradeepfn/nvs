@@ -1,3 +1,10 @@
+#include "px_constants.h"
+#include "px_debug.h"
+
+extern 
+extern
+
+
 /* page write fault executes this hanlder,
  * we find the corresponding variable->page and mark it
  * as modified. 
@@ -13,7 +20,15 @@ static void dedup_handler(int sig, siginfo_t *si, void *unused){
             offset = pageptr - s->ptr;
             if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
                 assert(s != NULL);
-                disable_protection(s->ptr, s->page_size);
+				/* 
+				 * 1. find the page index	 
+				 * 2. update the dedup_vector 
+				 * 3. disable the write protection
+				 */
+				long v_index = offset/PAGE_SIZE;
+				s->dedup_vector[v_index] = 1;
+				pageptr = (void *)((long)si->si_addr & ~(PAGE_SIZE-1));
+                disable_protection(pageptr, PAGE_SIZE);
                 return;
             }
         }

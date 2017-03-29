@@ -15,6 +15,7 @@ int nvmmemcpy_write(void * dest, void * src, size_t size,int wbw);
 var_t *px_alighned_allocate(size_t size, char *key);
 void read_configs(ccontext_t *config_context,char *file_path);
 void md5_digest(unsigned char *digest,void *data,ulong length);
+long get_varsize(int *,long);
 
 
 

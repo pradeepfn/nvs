@@ -35,14 +35,14 @@ int initshmlock(log_t *log, ccontext_t *configctxt){
 		//pthread_mutexattr_t mutexAttr;
 		//pthread_mutexattr_setpshared(&mutexAttr, PTHREAD_PROCESS_SHARED);
 		//pthread_mutex_init(&(log->ring_buffer.head->plock),&mutexAttr);
-		sem_init(&log->ring_buffer.head->sem,2,1); 
-		debug("[%d]shared semaphore initialized",log->runtime_context->process_id);	
-		log->ring_buffer.head->log_initialized = 1;		
+		sem_init(&log->ring_buffer.head->sem,2,1);
+		debug("[%d]shared semaphore initialized",log->runtime_context->process_id);
+		log->ring_buffer.head->log_initialized = 1;
 	}else{
 		debug("shared semaphore already initialized");
 	}
 	check(flock(fd,LOCK_UN) != -1, "error releasing lock");
-	return 0;		
+	return 0;
 error:
 	debug("error while initializing shared mem");
 	exit(1);
@@ -53,7 +53,7 @@ error:
 
 /*  - mmap the  named files in to process adress space.
  *  - initialize the shared locks. -- use file locking as bootstrap locking mechanism
- */ 
+ */
 int log_init(log_t *log , int proc_id){
 	ccontext_t *config_context = log->runtime_context->config_context;
 
@@ -75,7 +75,7 @@ int log_init(log_t *log , int proc_id){
 
 //update the current latest version of the log buffer and move the tail forward
 int log_commitv(log_t *log,ulong version){
-//TODO: lock
+	//TODO: lock
 	log->ring_buffer.head->current_version = version; // atomic commit
 	//TODO: flush to fs
 	//iterate starting from the tail and select a new tail
@@ -99,7 +99,7 @@ int log_write(log_t *log, var_t *variable, long version){
 	ulong dtail_offset;
 
 #ifdef DEDUP
-	long dedup_varsize = get_varsize(variable->dedup_vector);
+	long dedup_varsize = get_varsize(variable->dedup_vector,variable->dv_size);
 	ulong checkpoint_size = dedup_varsize + sizeof(struct preamble_t_) + variable->dv_size*sizeof(int);
 #else
 	ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
@@ -108,13 +108,13 @@ int log_write(log_t *log, var_t *variable, long version){
 	//pthread_mutex_lock(log->plock);
 	//check if slots left in the ring buffer
 	/*if(log_isfull(log)){
-		log_err("no slots left in the ring buffer");
-		//pthread_mutex_unlock(log->plock);
-		exit(1);
+	  log_err("no slots left in the ring buffer");
+	//pthread_mutex_unlock(log->plock);
+	exit(1);
 	}*/
-    if(sem_wait(&log->ring_buffer.head->sem)== -1){
-				log_err("error while sem wait");
-				exit(1);
+	if(sem_wait(&log->ring_buffer.head->sem)== -1){
+		log_err("error while sem wait");
+		exit(1);
 	}
 	if(log->ring_buffer.head->head == -1 && log->ring_buffer.head->tail == -1){
 		log->ring_buffer.head->head =0;
@@ -126,14 +126,14 @@ int log_write(log_t *log, var_t *variable, long version){
 		dtail_offset = log_start_offset(log, log->ring_buffer.head->tail); // data tail offset , point to tail of the data log. if equal to head, then empty
 	}
 	ulong dlog_size = log->ring_buffer.head->log_size; // data log size
-	/*debug("[%d] writing object : %s  with size : %ld, version: %ld   in to log, head_offset : %ld ,  tail_offset : %ld , log_size : %ld" , 
-						 log->runtime_context->process_id,
-						 variable->key1 , 
-						 variable->size, 
-						 version,
-						 dhead_offset, 
-						 dtail_offset, 
-						 dlog_size); */
+	/*debug("[%d] writing object : %s  with size : %ld, version: %ld   in to log, head_offset : %ld ,  tail_offset : %ld , log_size : %ld" ,
+	  log->runtime_context->process_id,
+	  variable->key1 ,
+	  variable->size,
+	  version,
+	  dhead_offset,
+	  dtail_offset,
+	  dlog_size); */
 
 	if(dhead_offset >= dtail_offset){   //if head is infront,
 		avail_size = dlog_size - dhead_offset;
@@ -148,14 +148,14 @@ int log_write(log_t *log, var_t *variable, long version){
 				exit(1);
 			}
 			/*log_info("[%d]not enought space log tail : %ld ,  head : %ld , available_size : %ld " ,
-					log->runtime_context->process_id,
-					dtail_offset,
-					dhead_offset,
-					avail_size);
-			log_info("[%d]ring buffer indexes , %ld  %ld",
-					log->runtime_context->process_id,
-					log->ring_buffer.head->tail,
-					log->ring_buffer.head->head);*/
+			  log->runtime_context->process_id,
+			  dtail_offset,
+			  dhead_offset,
+			  avail_size);
+			  log_info("[%d]ring buffer indexes , %ld  %ld",
+			  log->runtime_context->process_id,
+			  log->ring_buffer.head->tail,
+			  log->ring_buffer.head->head);*/
 			return -1;
 		}
 
@@ -170,14 +170,14 @@ int log_write(log_t *log, var_t *variable, long version){
 				exit(1);
 			}
 			/*log_info("[%d]not enough space: log tail : %ld ,  head : %ld , available_size : %ld " ,
-					log->runtime_context->process_id,
-					dtail_offset,
-					dhead_offset,
-					avail_size);
-			log_info("[%d]ring buffer indexes , %ld  %ld",
-					log->runtime_context->process_id,
-					log->ring_buffer.head->tail,
-					log->ring_buffer.head->head);*/
+			  log->runtime_context->process_id,
+			  dtail_offset,
+			  dhead_offset,
+			  avail_size);
+			  log_info("[%d]ring buffer indexes , %ld  %ld",
+			  log->runtime_context->process_id,
+			  log->ring_buffer.head->tail,
+			  log->ring_buffer.head->head);*/
 			return -1;
 		}
 	}
@@ -192,26 +192,36 @@ int log_write(log_t *log, var_t *variable, long version){
 	checkpoint_elem->size = variable->size;
 	checkpoint_elem->start_offset = reserved_log_offset;
 	checkpoint_elem->end_offset = reserved_log_offset + checkpoint_size-1;
-    //debug("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld", 
-	//			checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset); 
+#ifdef DEDUP
+	checkpoint_elem->dv_size = variable->dv_size * sizeof(int);
+#endif
+	//debug("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld",
+	//			checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset);
 
 	log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; // atomically commit slot reservation
 	//pthread_mutex_unlock(log->plock);
-			if(sem_post(&log->ring_buffer.head->sem) == -1){
-				log_err("error while sem post");
-				exit(1);
-			}
+	if(sem_post(&log->ring_buffer.head->sem) == -1){
+		log_err("error while sem post");
+		exit(1);
+	}
 
 #ifdef PX_DIGEST
 	md5_digest(checkpoint_elem->hash,variable->ptr,variable->size);
 	memcpy(variable->hash,checkpoint_elem->hash,MD5_LENGTH);
 #endif
 
-	//no lock operation
+#ifdef DEDUP
+	reserved_log_ptr = log_ptr(log,reserved_log_offset);
+	ulong data_offset = reserved_log_offset + variable->dv_size*sizeof(int); 
+	void *data_ptr = log_ptr(log,data_offset);
+	ulong preamble_offset = data_offset + variable->size;
+	preamble_log_ptr = log_ptr(log,preamble_offset);
+
+#else
 	reserved_log_ptr = log_ptr(log,reserved_log_offset);
 	ulong preamble_offset = reserved_log_offset + variable->size;
 	preamble_log_ptr = log_ptr(log,preamble_offset);
-
+#endif
 
 #ifdef DEDUP
 	// 1. write the dedup vector
@@ -294,10 +304,10 @@ int is_chkpoint_present(log_t *log){
 int log_isempty(log_t *log){
 
 	//pthread_mutex_lock(log->plock);
-    if(sem_wait(&log->ring_buffer.head->sem) == -1){
+	if(sem_wait(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
-    }
+	}
 	if(log->ring_buffer.head->tail == log->ring_buffer.head->head){
 		//pthread_mutex_unlock(log->plock);
 		if(sem_post(&log->ring_buffer.head->sem) == -1){
@@ -307,10 +317,10 @@ int log_isempty(log_t *log){
 		return 1;
 	}
 	//pthread_mutex_unlock(log->plock);
-    if(sem_post(&log->ring_buffer.head->sem) == -1){
+	if(sem_post(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
-    }
+	}
 	return 0;
 }
 
@@ -407,20 +417,20 @@ static void init_mmap_files(log_t *log){
 
 /* perform cleanup */
 int log_finalize(log_t *log){
-	
-    if(sem_wait(&log->ring_buffer.head->sem) == -1){
+
+	if(sem_wait(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem wait");
 		exit(1);
-    }
-	log->ring_buffer.head->log_initialized = 1;		
-    if(sem_post(&log->ring_buffer.head->sem) == -1){
+	}
+	log->ring_buffer.head->log_initialized = 1;
+	if(sem_post(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem post");
 		exit(1);
-    }
+	}
 	//destroy semaphore
-    if(sem_destroy(&log->ring_buffer.head->sem) == -1){
+	if(sem_destroy(&log->ring_buffer.head->sem) == -1){
 		log_err("error in sem destroy");
 		exit(1);
-    }
+	}
 	return 0;
 }
