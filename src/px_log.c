@@ -100,6 +100,7 @@ int log_write(log_t *log, var_t *variable, long version){
 
 #ifdef DEDUP
 	long dedup_varsize = get_varsize(variable->dedup_vector,variable->dv_size);
+	debug("de-duped variable size %ld", dedup_varsize);
 	ulong checkpoint_size = dedup_varsize + sizeof(struct preamble_t_) + variable->dv_size*sizeof(int);
 #else
 	ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
@@ -194,6 +195,7 @@ int log_write(log_t *log, var_t *variable, long version){
 	checkpoint_elem->end_offset = reserved_log_offset + checkpoint_size-1;
 #ifdef DEDUP
 	checkpoint_elem->dv_size = variable->dv_size;
+	checkpoint_elem->dedup_size = dedup_varsize;
 #endif
 	//debug("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld",
 	//			checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset);
@@ -214,9 +216,8 @@ int log_write(log_t *log, var_t *variable, long version){
 	reserved_log_ptr = log_ptr(log,reserved_log_offset);
 	ulong data_offset = reserved_log_offset + variable->dv_size*sizeof(int);
 	void *data_ptr = log_ptr(log,data_offset);
-	ulong preamble_offset = data_offset + variable->size;
+	ulong preamble_offset = data_offset + dedup_varsize;
 	preamble_log_ptr = log_ptr(log,preamble_offset);
-
 #else
 	reserved_log_ptr = log_ptr(log,reserved_log_offset);
 	ulong preamble_offset = reserved_log_offset + variable->size;
@@ -224,12 +225,24 @@ int log_write(log_t *log, var_t *variable, long version){
 #endif
 
 #ifdef DEDUP
+
+
+	char str[128];
+	int k;
+	int index = 0;
+	for (k=0; k<variable->dv_size; k++){
+		index += snprintf(&str[index], 128-index, "%d ",  variable->dedup_vector[k]);
+	}
+	debug("dedup string : %s", str);
+
 	// 1. write the dedup vector
 	// 2. write the data in to persistent log after in page chunks
-	nvmmemcpy_write(reserved_log_ptr,variable->dedup_vector,variable->dv_size,
+	nvmmemcpy_write(reserved_log_ptr,variable->dedup_vector,variable->dv_size*sizeof(int),
 			log->runtime_context->config_context->nvram_wbw);
-	nvmmemcpy_dedupv(data_ptr,variable->ptr,variable->size,variable->dedup_vector,
+	long temp = nvmmemcpy_dedupv(data_ptr,variable->ptr,variable->size,variable->dedup_vector,
 			variable->dv_size, log->runtime_context->config_context->nvram_wbw);
+	debug("copied data size : %ld , dedup_varsize : %ld", temp, dedup_varsize);
+	assert(temp == dedup_varsize);
 
 #else
 	// write to log on the granted log boundry and update the commit bit

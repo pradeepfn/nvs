@@ -20,11 +20,15 @@ int main(){
 		px_init(1);
 		px_obj obj;
 		for(i=0;i<4;i++){
+
+#ifdef DEDUP
+			if(!px_deltaget("key1",i,&obj)){
+#else
 			if(!px_get("key1",i,&obj)){
-				//compare the output
+#endif //compare the output
 				int *array = (int *)obj.data;
 				printf("content : ");
-				for(j=0;j<4*1024;j+=1024){
+				for(j=0;j<8*1024;j+=1024){
 					printf("%d ",array[j]);
 					//assert(strncmp(obj.data,"hello",6) == 0);
 				}
@@ -39,11 +43,10 @@ int main(){
 		int i,j;
 		px_init(1);
 		px_obj obj;
-		//allocate 4 pages
-		px_create("key1",4*1024*sizeof(int),&obj); // 4 pages
+		px_create("key1",8*1024*sizeof(int),&obj); // 8 pages
 		int *array = (int *)obj.data;
 		for( i=0;i<4;i++){
-			for(j=0;j<(4-i)*1024;j+=1024){
+			for(j=0;j<(8-i)*1024;j+=1024){
 				array[j] = i;
 			}
 			if(px_commit("key1", i)){ assert(0);}

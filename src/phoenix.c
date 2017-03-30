@@ -90,10 +90,11 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
  */
 int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
 #ifdef DEDUP
-	void *dataptr, *vectorptr;
+	void *dataptr;
+    int  *vectorptr;
 	checkpoint_t *objmeta = log_read(&nvlog, key1, version);
 	if(objmeta != NULL){
-		vectorptr = log_ptr(&nvlog,objmeta->start_offset);
+		vectorptr = (int *)log_ptr(&nvlog,objmeta->start_offset);
 		dataptr = log_ptr(&nvlog,objmeta->start_offset + objmeta->dv_size*sizeof(int));
 	}else{
 		log_err("key not found : %s", key1);
@@ -102,11 +103,26 @@ int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
 	if(version == 0){
 		// for now we consider this as a case. Fix this later!
 		retobj->data = malloc(objmeta->size);
-	}else{ assert(retobj->version == version -1);}
+		retobj->size = objmeta->size;
+	}else{
+		assert(retobj->data != NULL);
+		assert(retobj->version == version -1);
+	}
 
+	char str[128];
+	int k;
+	int index = 0;
+	for (k=0; k<objmeta->dv_size; k++){
+		index += snprintf(&str[index], 128-index, "%d ", vectorptr[k]);
+	}
+	debug("dedup string : %s", str);
 
-	nvmmemcpy_dedup_apply(retobj->data, retobj->size, dataptr,(objmeta->size-objmeta->dv_size*sizeof(int)), 
-								vectorptr,objmeta->dv_size);
+	long temp = nvmmemcpy_dedup_apply(retobj->data, retobj->size, dataptr,objmeta->size,
+			vectorptr,objmeta->dv_size);
+	debug("dedup obj size : %ld , applied data size ; %d", objmeta->dedup_size, temp);
+	assert(objmeta->dedup_size == temp);
+	retobj->version = objmeta->version;
+	retobj->size = objmeta->size;
 	return 0;
 #else
 

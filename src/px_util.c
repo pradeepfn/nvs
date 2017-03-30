@@ -344,13 +344,15 @@ long get_varsize(int *vector, long vsize){
 
 /*
  * copy chunks to a destination log given, variable and dedup vector
+ * return : total copied data in bytes
  */
 
-int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
+long nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
 		int *dvector, long dv_size, int nvram_bw){
 	int i;
 	int chunk_started=0;
 	long chunk_size=0;
+	long total_copied=0;
 	void *src_ptr;
 	for(i=0; i<dv_size;i++){
 		if(!chunk_started){
@@ -360,6 +362,7 @@ int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
 				chunk_size++;
 				if(i == dv_size-1){
 					nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
+					total_copied += chunk_size*PAGE_SIZE;
 					//we dont need bookkepping anymore
 				}
 			}else{
@@ -370,17 +373,19 @@ int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
 				chunk_size++;
 				if(i == dv_size-1){
 					nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
+					total_copied += chunk_size*PAGE_SIZE;
 					//we dont need bookkepping anymore
 				}
 			}else{ // write the chunk
+				nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
+				total_copied += chunk_size*PAGE_SIZE;
+				dest_ptr = dest_ptr + chunk_size*PAGE_SIZE;
 				chunk_started=0;
 				chunk_size=0;
-				nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
-				dest_ptr = dest_ptr + chunk_size*PAGE_SIZE;
 			}
 		}
 	}
-	return 0;
+	return total_copied;
 }
 
 
@@ -391,14 +396,16 @@ int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
  * apply diff to a versioned object
  */
 
-int nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,int *dvector,
+long nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,int *dvector,
 		long dv_size){
 
 	int i;
 	int chunk_started=0;
 	long chunk_size=0;
+	long total_applied=0; // total applied data in bytes
 	void *dest_ptr;
 
+	debug("base object size : %ld , stored object size : %ld", size, var_size);
 	assert(size == var_size);
 
 	for(i=0;i<dv_size;i++){
@@ -409,6 +416,7 @@ int nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,i
 				chunk_size++;
 				if(i == dv_size-1){
 					memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
+					total_applied += chunk_size*PAGE_SIZE;
 					//we dont need bookkepping anymore
 				}
 			}else{
@@ -419,17 +427,19 @@ int nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,i
 				chunk_size++;
 				if(i == dv_size-1){
 					memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
+					total_applied += chunk_size*PAGE_SIZE;
 					//we dont need bookkepping anymore
 				}
 			}else{ // write the chunk
+				memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
+				total_applied += chunk_size*PAGE_SIZE;
+				var_ptr = var_ptr + chunk_size*PAGE_SIZE;
 				chunk_started=0;
 				chunk_size=0;
-				memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
-				var_ptr = var_ptr + chunk_size*PAGE_SIZE;
 			}
 		}
 	}
-	return 0;
+	return total_applied;
 
 }
 

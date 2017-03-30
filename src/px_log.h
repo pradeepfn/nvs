@@ -16,6 +16,7 @@ typedef struct checkpoint_t_{
     long start_offset;  // start offset in linear log
     long end_offset;   // end offset in linear log
 #ifdef DEDUP
+	ulong dedup_size; // variable size after deduplication
 	long dv_size; // size of dedup vector (nelems)
 #endif
 }checkpoint_t;
