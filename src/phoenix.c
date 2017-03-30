@@ -89,11 +89,12 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
  *  -- currently we only support consercative version
  */
 int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
+#ifdef DEDUP
 	void *dataptr, *vectorptr;
 	checkpoint_t *objmeta = log_read(&nvlog, key1, version);
 	if(objmeta != NULL){
-		dataptr = log_ptr(&nvlog,objmeta->start_offset);
-		vectorptr = log_ptr(&nvlog,objmeta->vector_offset);
+		vectorptr = log_ptr(&nvlog,objmeta->start_offset);
+		dataptr = log_ptr(&nvlog,objmeta->start_offset + objmeta->dv_size*sizeof(int));
 	}else{
 		log_err("key not found : %s", key1);
 		return -1;
@@ -104,9 +105,14 @@ int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
 	}else{ assert(retobj->version == version -1);}
 
 
-	nvmmemcpy_dedup_apply(retobj->data, retobj->size, dataptr,objmeta->var_size,
-			vectorptr,objmeta->dv_size);
+	nvmmemcpy_dedup_apply(retobj->data, retobj->size, dataptr,(objmeta->size-objmeta->dv_size*sizeof(int)), 
+								vectorptr,objmeta->dv_size);
 	return 0;
+#else
+
+	return px_get(key1,version,retobj);
+
+#endif
 }
 
 /*

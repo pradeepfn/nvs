@@ -98,7 +98,7 @@ typedef struct var_t_ {
     struct timeval earlycopy_time_offset; /* time offset since checkpoint, before starting early copy */
     ulong version; // use in dlog hash structure.
     unsigned char hash[MD5_LENGTH]; // used for md5 digest store
-	long dv_size;
+	long dv_size; // number of int elements in the dedup vector
 	int *dedup_vector; //vector for tracking modified memory pages
     char key1[20];  /* key */
 

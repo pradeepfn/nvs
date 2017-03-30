@@ -6,6 +6,7 @@
 typedef struct px_obj_{
 	void *data;
 	unsigned long size;
+	long version;
 }px_obj;
 
 int px_init(int proc_id);

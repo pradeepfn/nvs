@@ -193,7 +193,7 @@ int log_write(log_t *log, var_t *variable, long version){
 	checkpoint_elem->start_offset = reserved_log_offset;
 	checkpoint_elem->end_offset = reserved_log_offset + checkpoint_size-1;
 #ifdef DEDUP
-	checkpoint_elem->dv_size = variable->dv_size * sizeof(int);
+	checkpoint_elem->dv_size = variable->dv_size;
 #endif
 	//debug("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld",
 	//			checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset);
@@ -226,10 +226,10 @@ int log_write(log_t *log, var_t *variable, long version){
 #ifdef DEDUP
 	// 1. write the dedup vector
 	// 2. write the data in to persistent log after in page chunks
-	nvmmemcpy_write(reserved_log_ptr,variable->dedup_vector,variable->dv_size*sizeof(int),
+	nvmmemcpy_write(reserved_log_ptr,variable->dedup_vector,variable->dv_size,
 			log->runtime_context->config_context->nvram_wbw);
 	nvmmemcpy_dedupv(data_ptr,variable->ptr,variable->size,variable->dedup_vector,
-			variable->dvector, log->runtime_context->config_context->nvram_wbw);
+			variable->dv_size, log->runtime_context->config_context->nvram_wbw);
 
 #else
 	// write to log on the granted log boundry and update the commit bit

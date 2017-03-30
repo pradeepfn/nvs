@@ -10,6 +10,7 @@
 #include "px_util.h"
 #include "px_debug.h"
 #include "px_constants.h"
+#include "px_types.h"
 
 // read bandwidth to constant maching
 // 2048Mb/s -> 600
@@ -24,6 +25,10 @@
 #define handle_error(msg) \
 	do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
+struct sigaction old_sa;
+
+void install_sighandler(void (*sighandler)(int,siginfo_t *,void *));
+void enable_write_protection(void *ptr, size_t size);
 
 
 unsigned long calc_delay_ns(size_t datasize,int bandwidth){
@@ -77,6 +82,48 @@ int nvmmemcpy_write(void *dest, void *src, size_t len, int wbw) {
 	return 0;
 }
 
+
+
+extern rcontext_t runtime_context;
+extern var_t *varmap;
+
+
+/* page write fault executes this hanlder,
+ * we find the corresponding variable->page and mark it
+ * as modified.
+ */
+static void dedup_handler(int sig, siginfo_t *si, void *unused){
+	if(si != NULL && si->si_addr != NULL){
+		var_t *s;
+		void *pageptr;
+		long offset =0;
+		pageptr = si->si_addr;
+
+		for(s = varmap; s != NULL; s = s->hh.next){
+			offset = pageptr - s->ptr;
+			if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
+				assert(s != NULL);
+				/*
+				 * 1. find the page index
+				 * 2. update the dedup_vector
+				 * 3. disable the write protection
+				 */
+				long v_index = offset/PAGE_SIZE;
+				s->dedup_vector[v_index] = 1;
+				pageptr = (void *)((long)si->si_addr & ~(PAGE_SIZE-1));
+				disable_protection(pageptr, PAGE_SIZE);
+				return;
+			}
+		}
+		debug("[%d] offending memory access : %p ",runtime_context.process_id,pageptr);
+		call_oldhandler(sig);
+	}
+
+}
+
+
+
+
 /* This function allocates a page aligned memory location and write protect it so we can track the
  *  * accesses of its chunks
  *   */
@@ -109,8 +156,8 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 
 #ifdef DEDUP
 	s->dv_size= page_aligned_size/page_size;
-	void *tmpptr = (int *) malloc(s->dv_size);
-	memset(tmpptr,0,s->dv_size);
+	void *tmpptr = (int *) malloc(s->dv_size*sizeof(int));
+	memset(tmpptr,0,s->dv_size*sizeof(int));
 	s->dedup_vector = tmpptr;
 	/*install dedup handler and enable write protection*/
 	install_sighandler(dedup_handler);
@@ -119,6 +166,59 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 
 	return s;
 }
+
+
+
+void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
+	struct sigaction sa;
+	sa.sa_flags = SA_SIGINFO;
+	sigemptyset(&sa.sa_mask);
+	sa.sa_sigaction = sighandler;
+	if (sigaction(SIGSEGV, &sa, &old_sa) == -1){
+		handle_error("sigaction");
+	}
+}
+
+
+void install_old_handler(){
+	struct sigaction temp;
+	debug("old signal handler installed");
+	if (sigaction(SIGSEGV, &old_sa, &temp) == -1){
+		handle_error("sigaction");
+	}
+}
+
+void call_oldhandler(int signo){
+	debug("old signal handler called");
+	(*old_sa.sa_handler)(signo);
+}
+
+void enable_protection(void *ptr, size_t size) {
+	if (mprotect(ptr, size,PROT_NONE) == -1){
+		handle_error("mprotect");
+	}
+}
+
+void enable_write_protection(void *ptr, size_t size) {
+	if (mprotect(ptr, size,PROT_READ) == -1){
+		handle_error("mprotect");
+	}
+}
+
+
+/*
+ * * Disable the protection of the whole aligned memory block related to each variable access
+ * * return : size of memory
+ * */
+long disable_protection(void *page_start_addr,size_t aligned_size){
+	if (mprotect(page_start_addr,aligned_size,PROT_WRITE) == -1){
+		handle_error("mprotect");
+	}
+	return aligned_size;
+}
+
+
+
 
 
 
@@ -246,11 +346,10 @@ long get_varsize(int *vector, long vsize){
  * copy chunks to a destination log given, variable and dedup vector
  */
 
-int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size, 
-							int *dvector, int dv_size, int nvram_bw){
+int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
+		int *dvector, long dv_size, int nvram_bw){
 	int i;
 	int chunk_started=0;
-	int chunk_ended=0;
 	long chunk_size=0;
 	void *src_ptr;
 	for(i=0; i<dv_size;i++){
@@ -292,11 +391,45 @@ int nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
  * apply diff to a versioned object
  */
 
-nvmmemcpy_dedup_apply(void *dest,long size, void *var_ptr,long var_size,int *dvector,
-								int dv_size){
+int nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,int *dvector,
+		long dv_size){
 
+	int i;
+	int chunk_started=0;
+	long chunk_size=0;
+	void *dest_ptr;
 
+	assert(size == var_size);
 
+	for(i=0;i<dv_size;i++){
+		if(!chunk_started){
+			if(dvector[i]){
+				chunk_started =1;
+				dest_ptr = ret_ptr + PAGE_SIZE*i;
+				chunk_size++;
+				if(i == dv_size-1){
+					memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
+					//we dont need bookkepping anymore
+				}
+			}else{
+				continue;
+			}
+		}else if(chunk_started){
+			if(dvector[i]){
+				chunk_size++;
+				if(i == dv_size-1){
+					memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
+					//we dont need bookkepping anymore
+				}
+			}else{ // write the chunk
+				chunk_started=0;
+				chunk_size=0;
+				memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
+				var_ptr = var_ptr + chunk_size*PAGE_SIZE;
+			}
+		}
+	}
+	return 0;
 
 }
 

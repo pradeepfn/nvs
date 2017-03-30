@@ -15,7 +15,9 @@ typedef struct checkpoint_t_{
     unsigned char hash[MD5_LENGTH]; // 64 bit hash value
     long start_offset;  // start offset in linear log
     long end_offset;   // end offset in linear log
-	long dv_size; // size of dedup vector in bytes
+#ifdef DEDUP
+	long dv_size; // size of dedup vector (nelems)
+#endif
 }checkpoint_t;
 
 typedef struct headmeta_t_{

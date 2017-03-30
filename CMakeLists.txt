@@ -24,6 +24,11 @@ set(HEADERS
 	include/phoenix.h)
 
 
+
+#add_definitions(-DNDEBUG)
+add_definitions(-DDEDUP)
+
+
 include_directories("include")
 
 set(CMAKE_C_FLAGS "-Wall -g")
@@ -38,9 +43,13 @@ set(SOURCE_FILES
 	src/px_util.h
 	src/px_util.c
 	src/px_constants.h
-	src/uthash.h)
+	src/uthash.h
+	src/px_dedup.h
+	src/px_dedup.c)
 
 set(EXE_SOURCE_FILES
+	src/phoenix.c
+	src/px_types.h
 	src/format.c
 	src/px_debug.h
 	src/px_debug.c
@@ -49,6 +58,8 @@ set(EXE_SOURCE_FILES
 	src/px_util.c)
 
 set(MPIFORMAT_SOURCE_FILES
+	src/phoenix.c
+	src/px_types.h
 	src/mpi_format.c
 	src/px_debug.h
 	src/px_debug.c
