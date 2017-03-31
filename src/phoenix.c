@@ -157,9 +157,12 @@ int px_snapshot(){
 	//debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
 	var_t *s;
 	for (s = varmap; s != NULL; s = s->hh.next){
-		while(log_write(&nvlog, s, runtime_context.checkpoint_version) == -1){ //not enough space
-			sleep(0.5);
-		};
+			log_write(&nvlog, s, runtime_context.checkpoint_version);
+#ifdef DEDUP
+			//memset the dedup vector and mprotect pages
+			memset(s->dedup_vector,0,s->dv_size*sizeof(int));
+			enable_write_protection(s->ptr, s->paligned_size);
+#endif
 	}
 	runtime_context.checkpoint_version ++;
 	return 0;

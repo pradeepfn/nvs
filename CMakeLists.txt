@@ -25,7 +25,7 @@ set(HEADERS
 
 
 
-#add_definitions(-DNDEBUG)
+add_definitions(-DNDEBUG)
 add_definitions(-DDEDUP)
 
 

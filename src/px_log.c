@@ -197,8 +197,8 @@ int log_write(log_t *log, var_t *variable, long version){
 	checkpoint_elem->dv_size = variable->dv_size;
 	checkpoint_elem->dedup_size = dedup_varsize;
 #endif
-	//debug("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld",
-	//			checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset);
+	/*log_info("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld",
+				checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset);*/
 
 	log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; // atomically commit slot reservation
 	//pthread_mutex_unlock(log->plock);
@@ -227,13 +227,13 @@ int log_write(log_t *log, var_t *variable, long version){
 #ifdef DEDUP
 
 
-	char str[128];
+	/*char str[128];
 	int k;
 	int index = 0;
 	for (k=0; k<variable->dv_size; k++){
 		index += snprintf(&str[index], 128-index, "%d ",  variable->dedup_vector[k]);
 	}
-	debug("dedup string : %s", str);
+	log_info("dedup string : %s", str);*/
 
 	// 1. write the dedup vector
 	// 2. write the data in to persistent log after in page chunks

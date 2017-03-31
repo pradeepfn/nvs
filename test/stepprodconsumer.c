@@ -24,35 +24,40 @@ int main(){
 #ifdef DEDUP
 			if(!px_deltaget("key1",i,&obj)){
 #else
-			if(!px_get("key1",i,&obj)){
+				if(!px_get("key1",i,&obj)){
 #endif //compare the output
-				int *array = (int *)obj.data;
-				printf("content : ");
-				for(j=0;j<8*1024;j+=1024){
-					printf("%d ",array[j]);
-					//assert(strncmp(obj.data,"hello",6) == 0);
+					int *array = (int *)obj.data;
+					printf("content : ");
+					for(j=0;j<8*1024;j+=1024){
+						printf("%d ",array[j]);
+						//assert(strncmp(obj.data,"hello",6) == 0);
+					}
+					printf("\n");
+				}else{
+					printf("Error: object not found\n");
 				}
-				printf("\n");
-			}else{
-				printf("Error: object not found\n");
 			}
-		}
 
-	}else{
-		//child
-		int i,j;
-		px_init(1);
-		px_obj obj;
-		px_create("key1",8*1024*sizeof(int),&obj); // 8 pages
-		int *array = (int *)obj.data;
-		for( i=0;i<4;i++){
-			for(j=0;j<(8-i)*1024;j+=1024){
-				array[j] = i;
+		}else{
+			//child
+			int i,j;
+
+			int touch_ptrn[4][8] = { {1,1,1,1,1,1,1,1},{0,0,1,1,1,1,0,0},{1,0,1,1,0,1,1,1},{1,1,1,1,1,1,1,1}};
+
+			px_init(1);
+			px_obj obj;
+			px_create("key1",8*1024*sizeof(int),&obj); // 8 pages
+			int *array = (int *)obj.data;
+			for( i=0;i<4;i++){
+				for(j=0;j<8;j++){
+					if(touch_ptrn[i][j] == 1){
+						array[j*1024] = i;
+					}
+				}
+				if(px_commit("key1", i)){ assert(0);}
 			}
-			if(px_commit("key1", i)){ assert(0);}
+			sleep(5);
+			px_finalize();
 		}
-		sleep(5);
-		px_finalize();
+		return 0;
 	}
-	return 0;
-}

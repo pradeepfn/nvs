@@ -101,13 +101,13 @@ static void dedup_handler(int sig, siginfo_t *si, void *unused){
 
 		for(s = varmap; s != NULL; s = s->hh.next){
 			offset = pageptr - s->ptr;
-			if (offset >= 0 && offset <= s->size) { // the adress belong to this chunk.
+			if(offset >=0 && offset <= s->paligned_size){ // the adress belong to this chunk.
 				assert(s != NULL);
-				/*
-				 * 1. find the page index
-				 * 2. update the dedup_vector
-				 * 3. disable the write protection
-				 */
+			
+				 // 1. find the page index
+				 // 2. update the dedup_vector
+				 // 3. disable the write protection
+				 
 				long v_index = offset/PAGE_SIZE;
 				s->dedup_vector[v_index] = 1;
 				pageptr = (void *)((long)si->si_addr & ~(PAGE_SIZE-1));
@@ -115,14 +115,55 @@ static void dedup_handler(int sig, siginfo_t *si, void *unused){
 				return;
 			}
 		}
-		debug("[%d] offending memory access : %p ",runtime_context.process_id,pageptr);
+		printf("offending address!!!!!\n");
 		call_oldhandler(sig);
 	}
 
 }
+/*
+static void dedup_handler(int sig, siginfo_t *si, void *unused){
+    if(si != NULL && si->si_addr != NULL){
+        var_t *s;
+        void *pageptr;
+        long offset =0;
+        pageptr = si->si_addr;
+		int pagesize = 4096;
 
 
+        for(s=varmap;s != NULL;s=s->hh.next) {
+            offset = pageptr - s->ptr;
+            if(offset >=0 && offset <= s->paligned_size){ // the adress belong to this chunk.
+                // if(isDebugEnabled()){
+                //    printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
+                //}
+				//get the page start
+				pageptr = (void *)((long)si->si_addr & ~(pagesize-1));
+                disable_protection(pageptr, pagesize);
+				// hopefully we dont acess this while signal handler being called
+                return;
+            }
+        }
+		printf("offending address!!!!!\n");
+        call_oldhandler(sig);
+    }
+}
+*/
 
+/*
+ *  * input char array is size of 20
+ *   * we null terminate it at the first space
+ *    */
+char* null_terminate(char *c_string){
+    int i;
+    for(i=0;i<19;i++){
+        if(c_string[i] == ' ' || i==10){ // zelectron0 hack for gtc
+            c_string[i] = '\0';
+            return c_string;
+        }
+    }
+    c_string[i] = '\0';
+    return c_string;
+}
 
 /* This function allocates a page aligned memory location and write protect it so we can track the
  *  * accesses of its chunks
@@ -133,7 +174,7 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	int status, page_size;
 	void *ptr;
 	var_t *s;
-
+    key = null_terminate(key);
 	page_size = sysconf(_SC_PAGESIZE);
 
 	page_aligned_size = ((size + page_size - 1) & ~(page_size - 1));
@@ -154,9 +195,11 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	s->earlycopy_time_offset.tv_usec = 0;
 	strncpy(s->key1,key,sizeof(char)*20);
 
+//	install_sighandler(dedup_handler);
+//	enable_write_protection(s->ptr, s->paligned_size);
 #ifdef DEDUP
 	s->dv_size= page_aligned_size/page_size;
-	void *tmpptr = (int *) malloc(s->dv_size*sizeof(int));
+	int *tmpptr = (int *) malloc(s->dv_size*sizeof(int));
 	memset(tmpptr,0,s->dv_size*sizeof(int));
 	s->dedup_vector = tmpptr;
 	/*install dedup handler and enable write protection*/
