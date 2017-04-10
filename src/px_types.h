@@ -8,6 +8,7 @@
 
 #include "uthash.h"
 #include "px_constants.h"
+#include "phoenix.h"
 
 
 struct log_t_;
@@ -100,7 +101,9 @@ typedef struct var_t_ {
     unsigned char hash[MD5_LENGTH]; // used for md5 digest store
 	long dv_size; // number of int elements in the dedup vector
 	int *dedup_vector; //vector for tracking modified memory pages
+	float mod_average;
     char key1[20];  /* key */
+	px_obj cobj; //hack to read snapshots
 
 } var_t;
 

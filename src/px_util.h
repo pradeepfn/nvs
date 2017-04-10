@@ -21,6 +21,7 @@ long nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,
 void call_oldhandler(int signo);
 long disable_protection(void *page_start_addr,size_t aligned_size);
 void enable_write_protection(void *ptr, size_t size);
+void print_dedup_numbers(var_t *s, long iteration);
 
 
 #endif

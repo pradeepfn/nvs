@@ -54,7 +54,6 @@ int px_create(char *key1, unsigned long size,px_obj *retobj){
 
 	retobj->data = s->ptr;
 	retobj->size = size;
-
 	return 0; // success
 }
 
@@ -91,7 +90,7 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
 int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
 #ifdef DEDUP
 	void *dataptr;
-    int  *vectorptr;
+	int  *vectorptr;
 	checkpoint_t *objmeta = log_read(&nvlog, key1, version);
 	if(objmeta != NULL){
 		vectorptr = (int *)log_ptr(&nvlog,objmeta->start_offset);
@@ -154,48 +153,40 @@ int px_commit(char *key1,int version) {
 
 
 int px_snapshot(){
+	if(!runtime_context.process_id){
+		log_info("[%d] px_snapshot.", runtime_context.process_id);
+	}
 	//debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
 	var_t *s;
 	for (s = varmap; s != NULL; s = s->hh.next){
-			log_write(&nvlog, s, runtime_context.checkpoint_version);
+		log_write(&nvlog, s, runtime_context.checkpoint_version);
 #ifdef DEDUP
-			//memset the dedup vector and mprotect pages
-			memset(s->dedup_vector,0,s->dv_size*sizeof(int));
-			enable_write_protection(s->ptr, s->paligned_size);
+		if(runtime_context.checkpoint_version){
+
+			print_dedup_numbers(s, runtime_context.checkpoint_version);
+		}
+		//memset the dedup vector and mprotect pages
+		memset(s->dedup_vector,0,s->dv_size*sizeof(int));
+		enable_write_protection(s->ptr, s->paligned_size);
 #endif
 	}
 	runtime_context.checkpoint_version ++;
 	return 0;
 }
 
-int read_watermark=0;
 
 /*read the next most recent snapshot */
 int px_get_snapshot(ulong version){
-	log_t *log = &nvlog;
-
-
-	// check if log empty
-	while(log_isempty(log)){ sleep(0.5);};
-	debug("waiting for semaphore");
-	if(sem_wait(&log->ring_buffer.head->sem) == -1){
-		log_err("error in sem wait");
-		exit(1);
+	// for now we implement the get snapshot functionality in the library itself.
+	var_t *s;
+	for (s = varmap; s != NULL; s = s->hh.next){
+#ifdef DEDUP
+		px_deltaget(s->key1, version, &(s->cobj));
+#else
+		px_get(s->key1, version, &(s->cobj));
+		// free the object
+#endif
 	}
-	checkpoint_t *rb_elem = ringb_element(log,log->ring_buffer.head->tail);
-	//truncating log
-	debug("traversing log");
-	while(log->ring_buffer.head->tail != log->ring_buffer.head->head && rb_elem->version <= version){
-		log->ring_buffer.head->tail = (log->ring_buffer.head->tail+1)%RING_BUFFER_SLOTS;
-		rb_elem = ringb_element(log,log->ring_buffer.head->tail);
-	}
-
-	debug("posting to semaphore");
-	if(sem_post(&log->ring_buffer.head->sem) == -1){
-		log_err("error in sem wait");
-		exit(1);
-	}
-	debug("snapshot data returned version : %ld" , version);
 	return 0;
 }
 

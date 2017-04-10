@@ -11,12 +11,11 @@
 int main(){
 
 	pid_t pid;
-
 	pid = fork();
 	if(pid > 0){
 		int i,j;
 		//parent
-		sleep(1);
+		sleep(5);
 		px_init(1);
 		px_obj obj;
 		for(i=0;i<4;i++){
@@ -49,12 +48,15 @@ int main(){
 			px_create("key1",8*1024*sizeof(int),&obj); // 8 pages
 			int *array = (int *)obj.data;
 			for( i=0;i<4;i++){
+
+			int *array = (int *)obj.data;
 				for(j=0;j<8;j++){
 					if(touch_ptrn[i][j] == 1){
 						array[j*1024] = i;
 					}
 				}
-				if(px_commit("key1", i)){ assert(0);}
+				//if(px_commit("key1", i)){ assert(0);}
+				if(px_snapshot()){ assert(0);}
 			}
 			sleep(5);
 			px_finalize();
