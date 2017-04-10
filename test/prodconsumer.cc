@@ -21,7 +21,7 @@ int main(){
 		px_obj obj;
 		if(!px_get("key1",1,&obj)){
 			//compare the output
-			assert(strncmp(obj.data,"hello",6) == 0);
+			assert(strncmp((char *)obj.data,"hello",6) == 0);
 		}else{
 			printf("Error: object not found\n");
 		}
@@ -31,7 +31,7 @@ int main(){
 		px_init(1);
 		px_obj obj;
 		px_create("key1",6,&obj);
-		strncpy(obj.data,"hello",6);
+		strncpy((char *)obj.data,"hello",6);
 		px_obj cmtobj;
 		if(px_commit("key1", 1)){ assert(0);}
 		sleep(5);

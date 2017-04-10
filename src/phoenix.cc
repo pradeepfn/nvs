@@ -136,7 +136,7 @@ int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
  */
 int px_commit(char *key1,int version) {
 	var_t *s;
-	for (s = varmap; s != NULL; s = s->hh.next){
+	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
 		if(!strncmp(s->key1,key1,KEY_LENGTH)){
 			log_write(&nvlog, s, version);
 #ifdef DEDUP
@@ -158,7 +158,7 @@ int px_snapshot(){
 	}
 	//debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
 	var_t *s;
-	for (s = varmap; s != NULL; s = s->hh.next){
+	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
 		log_write(&nvlog, s, runtime_context.checkpoint_version);
 #ifdef DEDUP
 		if(runtime_context.checkpoint_version){
@@ -179,7 +179,7 @@ int px_snapshot(){
 int px_get_snapshot(ulong version){
 	// for now we implement the get snapshot functionality in the library itself.
 	var_t *s;
-	for (s = varmap; s != NULL; s = s->hh.next){
+	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
 #ifdef DEDUP
 		px_deltaget(s->key1, version, &(s->cobj));
 #else
@@ -196,7 +196,7 @@ int px_get_snapshot(ulong version){
 int px_delete(char *key1){
 	var_t *s;
 
-	for (s = varmap; s != NULL; s = s->hh.next){
+	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
 		if(strncmp(s->key1, key1,KEY_LENGTH)){
 			free(s->ptr);
 		}

@@ -19,13 +19,13 @@ int main(){
 
 
  //populate memory with some data
- strncpy(obj1.data, "Some wierd text",10);
+ strncpy((char *)obj1.data, "Some wierd text",10);
 
  //test: get object
   px_obj obj2;
   assert(!px_get("foo",-1 ,&obj2));
   assert(obj2.size == 100);
-  assert(!strncmp(obj1.data,obj2.data,100));
+  assert(!strncmp((char *)obj1.data,(char *)obj2.data,100));
 
  //test: commit object to nvm
  px_obj obj3;
@@ -36,7 +36,7 @@ int main(){
  px_obj obj4;
  assert(!px_get("foo",1,&obj4));
  assert(obj4.size == 100);
- assert(!strncmp(obj1.data,obj4.data,100));
+ assert(!strncmp((char *)obj1.data,(char *)obj4.data,100));
  //TODO: compare actual data content
 
  return 0;

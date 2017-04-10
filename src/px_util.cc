@@ -99,8 +99,8 @@ static void dedup_handler(int sig, siginfo_t *si, void *unused){
 		long offset =0;
 		pageptr = si->si_addr;
 
-		for(s = varmap; s != NULL; s = s->hh.next){
-			offset = pageptr - s->ptr;
+		for(s = varmap; s != NULL; s = (var_t *)s->hh.next){
+			offset = (long)pageptr - (long)s->ptr;
 			if(offset >=0 && offset <= s->paligned_size){ // the adress belong to this chunk.
 				assert(s != NULL);
 

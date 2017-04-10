@@ -416,7 +416,7 @@ static void init_mmap_files(log_t *log){
 	}
 
 	debug("mapped the file: %s \n", log->ring_buffer.file_name);
-	log->ring_buffer.head = addr;
+	log->ring_buffer.head = (headmeta_t *)addr;
 	log->ring_buffer.elem_start_ptr =(checkpoint_t *)(((headmeta_t *)addr)+1);
 	close (fd);
 

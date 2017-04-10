@@ -25,47 +25,45 @@ set(HEADERS
 
 
 
-add_definitions(-DNDEBUG)
+#add_definitions(-DNDEBUG)
 add_definitions(-DDEDUP)
 
 
 include_directories("include")
 
-set(CMAKE_C_FLAGS "-Wall -g")
+set(CMAKE_CC_FLAGS "-Wall -g")
 
 set(SOURCE_FILES
-	src/phoenix.c
+	src/phoenix.cc
 	src/px_types.h
 	src/px_debug.h
-	src/px_debug.c
+	src/px_debug.cc
 	src/px_log.h
-	src/px_log.c
+	src/px_log.cc
 	src/px_util.h
-	src/px_util.c
-	src/px_constants.h
+	src/px_util.cc
 	src/uthash.h
-	src/px_dedup.h
-	src/px_dedup.c)
+	src/px_constants.h)
 
 set(EXE_SOURCE_FILES
-	src/phoenix.c
+	src/phoenix.cc
 	src/px_types.h
-	src/format.c
+	src/format.cc
 	src/px_debug.h
-	src/px_debug.c
-	src/px_log.c
+	src/px_debug.cc
+	src/px_log.cc
 	src/px_util.h
-	src/px_util.c)
+	src/px_util.cc)
 
 set(MPIFORMAT_SOURCE_FILES
-	src/phoenix.c
+	src/phoenix.cc
 	src/px_types.h
-	src/mpi_format.c
+	src/mpi_format.cc
 	src/px_debug.h
-	src/px_debug.c
-	src/px_log.c
+	src/px_debug.cc
+	src/px_log.cc
 	src/px_util.h
-	src/px_util.c)
+	src/px_util.cc)
 
 
 
