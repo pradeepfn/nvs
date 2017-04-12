@@ -124,4 +124,11 @@ typedef struct destage_t_{
     long checkpoint_version;
 }destage_t;
 
+
+typedef struct stat_t_{
+	
+
+}stat_t;
+
+
 #endif //PHOENIX_PX_TYPES_H
