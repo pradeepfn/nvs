@@ -18,6 +18,10 @@
 /* set some of the variables on the stack */
 rcontext_t runtime_context;
 ccontext_t config_context;
+#ifdef STATS
+stat_t statobj;
+TIMER_DECLARE(sim_t, iter_t, write_t, read_t)
+#endif
 var_t *varmap = NULL;
 log_t nvlog;
 
@@ -31,7 +35,12 @@ int px_init(int proc_id){
 	runtime_context.checkpoint_version=0;
 	runtime_context.process_id = proc_id;
 	nvlog.runtime_context = &runtime_context;
-
+#ifdef STATS
+	statobj = {.t_total=0, .t_iter=0, .t_write=0, .t_read=0,
+				.w_size=0, .r_size=0, .wd_size=0, rd_size=0 };
+	TIMER_START(sim_t)
+	TIMER_START(iter_t)
+#endif
 	if(lib_initialized){
 		log_err("Error: the library already initialized.");
 		exit(1);
@@ -156,7 +165,13 @@ int px_snapshot(){
 	if(!runtime_context.process_id){
 		log_info("[%d] px_snapshot.", runtime_context.process_id);
 	}
-	//debug("[%d] creating snapshot with version %ld",runtime_context.process_id,runtime_context.checkpoint_version);
+
+
+#ifdef STATS
+		TIMER_START(write_t)
+#endif
+
+
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
 		log_write(&nvlog, s, runtime_context.checkpoint_version);
@@ -170,6 +185,13 @@ int px_snapshot(){
 		enable_write_protection(s->ptr, s->paligned_size);
 #endif
 	}
+
+#ifdef STATs
+		 TIMER_END(write_t, statobj.t_write)
+		 TIMER_END(iter_t,statobj.t_iter)
+		 io_write(&statobj);
+		 TIMER_START(iter_t)
+#endif
 	runtime_context.checkpoint_version ++;
 	return 0;
 }
@@ -178,6 +200,9 @@ int px_snapshot(){
 /*read the next most recent snapshot */
 int px_get_snapshot(ulong version){
 	// for now we implement the get snapshot functionality in the library itself.
+#ifdef STATS
+	TIMER_START(read_t)
+#endif
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
 #ifdef DEDUP
@@ -185,6 +210,14 @@ int px_get_snapshot(ulong version){
 #else
 		px_get(s->key1, version, &(s->cobj));
 		// free the object
+#endif
+
+
+#ifdef STATS
+		 TIMER_END(read_t, statobj.t_read)
+		 TIMER_END(iter_t,statobj.t_iter)
+		 io_write(&statobj);
+		 TIMER_START(iter_t)
 #endif
 	}
 	return 0;
@@ -208,5 +241,11 @@ int px_delete(char *key1){
 
 int px_finalize(){
 	log_finalize(&nvlog);
+#ifdef STATS
+	TIMER_END(iter_t, statobj.t_iter)
+	TIMER_END(sim_t, statobj.t_total)
+	io_write(&statobj):
+	io_finalize();
+#endif
 	return 0;
 }

@@ -126,8 +126,14 @@ typedef struct destage_t_{
 
 
 typedef struct stat_t_{
-	
-
+	unsigned long t_total; // in micro-seconds
+	unsigned long t_iter; // iteration time including data read/write time
+	unsigned long t_write; // in micro-seoncds
+	unsigned long t_read;
+	unsinged long w_size; // write size in bytes
+	unsigned long r_size; // read size in bytes
+	unsigned long wd_size; // write delta size
+	unsigned long rd_size; // read delta size
 }stat_t;
 
 
