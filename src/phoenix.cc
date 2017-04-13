@@ -24,43 +24,43 @@ ccontext_t config_context;
 //#ifdef STATS
 stat_t statobj;
 TIMER_DECLARE4(sim_t, iter_t, write_t, read_t)
-//#endif
-var_t *varmap = NULL;
-log_t nvlog;
+	//#endif
+	var_t *varmap = NULL;
+	log_t nvlog;
 
-/* local variables */
-int lib_initialized = 0;
+	/* local variables */
+	int lib_initialized = 0;
 
-int px_init(int proc_id){
-	//tie up the global variable hieararchy
-	runtime_context.config_context = &config_context;
-	runtime_context.varmap = &varmap;
-	runtime_context.checkpoint_version=0;
-	runtime_context.process_id = proc_id;
-	nvlog.runtime_context = &runtime_context;
+	int px_init(int proc_id){
+		//tie up the global variable hieararchy
+		runtime_context.config_context = &config_context;
+		runtime_context.varmap = &varmap;
+		runtime_context.checkpoint_version=0;
+		runtime_context.process_id = proc_id;
+		nvlog.runtime_context = &runtime_context;
 #ifdef STATS
-	//initializing the stats obj. The .t_total=0 didnt work.
-	statobj.t_total=0;
-	statobj.t_iter=0;
-	statobj.t_write=0;
-	statobj.t_read=0;
-	statobj.w_size=0;
-	statobj.r_size=0;
-	statobj.wd_size=0;
-	statobj.rd_size=0;
+		//initializing the stats obj. The .t_total=0 didnt work.
+		statobj.t_total=0;
+		statobj.t_iter=0;
+		statobj.t_write=0;
+		statobj.t_read=0;
+		statobj.w_size=0;
+		statobj.r_size=0;
+		statobj.wd_size=0;
+		statobj.rd_size=0;
 
-	io_init(&statobj,"stats",proc_id);
-	TIMER_START(sim_t);
-	TIMER_START(iter_t);
+		io_init(&statobj,"stats",proc_id);
+		TIMER_START(sim_t);
+		TIMER_START(iter_t);
 #endif
-	if(lib_initialized){
-		log_err("Error: the library already initialized.");
-		exit(1);
+		if(lib_initialized){
+			log_err("Error: the library already initialized.");
+			exit(1);
+		}
+		read_configs(&config_context,CONFIG_FILE_NAME);
+		log_init(&nvlog,proc_id);
+		return 0;
 	}
-	read_configs(&config_context,CONFIG_FILE_NAME);
-	log_init(&nvlog,proc_id);
-	return 0;
-}
 
 
 
@@ -177,16 +177,17 @@ int px_snapshot(){
 	if(!runtime_context.process_id){
 		log_info("[%d] px_snapshot.", runtime_context.process_id);
 	}
-
-
 #ifdef STATS
-		TIMER_START(write_t);
+	TIMER_START(write_t);
 #endif
-
-
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
 		log_write(&nvlog, s, runtime_context.checkpoint_version);
+
+
+#ifdef STATS
+		statobj.w_size += s->size;
+#endif
 #ifdef DEDUP
 		if(runtime_context.checkpoint_version){
 
@@ -195,14 +196,22 @@ int px_snapshot(){
 		//memset the dedup vector and mprotect pages
 		memset(s->dedup_vector,0,s->dv_size*sizeof(int));
 		enable_write_protection(s->ptr, s->paligned_size);
+#ifdef STATS
+		statobj.wd_size += get_varsize(s->dedup_vector,s->dv_size);
+#endif
+#else
+		statobj.wd_size += s->size;
 #endif
 	}
 
 #ifdef STATS
-		 TIMER_END(write_t, statobj.t_write);
-		 TIMER_END(iter_t,statobj.t_iter);
-		 io_write(&statobj);
-		 TIMER_START(iter_t);
+	TIMER_END(write_t, statobj.t_write);
+	TIMER_END(iter_t,statobj.t_iter);
+	io_write(&statobj);
+	// reset varibale size data collected
+	statobj.w_size=0;
+	statobj.wd_size=0;
+	TIMER_START(iter_t);
 #endif
 	runtime_context.checkpoint_version ++;
 	return 0;
@@ -226,10 +235,10 @@ int px_get_snapshot(ulong version){
 
 
 #ifdef STATS
-		 TIMER_END(read_t, statobj.t_read);
-		 TIMER_END(iter_t,statobj.t_iter);
-		 io_write(&statobj);
-		 TIMER_START(iter_t);
+		TIMER_END(read_t, statobj.t_read);
+		TIMER_END(iter_t,statobj.t_iter);
+		io_write(&statobj);
+		TIMER_START(iter_t);
 #endif
 	}
 	return 0;
