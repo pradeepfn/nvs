@@ -95,6 +95,8 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
 		void *rptr = malloc(objmeta->size);
 		// application is responsible for freeing up object
 		memcpy(rptr,ptr,objmeta->size);
+		statobj.r_size += objmeta->size;
+		statobj.rd_size += objmeta->size;
 		retobj->data = rptr;
 		retobj->size = objmeta->size;
 		return 0;
@@ -103,6 +105,7 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
 		return -1;
 	}
 }
+
 
 
 /* apply the diff to given version
@@ -141,6 +144,8 @@ int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
 			vectorptr,objmeta->dv_size);
 	debug("dedup obj size : %ld , applied data size ; %d", objmeta->dedup_size, temp);
 	assert(objmeta->dedup_size == temp);
+	statobj.r_size += objmeta->size;
+	statobj.rd_size += temp;
 	retobj->version = objmeta->version;
 	retobj->size = objmeta->size;
 	return 0;
@@ -183,22 +188,17 @@ int px_snapshot(){
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
 		log_write(&nvlog, s, runtime_context.checkpoint_version);
-
-
-#ifdef STATS
 		statobj.w_size += s->size;
-#endif
-#ifdef DEDUP
-		if(runtime_context.checkpoint_version){
 
-			print_dedup_numbers(s, runtime_context.checkpoint_version);
-		}
+#ifdef DEDUP
+		// we populate data size irrespective of STATS flag
+		statobj.wd_size += get_varsize(s->dedup_vector,s->dv_size);
+		//if(runtime_context.checkpoint_version){
+		//	print_dedup_numbers(s, runtime_context.checkpoint_version);
+		//}
 		//memset the dedup vector and mprotect pages
 		memset(s->dedup_vector,0,s->dv_size*sizeof(int));
 		enable_write_protection(s->ptr, s->paligned_size);
-#ifdef STATS
-		statobj.wd_size += get_varsize(s->dedup_vector,s->dv_size);
-#endif
 #else
 		statobj.wd_size += s->size;
 #endif
@@ -238,6 +238,9 @@ int px_get_snapshot(ulong version){
 		TIMER_END(read_t, statobj.t_read);
 		TIMER_END(iter_t,statobj.t_iter);
 		io_write(&statobj);
+		// reset varibale size data collected
+		statobj.r_size=0;
+		statobj.rd_size=0;
 		TIMER_START(iter_t);
 #endif
 	}

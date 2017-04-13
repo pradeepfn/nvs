@@ -398,7 +398,7 @@ long get_nmodified(int *vector, long vsize){
  * return the variable size after dedup
  */
 long get_varsize(int *vector, long vsize){
-	return PAGE_SIZE*get_nmodified(vector, vsize);
+	return 4096*get_nmodified(vector, vsize);
 }
 
 
