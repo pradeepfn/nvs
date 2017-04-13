@@ -25,8 +25,10 @@ set(HEADERS
 
 
 
-#add_definitions(-DNDEBUG)
+add_definitions(-DNDEBUG)
 add_definitions(-DDEDUP)
+add_definitions(-DTIMING)
+add_definitions(-DSTATS)
 
 
 include_directories("include")
@@ -43,9 +45,11 @@ set(SOURCE_FILES
 	src/px_util.h
 	src/px_util.cc
 	src/uthash.h
+	src/px_io.h
+	src/px_timer.h
 	src/px_constants.h)
 
-set(EXE_SOURCE_FILES
+set(PHXFORMAT_SOURCE_FILES
 	src/phoenix.cc
 	src/px_types.h
 	src/format.cc
@@ -63,6 +67,8 @@ set(MPIFORMAT_SOURCE_FILES
 	src/px_debug.cc
 	src/px_log.cc
 	src/px_util.h
+	src/px_io.h
+	src/px_timer.h
 	src/px_util.cc)
 
 
@@ -75,10 +81,10 @@ prepended to install directories" FORCE)
 add_library(phoenix STATIC ${SOURCE_FILES})
 install(TARGETS phoenix DESTINATION lib)
 
-add_executable(phxformat ${EXE_SOURCE_FILES})
-target_link_libraries(phxformat pthread)
-target_link_libraries(phxformat ssl)
-install(TARGETS phxformat DESTINATION bin)
+#add_executable(phxformat ${PHXFORMAT_SOURCE_FILES})
+#target_link_libraries(phxformat pthread)
+#target_link_libraries(phxformat ssl)
+#install(TARGETS phxformat DESTINATION bin)
 
 #adding mpi version of phxformat
 find_package(MPI REQUIRED)
@@ -88,6 +94,7 @@ add_executable(mpiformat ${MPIFORMAT_SOURCE_FILES})
 target_link_libraries(mpiformat ${MPI_LIBRARIES})
 target_link_libraries(mpiformat pthread)
 target_link_libraries(mpiformat ssl)
+target_link_libraries(mpiformat rt)
 install(TARGETS mpiformat DESTINATION bin)
 
 # adding basic testing functionality

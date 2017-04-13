@@ -419,7 +419,7 @@ long nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
 		if(!chunk_started){
 			if(dvector[i]){
 				chunk_started =1;
-				src_ptr = var_ptr + PAGE_SIZE*i;
+				src_ptr = (void *)((long)var_ptr + PAGE_SIZE*i);
 				chunk_size++;
 				if(i == dv_size-1){
 					nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
@@ -440,7 +440,7 @@ long nvmmemcpy_dedupv(void *dest_ptr,void *var_ptr,long var_size,
 			}else{ // write the chunk
 				nvmmemcpy_write(dest_ptr,src_ptr,chunk_size*PAGE_SIZE,nvram_bw);
 				total_copied += chunk_size*PAGE_SIZE;
-				dest_ptr = dest_ptr + chunk_size*PAGE_SIZE;
+				dest_ptr = (void *)((long)dest_ptr + chunk_size*PAGE_SIZE);
 				chunk_started=0;
 				chunk_size=0;
 			}
@@ -473,7 +473,7 @@ long nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,
 		if(!chunk_started){
 			if(dvector[i]){
 				chunk_started =1;
-				dest_ptr = ret_ptr + PAGE_SIZE*i;
+				dest_ptr = (void *)((long)ret_ptr + PAGE_SIZE*i);
 				chunk_size++;
 				if(i == dv_size-1){
 					memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
@@ -494,7 +494,7 @@ long nvmmemcpy_dedup_apply(void *ret_ptr,long size, void *var_ptr,long var_size,
 			}else{ // write the chunk
 				memcpy(dest_ptr,var_ptr,chunk_size*PAGE_SIZE);
 				total_applied += chunk_size*PAGE_SIZE;
-				var_ptr = var_ptr + chunk_size*PAGE_SIZE;
+				var_ptr = (void *)((long)var_ptr + chunk_size*PAGE_SIZE);
 				chunk_started=0;
 				chunk_size=0;
 			}

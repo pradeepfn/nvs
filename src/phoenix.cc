@@ -12,16 +12,19 @@
 #include "px_debug.h"
 #include "px_util.h"
 #include "px_constants.h"
+#include "px_types.h"
+#include "px_timer.h"
+#include "px_io.h"
 
 
 
 /* set some of the variables on the stack */
 rcontext_t runtime_context;
 ccontext_t config_context;
-#ifdef STATS
+//#ifdef STATS
 stat_t statobj;
-TIMER_DECLARE(sim_t, iter_t, write_t, read_t)
-#endif
+TIMER_DECLARE4(sim_t, iter_t, write_t, read_t)
+//#endif
 var_t *varmap = NULL;
 log_t nvlog;
 
@@ -36,10 +39,19 @@ int px_init(int proc_id){
 	runtime_context.process_id = proc_id;
 	nvlog.runtime_context = &runtime_context;
 #ifdef STATS
-	statobj = {.t_total=0, .t_iter=0, .t_write=0, .t_read=0,
-				.w_size=0, .r_size=0, .wd_size=0, rd_size=0 };
-	TIMER_START(sim_t)
-	TIMER_START(iter_t)
+	//initializing the stats obj. The .t_total=0 didnt work.
+	statobj.t_total=0;
+	statobj.t_iter=0;
+	statobj.t_write=0;
+	statobj.t_read=0;
+	statobj.w_size=0;
+	statobj.r_size=0;
+	statobj.wd_size=0;
+	statobj.rd_size=0;
+
+	io_init(&statobj,"stats",proc_id);
+	TIMER_START(sim_t);
+	TIMER_START(iter_t);
 #endif
 	if(lib_initialized){
 		log_err("Error: the library already initialized.");
@@ -168,7 +180,7 @@ int px_snapshot(){
 
 
 #ifdef STATS
-		TIMER_START(write_t)
+		TIMER_START(write_t);
 #endif
 
 
@@ -186,11 +198,11 @@ int px_snapshot(){
 #endif
 	}
 
-#ifdef STATs
-		 TIMER_END(write_t, statobj.t_write)
-		 TIMER_END(iter_t,statobj.t_iter)
+#ifdef STATS
+		 TIMER_END(write_t, statobj.t_write);
+		 TIMER_END(iter_t,statobj.t_iter);
 		 io_write(&statobj);
-		 TIMER_START(iter_t)
+		 TIMER_START(iter_t);
 #endif
 	runtime_context.checkpoint_version ++;
 	return 0;
@@ -201,7 +213,7 @@ int px_snapshot(){
 int px_get_snapshot(ulong version){
 	// for now we implement the get snapshot functionality in the library itself.
 #ifdef STATS
-	TIMER_START(read_t)
+	TIMER_START(read_t);
 #endif
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
@@ -214,10 +226,10 @@ int px_get_snapshot(ulong version){
 
 
 #ifdef STATS
-		 TIMER_END(read_t, statobj.t_read)
-		 TIMER_END(iter_t,statobj.t_iter)
+		 TIMER_END(read_t, statobj.t_read);
+		 TIMER_END(iter_t,statobj.t_iter);
 		 io_write(&statobj);
-		 TIMER_START(iter_t)
+		 TIMER_START(iter_t);
 #endif
 	}
 	return 0;
@@ -242,10 +254,10 @@ int px_delete(char *key1){
 int px_finalize(){
 	log_finalize(&nvlog);
 #ifdef STATS
-	TIMER_END(iter_t, statobj.t_iter)
-	TIMER_END(sim_t, statobj.t_total)
-	io_write(&statobj):
-	io_finalize();
+	TIMER_END(iter_t, statobj.t_iter);
+	TIMER_END(sim_t, statobj.t_total);
+	io_write(&statobj);
+	io_finalize(&statobj);
 #endif
 	return 0;
 }
