@@ -1,7 +1,7 @@
 #ifndef __CONSTANTS_H
 #define __CONSTANTS_H
 
-#define RING_BUFFER_SLOTS 300
+#define RING_BUFFER_SLOTS 2000
 #define KEY_LENGTH 20
 #define PAGE_SIZE 4096
 #define CONFIG_FILE_NAME "phoenix.config"
