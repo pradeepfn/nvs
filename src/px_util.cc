@@ -372,14 +372,14 @@ void read_configs(ccontext_t *config_context,char *file_path){
  *
  * digest - char array with lenth MD5_DIGEST_LENGTH - 16
  */
-void md5_digest(unsigned char *digest,void *data, ulong length){
+/*void md5_digest(unsigned char *digest,void *data, ulong length){
 	MD5_CTX mdContext;
 
 	MD5_Init(&mdContext);
 	MD5_Update(&mdContext,data,length);
 	MD5_Final(digest,&mdContext);
 	return;
-}
+}*/
 
 
 /*
