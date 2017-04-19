@@ -201,9 +201,9 @@ int px_snapshot(){
 #ifdef DEDUP
 		// we populate data size irrespective of STATS flag
 		statobj.wd_size += get_varsize(s->dedup_vector,s->dv_size);
-		if(runtime_context.checkpoint_version){
+		/*if(runtime_context.checkpoint_version){
 			print_dedup_numbers(s, runtime_context.checkpoint_version);
-		}
+		}*/
 		//memset the dedup vector and mprotect pages
 		memset(s->dedup_vector,0,s->dv_size*sizeof(int));
 		enable_write_protection(s->ptr, s->paligned_size);
