@@ -57,7 +57,6 @@ error:
 int log_init(log_t *log , int proc_id){
 	ccontext_t *config_context = log->runtime_context->config_context;
 
-	log->data_log.log_size = config_context->log_size;
 	snprintf(log->ring_buffer.file_name, sizeof(log->ring_buffer.file_name), "%s%s%d",
 			config_context->pfile_location,FILE_PATH_ONE, proc_id);
 	snprintf(log->data_log.file_name, sizeof(log->data_log.file_name),"%s%s%d",
@@ -105,14 +104,7 @@ int log_write(log_t *log, var_t *variable, long version){
 #else
 	ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
 #endif
-	//get the log reservation
-	//pthread_mutex_lock(log->plock);
-	//check if slots left in the ring buffer
-	/*if(log_isfull(log)){
-	  log_err("no slots left in the ring buffer");
-	//pthread_mutex_unlock(log->plock);
-	exit(1);
-	}*/
+
 	if(sem_wait(&log->ring_buffer.head->sem)== -1){
 		log_err("error while sem wait");
 		exit(1);
@@ -123,22 +115,19 @@ int log_write(log_t *log, var_t *variable, long version){
 		dhead_offset = 0;
 		dtail_offset = 0;
 	}else{
-		dhead_offset = log_end_offset(log, log->ring_buffer.head->head - 1); // data head offset , point to the next free head element to write
-		dtail_offset = log_start_offset(log, log->ring_buffer.head->tail); // data tail offset , point to tail of the data log. if equal to head, then empty
-	}
-	ulong dlog_size = log->ring_buffer.head->log_size; // data log size
-	/*debug("[%d] writing object : %s  with size : %ld, version: %ld   in to log, head_offset : %ld ,  tail_offset : %ld , log_size : %ld" ,
-	  log->runtime_context->process_id,
-	  variable->key1 ,
-	  variable->size,
-	  version,
-	  dhead_offset,
-	  dtail_offset,
-	  dlog_size); */
+		// data head offset , point to the next free head element to write
+		dhead_offset = log_end_offset(log, log->ring_buffer.head->head - 1); 
 
+		// data tail offset , point to tail of the data log. if equal to head, then empty
+		dtail_offset = log_start_offset(log, log->ring_buffer.head->tail); 
+	}
+
+	// data log size
+	ulong dlog_size = log->ring_buffer.head->log_size; 
+	debug("head_index : %d , tail_index : %d", log->ring_buffer.head->head, log->ring_buffer.head->tail);
 	if(dhead_offset >= dtail_offset){   //if head is infront,
 		avail_size = dlog_size - dhead_offset;
-		if(avail_size >= checkpoint_size){  // head to end of linear log
+		if(avail_size >= checkpoint_size){  // head to the end of linear log
 			reserved_log_offset = dhead_offset;
 		}else if(dtail_offset >= checkpoint_size){   // start of the linear log to tail
 			reserved_log_offset = 0;
@@ -148,15 +137,7 @@ int log_write(log_t *log, var_t *variable, long version){
 				log_err("error while sem post");
 				exit(1);
 			}
-			/*log_info("[%d]not enought space log tail : %ld ,  head : %ld , available_size : %ld " ,
-			  log->runtime_context->process_id,
-			  dtail_offset,
-			  dhead_offset,
-			  avail_size);
-			  log_info("[%d]ring buffer indexes , %ld  %ld",
-			  log->runtime_context->process_id,
-			  log->ring_buffer.head->tail,
-			  log->ring_buffer.head->head);*/
+			log_err("not enough space in log");
 			return -1;
 		}
 
@@ -170,15 +151,7 @@ int log_write(log_t *log, var_t *variable, long version){
 				log_err("error while sem post");
 				exit(1);
 			}
-			/*log_info("[%d]not enough space: log tail : %ld ,  head : %ld , available_size : %ld " ,
-			  log->runtime_context->process_id,
-			  dtail_offset,
-			  dhead_offset,
-			  avail_size);
-			  log_info("[%d]ring buffer indexes , %ld  %ld",
-			  log->runtime_context->process_id,
-			  log->ring_buffer.head->tail,
-			  log->ring_buffer.head->head);*/
+			log_err("not enough space in log");
 			return -1;
 		}
 	}
@@ -197,10 +170,10 @@ int log_write(log_t *log, var_t *variable, long version){
 	checkpoint_elem->dv_size = variable->dv_size;
 	checkpoint_elem->dedup_size = dedup_varsize;
 #endif
-	/*log_info("chekcpoint size : start offset : end offset of element = %ld :  %ld : %ld",
-	  checkpoint_size, checkpoint_elem->start_offset, checkpoint_elem->end_offset);*/
 
-	log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; // atomically commit slot reservation
+	// atomically commit slot reservation
+	log->ring_buffer.head->head = (log->ring_buffer.head->head + 1)%RING_BUFFER_SLOTS; 
+
 	//pthread_mutex_unlock(log->plock);
 	if(sem_post(&log->ring_buffer.head->sem) == -1){
 		log_err("error while sem post");
@@ -225,15 +198,6 @@ int log_write(log_t *log, var_t *variable, long version){
 #endif
 
 #ifdef DEDUP
-
-
-	/*char str[128];
-	  int k;
-	  int index = 0;
-	  for (k=0; k<variable->dv_size; k++){
-	  index += snprintf(&str[index], 128-index, "%d ",  variable->dedup_vector[k]);
-	  }
-	  log_info("dedup string : %s", str);*/
 
 	// 1. write the dedup vector
 	// 2. write the data in to persistent log after in page chunks
@@ -295,7 +259,7 @@ checkpoint_t* ringb_element(log_t *log, ulong index){
 }
 
 void* log_ptr(log_t *log,ulong offset){
-	assert(offset>=0 && offset < log->data_log.log_size );
+	assert(offset>=0 && offset < log->ring_buffer.head->log_size);
 	return ((char *)(log->data_log.start_ptr)+offset);
 }
 
@@ -415,14 +379,15 @@ static void init_mmap_files(log_t *log){
 		exit(1);
 	}
 
-	debug("mapped the file: %s \n", log->ring_buffer.file_name);
 	log->ring_buffer.head = (headmeta_t *)addr;
 	log->ring_buffer.elem_start_ptr =(checkpoint_t *)(((headmeta_t *)addr)+1);
 	close (fd);
+	debug("mapped the file: %s \n with data log size %lu \n", 
+				log->ring_buffer.file_name, log->ring_buffer.head->log_size);
 
 	//init data log memory map file
 	fd = open (log->data_log.file_name, O_RDWR, S_IRUSR | S_IWUSR);
-	addr = mmap (NULL,log->data_log.log_size, PROT_WRITE, MAP_SHARED, fd, 0);
+	addr = mmap (NULL,log->ring_buffer.head->log_size, PROT_WRITE, MAP_SHARED, fd, 0);
 	if(addr == MAP_FAILED){
 		log_err("Runtime Error: error while memory mapping the file\n");
 		exit(1);

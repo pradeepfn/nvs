@@ -10,6 +10,9 @@
 
 #define MICROSEC 1000000
 
+#define SAFEMALLOC(n) safe_malloc(n, __LINE__)
+
+
 int nvmmemcpy_read(void * dest, void * src, size_t size,int rbw);
 int nvmmemcpy_write(void * dest, void * src, size_t size,int wbw);
 var_t *px_alighned_allocate(size_t size, char *key);
@@ -22,6 +25,24 @@ void call_oldhandler(int signo);
 long disable_protection(void *page_start_addr,size_t aligned_size);
 void enable_write_protection(void *ptr, size_t size);
 void print_dedup_numbers(var_t *s, long iteration);
+
+
+
+
+static void* safe_malloc(size_t n, unsigned long line)
+{
+    void* p = malloc(n);
+    if (!p)
+    {
+        fprintf(stderr, "[%s:%ul]Out of memory(%ul bytes)\n",
+                __FILE__, line, (unsigned long)n);
+        exit(EXIT_FAILURE);
+    }
+    return p;
+}
+
+
+
 
 
 #endif

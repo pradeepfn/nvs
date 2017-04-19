@@ -12,3 +12,7 @@ target_link_libraries(ProdConsumerTest phoenix rt)
 add_executable(stepProdConsumerTest stepprodconsumer.cc)
 target_link_libraries(stepProdConsumerTest phoenix ssl)
 target_link_libraries(stepProdConsumerTest phoenix rt)
+
+add_executable(largeWriteTest largewrite.cc)
+target_link_libraries(largeWriteTest phoenix ssl)
+target_link_libraries(largeWriteTest phoenix rt)

@@ -25,8 +25,8 @@ set(HEADERS
 
 
 
-add_definitions(-DNDEBUG)
-add_definitions(-DDEDUP)
+#add_definitions(-DNDEBUG)
+#add_definitions(-DDEDUP)
 add_definitions(-DTIMING)
 add_definitions(-DSTATS)
 

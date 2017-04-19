@@ -53,7 +53,6 @@ typedef struct ringbuffer_t_{
 typedef struct logdata_t_{
     void *start_ptr;
     char file_name[256];
-    ulong log_size;
 }logdata_t;
 
 /*we use this structure to identify valid

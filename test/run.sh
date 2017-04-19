@@ -1,3 +1,3 @@
 #!/bin/bash
 rm -rf /dev/shm/mmap*
-mpirun -np 4 ./mpiformat /dev/shm 1000
+mpirun -np 4 ./mpiformat /dev/shm 100

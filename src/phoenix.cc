@@ -92,7 +92,7 @@ int px_get(char *key1, uint64_t version, px_obj *retobj){
 	checkpoint_t *objmeta = log_read(&nvlog, key1, version);
 	if(objmeta != NULL){
 		void *ptr = log_ptr(&nvlog,objmeta->start_offset);
-		void *rptr = malloc(objmeta->size);
+		void *rptr = SAFEMALLOC(objmeta->size);
 		// application is responsible for freeing up object
 		memcpy(rptr,ptr,objmeta->size);
 		statobj.r_size += objmeta->size;
@@ -125,7 +125,7 @@ int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
 	}
 	if(version == 0){
 		// for now we consider this as a case. Fix this later!
-		retobj->data = malloc(objmeta->size);
+		retobj->data = SAFEMALLOC(objmeta->size);
 		retobj->size = objmeta->size;
 	}else{
 		assert(retobj->data != NULL);
@@ -179,6 +179,7 @@ int px_commit(char *key1,int version) {
 
 
 int px_snapshot(){
+	int ret;
 	if(!runtime_context.process_id){
 		log_info("[%d] px_snapshot.", runtime_context.process_id);
 	}
@@ -187,15 +188,22 @@ int px_snapshot(){
 #endif
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
-		log_write(&nvlog, s, runtime_context.checkpoint_version);
+		ret = log_write(&nvlog, s, runtime_context.checkpoint_version);
+		// if the log is full, retry
+		if(ret == -1){
+			do{
+				sleep(1);
+				ret = log_write(&nvlog, s, runtime_context.checkpoint_version);
+			}while(ret);
+		}
 		statobj.w_size += s->size;
 
 #ifdef DEDUP
 		// we populate data size irrespective of STATS flag
 		statobj.wd_size += get_varsize(s->dedup_vector,s->dv_size);
-		//if(runtime_context.checkpoint_version){
-		//	print_dedup_numbers(s, runtime_context.checkpoint_version);
-		//}
+		if(runtime_context.checkpoint_version){
+			print_dedup_numbers(s, runtime_context.checkpoint_version);
+		}
 		//memset the dedup vector and mprotect pages
 		memset(s->dedup_vector,0,s->dv_size*sizeof(int));
 		enable_write_protection(s->ptr, s->paligned_size);

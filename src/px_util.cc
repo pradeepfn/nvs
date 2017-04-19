@@ -180,13 +180,15 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 
 	page_aligned_size = ((size + page_size - 1) & ~(page_size - 1));
 	status = posix_memalign(&ptr, page_size, page_aligned_size);
+	// introduce a safe memalign??
 	if (status != 0) {
+		exit(EXIT_FAILURE);
 		return NULL;
 	}
 
 	memset(ptr, 0, page_aligned_size);
 
-	s = (var_t *)malloc(sizeof(var_t));
+	s = (var_t *)SAFEMALLOC(sizeof(var_t));
 	s->ptr = ptr;
 	s->size = size;
 	s->paligned_size = page_aligned_size;
@@ -200,7 +202,7 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	//	enable_write_protection(s->ptr, s->paligned_size);
 #ifdef DEDUP
 	s->dv_size= page_aligned_size/page_size;
-	int *tmpptr = (int *) malloc(s->dv_size*sizeof(int));
+	int *tmpptr = (int *) SAFEMALLOC(s->dv_size*sizeof(int));
 	memset(tmpptr,0,s->dv_size*sizeof(int));
 	s->dedup_vector = tmpptr;
 	/*install dedup handler and enable write protection*/
@@ -283,7 +285,7 @@ void read_configs(ccontext_t *config_context,char *file_path){
 	char varvalue[32];// we are reading integers in to this
 
 	//initialize with defaults
-	config_context->log_size = 2*1024*1024;
+	config_context->log_size = 1024;
 	config_context->chunk_size = 4096;
 	config_context->copy_strategy = 1;
 	config_context->nvram_wbw = -1;
@@ -315,8 +317,6 @@ void read_configs(ccontext_t *config_context,char *file_path){
 			fscanf(fp, "%*[^\n]");
 			fscanf(fp, "%*1[\n]");
 			continue;
-		} else if (!strncmp(NVM_SIZE, varname, sizeof(varname))) {
-			config_context->log_size = atoi(varvalue) * 1024 * 1024;
 		} else if (!strncmp(CHUNK_SIZE, varname, sizeof(varname))) {
 			config_context->chunk_size = atoi(varvalue);
 		} else if (!strncmp(COPY_STRATEGY, varname, sizeof(varname))) {
@@ -373,13 +373,13 @@ void read_configs(ccontext_t *config_context,char *file_path){
  * digest - char array with lenth MD5_DIGEST_LENGTH - 16
  */
 /*void md5_digest(unsigned char *digest,void *data, ulong length){
-	MD5_CTX mdContext;
+  MD5_CTX mdContext;
 
-	MD5_Init(&mdContext);
-	MD5_Update(&mdContext,data,length);
-	MD5_Final(digest,&mdContext);
-	return;
-}*/
+  MD5_Init(&mdContext);
+  MD5_Update(&mdContext,data,length);
+  MD5_Final(digest,&mdContext);
+  return;
+  }*/
 
 
 /*
