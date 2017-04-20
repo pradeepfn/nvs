@@ -178,6 +178,17 @@ int px_commit(char *key1,int version) {
 }
 
 
+
+
+
+
+
+
+
+
+
+
+/* snapshotting all the variables created using yuma allocs*/
 int px_snapshot(){
 	int ret;
 	if(!runtime_context.process_id){
@@ -185,7 +196,9 @@ int px_snapshot(){
 	}
 #ifdef STATS
 	TIMER_START(write_t);
-#endif
+#endif//STATS
+
+#ifndef NCHECKPT
 	var_t *s;
 	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
 		ret = log_write(&nvlog, s, runtime_context.checkpoint_version);
@@ -209,8 +222,11 @@ int px_snapshot(){
 		enable_write_protection(s->ptr, s->paligned_size);
 #else
 		statobj.wd_size += s->size;
-#endif
+#endif //DEDUP
 	}
+#endif //NCHECKPT
+
+
 
 #ifdef STATS
 	TIMER_END(write_t, statobj.t_write);
@@ -220,7 +236,7 @@ int px_snapshot(){
 	statobj.w_size=0;
 	statobj.wd_size=0;
 	TIMER_START(iter_t);
-#endif
+#endif//STATS
 	runtime_context.checkpoint_version ++;
 	return 0;
 }
