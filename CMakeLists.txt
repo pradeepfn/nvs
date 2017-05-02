@@ -25,6 +25,7 @@ set(HEADERS
 
 
 
+add_definitions(-DNCHECKPT)
 add_definitions(-DNDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-DTIMING)
