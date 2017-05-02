@@ -8,6 +8,9 @@ set (PHOENIX_VERSION_MINOR 3)
 
 set(CMAKE_BUILD_TYPE Debug)
 
+#compiler flags
+set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
+
 # configure a header file to pass some of the CMake settings
 # to the source code
 #configure_file (
@@ -25,7 +28,7 @@ set(HEADERS
 
 
 
-add_definitions(-DNCHECKPT)
+#add_definitions(-DNCHECKPT)
 add_definitions(-DNDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-DTIMING)
@@ -33,8 +36,6 @@ add_definitions(-DSTATS)
 
 
 include_directories("include")
-
-set(CMAKE_CC_FLAGS "-Wall -g")
 
 set(SOURCE_FILES
 	src/phoenix.cc

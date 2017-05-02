@@ -7,6 +7,9 @@
 #include <semaphore.h>
 #include <unistd.h>
 
+#include <unordered_map>
+#include <string>
+
 #include "phoenix.h"
 #include "px_log.h"
 #include "px_debug.h"
@@ -21,11 +24,13 @@
 /* set some of the variables on the stack */
 rcontext_t runtime_context;
 ccontext_t config_context;
-//#ifdef STATS
 stat_t statobj;
 TIMER_DECLARE4(sim_t, iter_t, write_t, read_t)
-	//#endif
-	var_t *varmap = NULL;
+
+
+	std::unordered_map <std::string, var_t *> var_map; // map that holds phx_create variables
+
+	//var_t *varmap = NULL;
 	log_t nvlog;
 
 	/* local variables */
@@ -34,7 +39,7 @@ TIMER_DECLARE4(sim_t, iter_t, write_t, read_t)
 	int px_init(int proc_id){
 		//tie up the global variable hieararchy
 		runtime_context.config_context = &config_context;
-		runtime_context.varmap = &varmap;
+		runtime_context.var_map = &var_map;
 		runtime_context.checkpoint_version=0;
 		runtime_context.process_id = proc_id;
 		nvlog.runtime_context = &runtime_context;
@@ -70,8 +75,10 @@ TIMER_DECLARE4(sim_t, iter_t, write_t, read_t)
  */
 int px_create(char *key1, unsigned long size,px_obj *retobj){
 	var_t *s;
+	std::string key(key1);
 	s = px_alighned_allocate(size, key1);
-	HASH_ADD_STR(varmap, key1, s );
+	var_map[key] = s;
+	//HASH_ADD_STR(varmap, key1, s );
 
 	retobj->data = s->ptr;
 	retobj->size = size;
@@ -162,7 +169,9 @@ int px_deltaget(char *key1,uint64_t version, px_obj *retobj){
  */
 int px_commit(char *key1,int version) {
 	var_t *s;
-	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
+
+	for (auto iter = var_map.begin(); iter != var_map.end(); ++iter) {
+		s = iter->second;
 		if(!strncmp(s->key1,key1,KEY_LENGTH)){
 			log_write(&nvlog, s, version);
 #ifdef DEDUP
@@ -178,19 +187,8 @@ int px_commit(char *key1,int version) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
 /* snapshotting all the variables created using yuma allocs*/
 int px_snapshot(){
-	int ret;
 	if(!runtime_context.process_id){
 		log_info("[%d] px_snapshot.", runtime_context.process_id);
 	}
@@ -199,8 +197,11 @@ int px_snapshot(){
 #endif//STATS
 
 #ifndef NCHECKPT
+	int ret;
 	var_t *s;
-	for (s = varmap; s != NULL; s = (var_t *) s->hh.next){
+
+	for (auto iter = var_map.begin(); iter != var_map.end(); ++iter) {
+		s = iter->second;
 		ret = log_write(&nvlog, s, runtime_context.checkpoint_version);
 		// if the log is full, retry
 		if(ret == -1){
@@ -210,13 +211,12 @@ int px_snapshot(){
 			}while(ret);
 		}
 		statobj.w_size += s->size;
-
 #ifdef DEDUP
 		// we populate data size irrespective of STATS flag
 		statobj.wd_size += get_varsize(s->dedup_vector,s->dv_size);
 		/*if(runtime_context.checkpoint_version){
-			print_dedup_numbers(s, runtime_context.checkpoint_version);
-		}*/
+		  print_dedup_numbers(s, runtime_context.checkpoint_version);
+		  }*/
 		//memset the dedup vector and mprotect pages
 		memset(s->dedup_vector,0,s->dv_size*sizeof(int));
 		enable_write_protection(s->ptr, s->paligned_size);
@@ -225,8 +225,6 @@ int px_snapshot(){
 #endif //DEDUP
 	}
 #endif //NCHECKPT
-
-
 
 #ifdef STATS
 	TIMER_END(write_t, statobj.t_write);
@@ -249,7 +247,8 @@ int px_get_snapshot(ulong version){
 	TIMER_START(read_t);
 #endif
 	var_t *s;
-	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
+	for (auto iter = var_map.begin(); iter != var_map.end(); ++iter) {
+		s= iter->second;
 #ifdef DEDUP
 		px_deltaget(s->key1, version, &(s->cobj));
 #else
@@ -277,7 +276,8 @@ int px_get_snapshot(ulong version){
 int px_delete(char *key1){
 	var_t *s;
 
-	for (s = varmap; s != NULL; s = (var_t *)s->hh.next){
+	for (auto iter = var_map.begin(); iter != var_map.end(); ++iter) {
+		s= iter->second;
 		if(strncmp(s->key1, key1,KEY_LENGTH)){
 			free(s->ptr);
 		}

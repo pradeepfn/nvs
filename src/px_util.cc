@@ -7,6 +7,9 @@
 #include <sys/time.h>
 #include <openssl/md5.h>
 
+#include <iostream>
+#include <string>
+
 #include "px_util.h"
 #include "px_debug.h"
 #include "px_constants.h"
@@ -85,7 +88,6 @@ int nvmmemcpy_write(void *dest, void *src, size_t len, int wbw) {
 
 
 extern rcontext_t runtime_context;
-extern var_t *varmap;
 
 
 /* page write fault executes this hanlder,
@@ -98,8 +100,9 @@ static void dedup_handler(int sig, siginfo_t *si, void *unused){
 		void *pageptr;
 		long offset =0;
 		pageptr = si->si_addr;
-
-		for(s = varmap; s != NULL; s = (var_t *)s->hh.next){
+		std::unordered_map<std::string, var_t *> *var_map = runtime_context.var_map;
+		for (auto iter = var_map->begin(); iter != var_map->end(); ++iter) {
+			s = iter->second;
 			offset = (long)pageptr - (long)s->ptr;
 			if(offset >=0 && offset <= s->paligned_size){ // the adress belong to this chunk.
 				assert(s != NULL);
