@@ -205,11 +205,11 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	s->dv_size= page_aligned_size/page_size;
 	int *tmpptr = (int *) SAFEMALLOC(s->dv_size*sizeof(int));
 	/* initialize the vector to all '1' */
-	//int k;
-	//for(k=0; k < s->dv_size ; k++){
-	//	tmpptr[k] = 1;
-	//}
-	memset(tmpptr,0,s->dv_size*sizeof(int));
+	int k;
+	for(k=0; k < s->dv_size ; k++){
+		tmpptr[k] = 1;
+	}
+	//memset(tmpptr,0,s->dv_size*sizeof(int));
 	s->dedup_vector = tmpptr;
 	/*install dedup handler and enable write protection*/
 	install_sighandler(dedup_handler);
