@@ -99,7 +99,7 @@ int log_write(log_t *log, var_t *variable, long version){
 
 #ifdef DEDUP
 	long dedup_varsize = get_varsize(variable->dedup_vector,variable->dv_size);
-	debug("de-duped variable size %ld", dedup_varsize);
+	//debug("de-duped variable size %ld", dedup_varsize);
 	ulong checkpoint_size = dedup_varsize + sizeof(struct preamble_t_) + variable->dv_size*sizeof(int);
 #else
 	ulong checkpoint_size = variable->size + sizeof(struct preamble_t_);
@@ -254,7 +254,7 @@ checkpoint_t *log_read(log_t *log, char *key, long version){
 
 
 checkpoint_t* ringb_element(log_t *log, ulong index){
-	assert(index < RING_BUFFER_SLOTS );
+	assert(index < RING_BUFFER_SLOTS && "index exceeds ring buffer size");
 	return (((checkpoint_t*)(log->ring_buffer.elem_start_ptr)) + index);
 }
 

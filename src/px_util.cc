@@ -185,6 +185,7 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	status = posix_memalign(&ptr, page_size, page_aligned_size);
 	// introduce a safe memalign??
 	if (status != 0) {
+		log_err("aligned memory allocation failure");
 		exit(EXIT_FAILURE);
 		return NULL;
 	}
@@ -210,7 +211,7 @@ var_t *px_alighned_allocate(size_t size, char *key) {
 	s->dedup_vector = tmpptr;
 	/*install dedup handler and enable write protection*/
 	install_sighandler(dedup_handler);
-	enable_write_protection(s->ptr, s->paligned_size);
+	//enable_write_protection(s->ptr, s->paligned_size);
 	s->mod_average = 0;
 #endif
 
@@ -236,7 +237,7 @@ void install_sighandler(void (*sighandler)(int,siginfo_t *,void *)){
 	sigemptyset(&sa.sa_mask);
 	sa.sa_sigaction = sighandler;
 	if (sigaction(SIGSEGV, &sa, &old_sa) == -1){
-		handle_error("sigaction");
+		handle_error("install sighandler failed");
 	}
 }
 
@@ -256,13 +257,13 @@ void call_oldhandler(int signo){
 
 void enable_protection(void *ptr, size_t size) {
 	if (mprotect(ptr, size,PROT_NONE) == -1){
-		handle_error("mprotect");
+		handle_error("read/write protection failed");
 	}
 }
 
 void enable_write_protection(void *ptr, size_t size) {
 	if (mprotect(ptr, size,PROT_READ) == -1){
-		handle_error("mprotect");
+		handle_error("write protection failed");
 	}
 }
 
@@ -273,7 +274,7 @@ void enable_write_protection(void *ptr, size_t size) {
  * */
 long disable_protection(void *page_start_addr,size_t aligned_size){
 	if (mprotect(page_start_addr,aligned_size,PROT_WRITE) == -1){
-		handle_error("mprotect");
+		handle_error("disable page protection failed");
 	}
 	return aligned_size;
 }
