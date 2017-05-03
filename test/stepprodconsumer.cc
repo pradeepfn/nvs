@@ -41,7 +41,7 @@ int main(){
 			//child
 			int i,j;
 
-			int touch_ptrn[4][8] = { {1,1,1,1,1,1,1,1},{0,0,1,1,1,1,0,0},{1,0,1,1,0,1,1,1},{1,1,1,1,1,1,1,1}};
+			int touch_ptrn[4][8] = { {1,0,1,1,1,1,0,1},{0,0,1,1,1,1,0,0},{1,0,1,1,0,1,1,1},{1,1,1,1,1,1,1,1}};
 
 			px_init(1);
 			px_obj obj;
@@ -52,7 +52,7 @@ int main(){
 			int *array = (int *)obj.data;
 				for(j=0;j<8;j++){
 					if(touch_ptrn[i][j] == 1){
-						array[j*1024] = i;
+						array[j*1024] = i+2;
 					}
 				}
 				//if(px_commit("key1", i)){ assert(0);}
