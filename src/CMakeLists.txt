@@ -1,0 +1,9 @@
+add_subdirectory(client)
+add_subdirectory(common)
+add_subdirectory(ns)
+add_subdirectory(runtime)
+
+#we populate YUMA_SRC variable within sub-directories
+
+add_library(yuma SHARED ${YUMA_SRC})
+target_link_libraries(yuma boost_thread boost_log)
