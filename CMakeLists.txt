@@ -9,6 +9,9 @@ include_directories(/usr/include)
 link_directories(/usr/local/lib)
 include_directories(/usr/local/include)
 
+#gull libs and include directories
+include_directories(${PROJECT_SOURCE_DIR}/../gull/include)
+link_directories(${PROJECT_SOURCE_DIR}/../gull/build/src)
 
 #version number
 set (YUMA_VERSION_MAJOR 1)

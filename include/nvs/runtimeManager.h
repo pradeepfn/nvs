@@ -68,12 +68,12 @@ namespace nvs{
         /*
          * Root of meta-data structures associated with this workflow
          */
-        int createStore(std::string rootId);
+        ErrorCode createStore(std::string rootId);
 
         /*
          *  get hold of root structure
          */
-        Root findSore(std::string rootId, Root *root);
+        ErrorCode findStore(std::string rootId, Root **root);
 
 
     };
