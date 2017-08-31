@@ -37,10 +37,18 @@ namespace nvs{
 
 
 
-    class Root{
+    /*
+     * Store representation. This class abstraction mutate the
+     * persistent state on the NVM transparent to the application
+     */
+    class Store{
     private:
+        uint64_t *addr;
+        std::string storeId;
     protected:
     public:
+        Store(uint64_t *addr, std::string storeId);
+        ~Store();
         void *create_obj(std::string key, uint64_t version);
         int put_obj(std::string key, uint64_t version);
         int get_obj(std::string key, uint64_t version, std::string range);
@@ -68,7 +76,7 @@ namespace nvs{
         /*
          * Root of meta-data structures associated with this workflow
          */
-        ErrorCode createStore(std::string rootId);
+        ErrorCode createStore(std::string storeId);
 
         /*
          *  get hold of root structure

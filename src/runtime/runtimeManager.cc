@@ -16,27 +16,58 @@ namespace nvs{
  **/
  class RuntimeManager::Impl_{
 
+    nvmm::Region *region;
+     nvmm::MemoryManager *mm;
+     uint64_t *mapped_addr;
+     size_t size;
+
      Impl_(){ }
 
      ErrorCode init();
      ErrorCode finalize();
 
-     ErrorCode createStore(std::string rootId);
+     ErrorCode createStore(std::string rootId,Store **store);
      ErrorCode FindStore(std::string rootId, Root **root);
 
  };
 
     ErrorCode RuntimeManager::Impl_::init() {
+        this->mm = nvmm::MemoryManager::GetInstance();
+
+        // create a new 128MB NVM region with pool id 1
+        nvmm::PoolId pool_id = 1;
+        this->size = 128*1024*1024; // 128MB
+        nvmm::ErrorCode ret = mm->CreateRegion(pool_id, size);
+        assert(ret == NO_ERROR);
+
+        // acquire the region
+        this->region = NULL;
+        ret = mm->FindRegion(pool_id, &region);
+        assert(ret == NO_ERROR);
+
+        // open and map the region
+        ret = region->Open(O_RDWR);
+        assert(ret == NO_ERROR);
+        this->mapped_addr = NULL;
+
+        ret = region->Map(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, 0, (void**)&mapped_addr);
+        assert(ret == NO_ERROR);
 
     }
 
-    ErrorCode RuntimeManager::Impl_::createStore(std::string rootId) {
-
+    ErrorCode RuntimeManager::Impl_::createStore(std::string storeId,Store **store) {
+            *store =  new Store(this->mapped_addr,storeId);
     }
 
     ErrorCode RuntimeManager::Impl_::finalize() {
 
+        //TODO: delete store
 
+        // unmap and close the region
+        nvmm::ErrorCode ret = this->region->Unmap(mapped_addr, size);
+        assert(ret == NO_ERROR);
+        ret = this->region->Close();
+        assert(ret == NO_ERROR);
 
     }
 
