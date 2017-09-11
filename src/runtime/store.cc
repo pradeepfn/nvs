@@ -2,6 +2,8 @@
 // Created by pradeep on 8/30/17.
 //
 
+#include <cstdint>
+#include <nvs/runtimeManager.h>
 #include "serializationTypes.h"
 
 namespace nvs{
@@ -19,14 +21,16 @@ namespace nvs{
 
     }
 
-    int Store::put_obj(std::string key, uint64_t version)
+    int Store::put(std::string key, uint64_t version)
     {
 
     }
 
-    int Store::get_obj(std::string key, uint64_t version, std::string range)
+    int Store::get(std::string key, uint64_t version, std::string range)
     {
 
 
     }
+
+    ErrorCode Store::close() {}
 }

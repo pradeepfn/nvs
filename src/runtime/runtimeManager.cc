@@ -60,6 +60,9 @@ namespace nvs{
             *store =  new Store(this->mapped_addr,storeId);
     }
 
+
+    ErrorCode RuntimeManager::Impl_::findStore(std::string rootId, Store **store) {}
+
     ErrorCode RuntimeManager::Impl_::finalize() {
 
         //TODO: delete store
@@ -91,6 +94,8 @@ namespace nvs{
         return privateImpl->createStore(storeId, store);
 
     }
+
+    ErrorCode RuntimeManager::close() {}
 
     std::atomic<RuntimeManager *> RuntimeManager::instance_;
     std::mutex RuntimeManager::mutex_;
