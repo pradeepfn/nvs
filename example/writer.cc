@@ -1,41 +1,47 @@
-//
-// Created by pradeep on 8/28/17.
-//
+#include <iostream>
+#include <string>
+
+#include <common/nanassert.h>
+#include <nvs/errorCode.h>
+#include "nvs/runtimeManager.h"
+
+#define FOO_SIZE 4000
+#define VERSION  1
+
+using namespace nvs;
 
 int main(int argc, char **argv){
 
-    init_log(off);
 
-    RuntimeManager *rm = RuntimeManager::GetInstance();
+
+    RuntimeManager *rm = RuntimeManager::getInstance();
+    Store *myStore;
 
     //create a new root for the workflow
-    ErrorCode ret = rm->createStore("example_workflow");
-    assert(ret == NO_ERROR);
+    ErrorCode ret = rm->createStore("example_workflow",&myStore);
+    I(ret == NO_ERROR);
 
-
-    //get hold of root
-    Store *store = nullptr;
-    ret = rm->findStore("example_workflow", &store);
-    assert(ret == NO_ERROR);
+    ret = rm->findStore("example_workflow", &myStore);
+    I(ret == NO_ERROR);
 
     //create new object with a key
-    store->create_obj("foo", FOO_SIZE,);
+    myStore->create_obj("foo", FOO_SIZE);
 
     //use object
 
 
 
     //create a version/snapshot of the object
-    store->put("foo", VERSION);
+    myStore->put("foo", VERSION);
 
 
     //use object
 
-    stroe->put("foo", VERSION+1);
+    myStore->put("foo", VERSION+1);
 
 
     //close store and manager
-    store->close();
+    myStore->close();
     rm->close();
 
     return 0;

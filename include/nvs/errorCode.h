@@ -6,15 +6,15 @@
 #define YUMA_ERRORCODE_H
 
 namespace nvs{
+    enum ErrorCode
+    {
 
-    enum ErrorCode{
-
-
+                NO_ERROR=0,
 
     };
 
-
 }
+
 
 
 

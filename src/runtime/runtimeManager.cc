@@ -15,19 +15,20 @@ namespace nvs{
  * hp-nvmm
  **/
  class RuntimeManager::Impl_{
-
+ private:
     nvmm::Region *region;
      nvmm::MemoryManager *mm;
      uint64_t *mapped_addr;
      size_t size;
 
+ public:
      Impl_(){ }
 
      ErrorCode init();
      ErrorCode finalize();
 
      ErrorCode createStore(std::string rootId,Store **store);
-     ErrorCode FindStore(std::string rootId, Root **root);
+     ErrorCode findStore(std::string rootId, Store **store);
 
  };
 
@@ -81,13 +82,13 @@ namespace nvs{
         ErrorCode ret = privateImpl->finalize();
     }
 
-    ErrorCode RuntimeManager::findStore(std::string rootId, Root **root) {
-        return privateImpl->findStore(rootId,root);
+    ErrorCode RuntimeManager::findStore(std::string storeId, Store **store) {
+        return privateImpl->findStore(storeId,store);
     }
 
-    ErrorCode RuntimeManager::createStore(std::string rootId) {
+    ErrorCode RuntimeManager::createStore(std::string storeId, Store **store) {
 
-        return privateImpl->createStore(rootId);
+        return privateImpl->createStore(storeId, store);
 
     }
 

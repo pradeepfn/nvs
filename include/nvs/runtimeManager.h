@@ -5,6 +5,10 @@
 #ifndef YUMA_RUNTIMEMANAGER_H
 #define YUMA_RUNTIMEMANAGER_H
 
+#include <memory>
+#include <mutex>
+#include <atomic>
+#include "nvs/errorCode.h"
 
 namespace nvs{
 
@@ -22,10 +26,10 @@ namespace nvs{
     class Key{
 
     private:
-        gptr *ptr;
+        //gptr *ptr;
         uint64_t size;
         /* bit field to keep track of modified pages of the buffer */
-        Byte *barry;
+        char *barry;
         /*vector of versions */
 
 
@@ -50,8 +54,9 @@ namespace nvs{
         Store(uint64_t *addr, std::string storeId);
         ~Store();
         void *create_obj(std::string key, uint64_t version);
-        int put_obj(std::string key, uint64_t version);
-        int get_obj(std::string key, uint64_t version, std::string range);
+        int put(std::string key, uint64_t version);
+        int get(std::string key, uint64_t version, std::string range);
+        ErrorCode close();
     };
 
 
@@ -76,14 +81,15 @@ namespace nvs{
         /*
          * Root of meta-data structures associated with this workflow
          */
-        ErrorCode createStore(std::string storeId);
+        ErrorCode createStore(std::string storeId, Store **store);
 
         /*
          *  get hold of root structure
          */
-        ErrorCode findStore(std::string rootId, Root **root);
+        ErrorCode findStore(std::string rootId, Store **store);
 
 
+        ErrorCode close();
     };
 
 
