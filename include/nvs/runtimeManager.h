@@ -14,30 +14,7 @@ namespace nvs{
 
 
 
-    class Version{
 
-
-    public:
-    };
-
-    /*
-     * Key
-     */
-    class Key{
-
-    private:
-        //gptr *ptr;
-        uint64_t size;
-        /* bit field to keep track of modified pages of the buffer */
-        char *barry;
-        /*vector of versions */
-
-
-    public:
-        Version *getVersion(uint64_t version);
-        uint64_t getSize();
-
-    };
 
 
 
@@ -47,8 +24,15 @@ namespace nvs{
      */
     class Store{
     private:
-        uint64_t *addr;
+        objkey_t *kr_addr; // starting address of key-region
+
         std::string storeId;
+        store_t *srl_store; // shared memory representation of the store.
+        RuntimeManager *rt;
+
+        Key *findKey(std::string key);
+
+
     protected:
     public:
         Store(uint64_t *addr, std::string storeId);

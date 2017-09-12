@@ -10,6 +10,7 @@ namespace nvs{
     {
 
                 NO_ERROR=0,
+        DUPLICATE_KEY,
 
     };
 
