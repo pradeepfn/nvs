@@ -40,6 +40,7 @@ include_directories(${PROJECT_SOURCE_DIR}/test) #test headers
 add_subdirectory(src)
 add_subdirectory(test)
 add_subdirectory(example)
+add_subdirectory(include)
 
 
 

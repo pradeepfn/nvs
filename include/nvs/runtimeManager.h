@@ -11,13 +11,6 @@
 #include "nvs/errorCode.h"
 
 namespace nvs{
-
-
-
-
-
-
-
     /*
      * Store representation. This class abstraction mutate the
      * persistent state on the NVM transparent to the application
@@ -32,20 +25,15 @@ namespace nvs{
 
         Key *findKey(std::string key);
 
-
     protected:
     public:
         Store(uint64_t *addr, std::string storeId);
         ~Store();
-        void *create_obj(std::string key, uint64_t version);
+        void *create_obj(std::string key, uint64_t version, uint64_t **obj_addr);
         int put(std::string key, uint64_t version);
-        int get(std::string key, uint64_t version, std::string range);
+        int get(std::string key, uint64_t version, uint64_t **obj_addr);
         ErrorCode close();
     };
-
-
-
-
 
 
     class RuntimeManager{

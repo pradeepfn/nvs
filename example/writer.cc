@@ -24,8 +24,9 @@ int main(int argc, char **argv){
     ret = rm->findStore("example_workflow", &myStore);
     I(ret == NO_ERROR);
 
+    uint64_t *addr;
     //create new object with a key
-    myStore->create_obj("foo", FOO_SIZE);
+    myStore->create_obj("foo", FOO_SIZE, &addr);
 
     //use object
 

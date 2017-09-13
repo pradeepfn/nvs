@@ -31,6 +31,8 @@ namespace nvs {
 
         ErrorCode createVersion(uint64_t version);
 
+        ErrorCode deleteVesion(uint64_t version);
+
         ErrorCode getVersion(uint64_t version, uint64_t **addr);
 
     };

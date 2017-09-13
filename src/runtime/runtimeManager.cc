@@ -5,9 +5,11 @@
 #include <string>
 #include <atomic>
 #include <mutex>
+#include <map>
+#include <common/nanassert.h>
 #include "nvs/runtimeManager.h"
-#include "nvs/errorCode.h"
 #include "nvmm/memory_manager.h"
+#include "serializationTypes.h"
 
 namespace nvs{
 /*
@@ -18,8 +20,9 @@ namespace nvs{
  private:
     nvmm::Region *region;
      nvmm::MemoryManager *mm;
-     uint64_t *mapped_addr;
+     store_t *mapped_addr; // root address of shared memory stored store structures
      size_t size;
+     std::map<std::string,Store *> storeMap; // Store objects
 
  public:
      Impl_(){ }
@@ -56,12 +59,33 @@ namespace nvs{
 
     }
 
+    /*
+     * traverse through the shared memory stored store structures, if no store
+     * found with given store-id then create store on shared memory, and return
+     * a store object.
+     */
     ErrorCode RuntimeManager::Impl_::createStore(std::string storeId,Store **store) {
             *store =  new Store(this->mapped_addr,storeId);
     }
 
 
-    ErrorCode RuntimeManager::Impl_::findStore(std::string rootId, Store **store) {}
+    /*
+     * traverse the local map for store, if not found then traverse the shared memory
+     * segment for a store.
+     */
+    ErrorCode RuntimeManager::Impl_::findStore(std::string storeId, Store **store) {
+
+        std::map<std::string, Store *>::const_iterator it =  storeMap.find(storeId);
+        if(it != storeMap.end()){
+            I(storeId.compare(it->first))
+            *store = it->second;
+        }else{
+            // traverse the shared memory segments to find the store
+            for(store_t *st = mapped_addr; st != nullptr;  )
+
+        }
+
+    }
 
     ErrorCode RuntimeManager::Impl_::finalize() {
 
