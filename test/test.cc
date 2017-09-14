@@ -1,43 +1,18 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <assert.h>
 
-#include "phoenix.h"
+#include "test.h"
 
+namespace nvs {
 
-int main(){
+    void InitTest(SeverityLevel level, bool to_console) {
+        // init boost::log
+        if (to_console == true) {
+            nvs::init_log(level, "");
+        } else {
+            nvs::init_log(level, "mm.log");
+        }
 
-
- printf("basic testing of phoenix functionality\n");
- assert(px_init(1) == 0);
-
- //test: create object
- px_obj obj1;
- assert(!px_create("foo",100, &obj1));
- assert(obj1.data && obj1.size == 100);
-
-
- //populate memory with some data
- strncpy((char *)obj1.data, "Some wierd text",10);
-
- //test: get object
-  px_obj obj2;
-  assert(!px_get("foo",-1 ,&obj2));
-  assert(obj2.size == 100);
-  assert(!strncmp((char *)obj1.data,(char *)obj2.data,100));
-
- //test: commit object to nvm
- px_obj obj3;
- assert(px_commit("foo",2) == 0);
-
-
- //test: get a versioned object
- px_obj obj4;
- assert(!px_get("foo",1,&obj4));
- assert(obj4.size == 100);
- assert(!strncmp((char *)obj1.data,(char *)obj4.data,100));
- //TODO: compare actual data content
-
- return 0;
+        // remove previous files in SHELF_BASE_DIR
+        //std::string cmd = std::string("exec rm -f ") + SHELF_BASE_DIR + "/" + SHELF_USER + "* > /dev/null";
+        //system(cmd.c_str());
+    }
 }

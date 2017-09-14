@@ -98,7 +98,7 @@ namespace nvs{
     }
 
     /*
-     * free the resources on local memory, e.g: delete 
+     * free the resources on local memory, e.g: delete
      */
     ErrorCode RuntimeManager::Impl_::finalize() {
 

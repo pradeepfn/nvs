@@ -32,10 +32,34 @@ add_definitions(-DTIMING)
 add_definitions(-DSTATS)
 
 
+#tests
+enable_testing()
+
+
+#
+# enable boost
+#
+find_package(Boost 1.55 COMPONENTS log REQUIRED)
+
+# for boost::log
+add_definitions(-DBOOST_LOG_DYN_LINK)
+
 #include directories
 include_directories(${PROJECT_SOURCE_DIR}/include) #public headers
 include_directories(${PROJECT_SOURCE_DIR}/src) #private headers
 include_directories(${PROJECT_SOURCE_DIR}/test) #test headers
+
+
+#
+# third-party libraries
+#
+set(GTEST_ROOT ${PROJECT_SOURCE_DIR}/third-party/gtest)
+set(CMAKE_POSITION_INDEPENDENT_CODE TRUE)
+add_subdirectory(third-party)
+include_directories(${PROJECT_SOURCE_DIR}/third-party/gtest/include)
+
+
+
 
 add_subdirectory(src)
 add_subdirectory(test)
