@@ -5,10 +5,14 @@
 #ifndef YUMA_CONSTANTS_H
 #define YUMA_CONSTANTS_H
 
+#include <cstdint>
+
 namespace nvs{
 
-
-     const uint64_t LIST_TERMINATOR = 1234;
+    class Constants{
+    public:
+        static const uint64_t LIST_TERMINATOR = 1234;
+    };
 
 }
 

@@ -10,7 +10,8 @@ namespace nvs{
     {
 
                 NO_ERROR=0,
-        DUPLICATE_KEY,
+                DUPLICATE_KEY,
+                ELEM_NOT_FOUND,
 
     };
 

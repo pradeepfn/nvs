@@ -5,10 +5,11 @@
 
 namespace nvs{
 
-    ErrorCode Key::createVersion(uint64_t version, Version *vob) {
+    ErrorCode Key::createVersion(uint64_t version)
+    {
 
-        vob = new Version(version);
-        return NO_ERROR;
+        /*vob = new Version(version);
+        return NO_ERROR;*/
     }
 
     ErrorCode Key::deleteVesion(uint64_t version) {

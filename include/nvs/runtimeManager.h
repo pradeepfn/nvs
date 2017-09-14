@@ -9,32 +9,10 @@
 #include <mutex>
 #include <atomic>
 #include "nvs/errorCode.h"
+#include "nvs/runtimeManager.h"
+#include "nvs/store.h"
 
 namespace nvs{
-    /*
-     * Store representation. This class abstraction mutate the
-     * persistent state on the NVM transparent to the application
-     */
-    class Store{
-    private:
-        objkey_t *kr_addr; // starting address of key-region
-
-        std::string storeId;
-        store_t *srl_store; // shared memory representation of the store.
-        RuntimeManager *rt;
-
-        Key *findKey(std::string key);
-
-    protected:
-    public:
-        Store(uint64_t *addr, std::string storeId);
-        ~Store();
-        void *create_obj(std::string key, uint64_t version, uint64_t **obj_addr);
-        int put(std::string key, uint64_t version);
-        int get(std::string key, uint64_t version, uint64_t **obj_addr);
-        ErrorCode close();
-    };
-
 
     class RuntimeManager{
     private:

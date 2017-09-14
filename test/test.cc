@@ -6,9 +6,9 @@ namespace nvs {
     void InitTest(SeverityLevel level, bool to_console) {
         // init boost::log
         if (to_console == true) {
-            nvs::init_log(level, "");
+            init_log(level, "");
         } else {
-            nvs::init_log(level, "mm.log");
+            init_log(level, "mm.log");
         }
 
         // remove previous files in SHELF_BASE_DIR

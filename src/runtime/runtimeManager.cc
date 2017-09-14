@@ -9,8 +9,9 @@
 #include <common/nanassert.h>
 #include "nvs/runtimeManager.h"
 #include "nvmm/memory_manager.h"
-#include "serializationTypes.h"
 #include "constants.h"
+#include "serializationTypes.h"
+#include "gtstore.h"
 
 namespace nvs{
 /*
@@ -24,6 +25,10 @@ namespace nvs{
      store_t *st_head; // root address of shared memory stored store structures
      size_t size;
      std::map<std::string,Store *> storeMap; // Store objects
+
+     store_t *lptr(uint64_t offset){
+         (store_t *)(st_head + offset);
+     }
 
  public:
      Impl_(){ }
@@ -53,9 +58,9 @@ namespace nvs{
         // open and map the region
         ret = region->Open(O_RDWR);
         assert(ret == NO_ERROR);
-        this->mapped_addr = NULL;
+        this->st_head = NULL;
 
-        ret = region->Map(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, 0, (void**)&mapped_addr);
+        ret = region->Map(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, 0, (void**)&st_head);
         assert(ret == NO_ERROR);
 
     }
@@ -66,7 +71,7 @@ namespace nvs{
      * a store object.
      */
     ErrorCode RuntimeManager::Impl_::createStore(std::string storeId,Store **store) {
-            *store =  new Store(,storeId);
+            // *store =  new Store(,storeId);
     }
 
 
@@ -82,10 +87,10 @@ namespace nvs{
             *store = it->second;
         }else{
             // traverse the shared memory segments to find the store
-            for(store_t *st = st_head; st != (store_t *)LIST_TERMINATOR;
+            for(store_t *st = st_head; st != (store_t *)Constants().LIST_TERMINATOR;
                 st = lptr(st->next) ){
                 if(storeId.compare(st->storeId)){
-                    Store *tmp = new Store();
+                    Store *tmp = new GTStore();
                     storeMap[storeId] = tmp;
                     *store = tmp;
                     return NO_ERROR;
@@ -98,14 +103,14 @@ namespace nvs{
     }
 
     /*
-     * free the resources on local memory, e.g: delete
+     *
      */
     ErrorCode RuntimeManager::Impl_::finalize() {
 
         //TODO: delete store
 
         // unmap and close the region
-        nvmm::ErrorCode ret = this->region->Unmap(mapped_addr, size);
+        nvmm::ErrorCode ret = this->region->Unmap(st_head, size);
         assert(ret == NO_ERROR);
         ret = this->region->Close();
         assert(ret == NO_ERROR);

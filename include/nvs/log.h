@@ -15,11 +15,10 @@
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 
-namespace nvs{
+namespace nvs {
 
 // severity levels
-    enum SeverityLevel
-    {
+    enum SeverityLevel {
         all, // turn on all logging
         trace,
         debug,
@@ -50,5 +49,5 @@ namespace nvs{
 #define LOG(severity) if(0)std::cerr
 #define TRACE() {}
 #endif
-
+}
 #endif //YUMA_LOG_H
