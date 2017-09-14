@@ -11,7 +11,7 @@
 
     typedef struct store_t_ {
         char storeId[100];
-
+        uint64_t next; // offset of the next elem
 
     } store_t;
 

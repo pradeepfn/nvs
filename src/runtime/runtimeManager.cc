@@ -10,6 +10,7 @@
 #include "nvs/runtimeManager.h"
 #include "nvmm/memory_manager.h"
 #include "serializationTypes.h"
+#include "constants.h"
 
 namespace nvs{
 /*
@@ -20,7 +21,7 @@ namespace nvs{
  private:
     nvmm::Region *region;
      nvmm::MemoryManager *mm;
-     store_t *mapped_addr; // root address of shared memory stored store structures
+     store_t *st_head; // root address of shared memory stored store structures
      size_t size;
      std::map<std::string,Store *> storeMap; // Store objects
 
@@ -65,7 +66,7 @@ namespace nvs{
      * a store object.
      */
     ErrorCode RuntimeManager::Impl_::createStore(std::string storeId,Store **store) {
-            *store =  new Store(this->mapped_addr,storeId);
+            *store =  new Store(,storeId);
     }
 
 
@@ -81,12 +82,24 @@ namespace nvs{
             *store = it->second;
         }else{
             // traverse the shared memory segments to find the store
-            for(store_t *st = mapped_addr; st != nullptr;  )
+            for(store_t *st = st_head; st != (store_t *)LIST_TERMINATOR;
+                st = lptr(st->next) ){
+                if(storeId.compare(st->storeId)){
+                    Store *tmp = new Store();
+                    storeMap[storeId] = tmp;
+                    *store = tmp;
+                    return NO_ERROR;
+                }
+            }
+            return ELEM_NOT_FOUND;
 
         }
 
     }
 
+    /*
+     * free the resources on local memory, e.g: delete 
+     */
     ErrorCode RuntimeManager::Impl_::finalize() {
 
         //TODO: delete store

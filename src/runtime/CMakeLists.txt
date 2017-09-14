@@ -8,5 +8,6 @@ set(YUMA_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/version.h
         ${CMAKE_CURRENT_SOURCE_DIR}/version.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/serializationTypes.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/constants.h
         PARENT_SCOPE
         )
