@@ -16,7 +16,7 @@ namespace nvs {
 
         RuntimeManager *rm = RuntimeManager::getInstance();
 
-        EXPECT_EQ(ID_NOT_FOUND, rm->findStore(storeId,&myStore));
+        EXPECT_EQ(STORE_NOT_FOUND, rm->findStore(storeId,&myStore));
         EXPECT_EQ(NO_ERROR, rm->createStore(storeId,&myStore));
 
         EXPECT_EQ(NO_ERROR, rm->findStore(storeId,&myStore));
@@ -26,8 +26,21 @@ namespace nvs {
 
 
     TEST(RuntimeManagerTest, Key) {
+        std::string storeId = "testStore";
+        Store *myStore = nullptr;
 
+        RuntimeManager *rm = RuntimeManager::getInstance();
+        rm->createStore("testKeyStore", &myStore);
 
+        uint64_t *addr;
+
+        EXPECT_EQ(KEY_NOT_EXIST, myStore->get("testKey", 0, &addr));
+        EXPECT_EQ(KEY_NOT_EXIST, myStore->put("testKey",1));
+
+        EXPECT_EQ(NO_ERROR, myStore->create_obj("testKey",100,&addr));
+
+        EXPECT_EQ(NO_ERROR, myStore->get("testKey", 0, &addr));
+        EXPECT_EQ(NO_ERROR, myStore->put("testKey",1));
     }
 
 

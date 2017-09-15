@@ -28,7 +28,7 @@ namespace nvs {
     protected:
     public:
 
-        GTStore();
+        GTStore(store_t *st);
 
         GTStore(uint64_t *addr, std::string storeId);
 

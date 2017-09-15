@@ -12,7 +12,7 @@
     typedef struct store_t_ {
         char storeId[100];
         uint64_t next; // offset of the next elem
-
+        uint64_t key_root; // root of the key structure for shared memory based object keys
     } store_t;
 
     typedef struct objkey_t {

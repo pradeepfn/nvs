@@ -5,17 +5,34 @@
 #include <cstdint>
 #include <nvs/runtimeManager.h>
 #include <common/nanassert.h>
+#include <nvmm/error_code.h>
+#include <nvmm/global_ptr.h>
 #include "serializationTypes.h"
 #include "gtstore.h"
 
 namespace nvs{
 
-    GTStore::GTStore(){}
+    GTStore::GTStore(store_t *st){
+
+        // store structure has the id to metadata heap
+        Heap *heap = NULL;
+        mm->FindHeap(st->meta_heap, &heap);
+
+        nvmm::ErrorCode ret = heap->Open();
+        I(ret == NO_ERROR);
+
+
+
+
+    }
 
     GTStore::GTStore(uint64_t *addr, std::string storeId):key_head((objkey_t *)addr),storeId(storeId)
     {
         srl_store = (store_t *) addr;
         I(GTStoreId.compare(std:string(srl_GTStore->GTStoreId)));
+
+
+
         /* we create a region to GTStore keys for this GTStore */
         //kr_addr = rt->findKeyRegion(GTStoreId);
     }
@@ -25,6 +42,13 @@ namespace nvs{
     /* traverse the list of key structs and create a new key if not found*/
     ErrorCode GTStore::create_obj(std::string key, uint64_t size, uint64_t **obj_addr)
     {
+        //create an key structure in shared heap
+        nvmm::GlobalPtr ptr=  this->heap->Alloc(sizeof(key_t));
+
+
+        this->srl_store->key_root = ptr.ToUINT64();
+
+
         /*
          * right now the key-region is formatted as an array structure.
          */

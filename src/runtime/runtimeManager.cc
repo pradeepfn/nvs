@@ -24,9 +24,10 @@ namespace nvs{
      nvmm::MemoryManager *mm;
      store_t *st_head; // root address of shared memory stored store structures
      size_t size;
-     std::map<std::string,Store *> storeMap; // Store objects
+     std::map<std::string,GTStore *> storeMap; // Store objects
 
      store_t *lptr(uint64_t offset){
+         if(offset == Constants::LIST_TERMINATOR) {return  (store_t *)offset;}
          (store_t *)(st_head + offset);
      }
 
@@ -71,7 +72,26 @@ namespace nvs{
      * a store object.
      */
     ErrorCode RuntimeManager::Impl_::createStore(std::string storeId,Store **store) {
-            // *store =  new Store(,storeId);
+        /* traverse our serialized store structure and provision new store */
+        store_t *gtstore = nullptr;
+        {
+            store_t *st;
+            int i;
+            for (st = st_head, i = 0; lptr(st->next) != (store_t *) Constants::LIST_TERMINATOR;
+                 st = lptr(st->next),i++);
+
+            gtstore = st_head + i + 1;
+            st->next = (i+1)*sizeof(store_t);
+        }
+
+
+        gtstore->next = Constants::LIST_TERMINATOR;
+        gtstore->key_root = Constants::NULL_OFFSET;
+        snprintf(gtstore->storeId, 100, "%s", storeId.c_str());
+        GTStore *gs =  new GTStore(gtstore);
+        storeMap[storeId] = gs;
+        *store = gs;
+        return NO_ERROR;
     }
 
 
@@ -81,25 +101,23 @@ namespace nvs{
      */
     ErrorCode RuntimeManager::Impl_::findStore(std::string storeId, Store **store) {
 
-        std::map<std::string, Store *>::const_iterator it =  storeMap.find(storeId);
-        if(it != storeMap.end()){
+        std::map<std::string, GTStore *>::const_iterator it = storeMap.find(storeId);
+        if (it != storeMap.end()) {
             I(storeId.compare(it->first))
             *store = it->second;
-        }else{
-            // traverse the shared memory segments to find the store
-            for(store_t *st = st_head; st != (store_t *)Constants().LIST_TERMINATOR;
-                st = lptr(st->next) ){
-                if(storeId.compare(st->storeId)){
-                    Store *tmp = new GTStore();
-                    storeMap[storeId] = tmp;
-                    *store = tmp;
-                    return NO_ERROR;
-                }
-            }
-            return ELEM_NOT_FOUND;
-
+            return NO_ERROR;
         }
-
+        // traverse the shared memory segments to find the store
+        for (store_t *st = lptr(st_head->next); st != (store_t *) Constants::LIST_TERMINATOR;
+             st = lptr(st->next)) {
+            if (storeId.compare(st->storeId)) {
+                GTStore *tmp = new GTStore(st); // create object around shared memory structure
+                storeMap[storeId] = tmp;
+                *store = tmp;
+                return NO_ERROR;
+            }
+        }
+        return STORE_NOT_FOUND;
     }
 
     /*
@@ -107,14 +125,15 @@ namespace nvs{
      */
     ErrorCode RuntimeManager::Impl_::finalize() {
 
-        //TODO: delete store
+        //TODO:delete store objects
+        //std::map<std::string, GTStore *>::const_iterator it;
 
         // unmap and close the region
         nvmm::ErrorCode ret = this->region->Unmap(st_head, size);
-        assert(ret == NO_ERROR);
+        I(ret == NO_ERROR);
         ret = this->region->Close();
-        assert(ret == NO_ERROR);
-
+        I(ret == NO_ERROR);
+        return NO_ERROR;
     }
 
 
@@ -137,7 +156,9 @@ namespace nvs{
 
     }
 
-    ErrorCode RuntimeManager::close() {}
+    ErrorCode RuntimeManager::close() {
+        return privateImpl->finalize();
+    }
 
     std::atomic<RuntimeManager *> RuntimeManager::instance_;
     std::mutex RuntimeManager::mutex_;

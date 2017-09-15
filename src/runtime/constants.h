@@ -12,6 +12,9 @@ namespace nvs{
     class Constants{
     public:
         static const uint64_t LIST_TERMINATOR = 1234;
+        static const uint64_t NULL_OFFSET = 0;
+
+        static const std::string METADATA_HEAP = "metada.heap";
     };
 
 }
