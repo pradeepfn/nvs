@@ -13,9 +13,10 @@ namespace nvs {
     }
 
     template<typename T, typename P>
-    ErrorCode List::addNode(T node) {
-
-
+    ErrorCode List::addNode(T *node) {
+         node->next = listHead;
+        listHead = 0;
+        return NO_ERROR;
     }
 
 
@@ -26,6 +27,6 @@ namespace nvs {
 
 
     template<typename T, typename P>
-    ErrorCode List::removeNode(T node) {}
+    ErrorCode List::removeNode(P id) {}
 
 }

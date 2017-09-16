@@ -6,6 +6,8 @@
 #define YUMA_KEY_H
 
 #include <cstdint>
+#include <string>
+#include <common/list.h>
 #include "nvs/errorCode.h"
 #include "version.h"
 
@@ -18,9 +20,14 @@ namespace nvs {
     private:
         //gptr *ptr;
         uint64_t size;
+
+        version_t *version_root; // root of the version stuctures
+
+        List<version_t,std::string> *versionList;
         /* bit field to keep track of modified pages of the buffer */
         char *barry;
         /*vector of versions */
+        uint64_t next; // global pointer to next element
 
 
 

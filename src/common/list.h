@@ -20,11 +20,11 @@ namespace nvs {
 
         ~List();
 
-        ErrorCode addNode(T node);
+        ErrorCode addNode(T *node);
 
-        ErrorCode removeNode(T node);
+        ErrorCode removeNode(P id);
 
-        T findNode(P id);
+        T findNode(P id, T **node);
     };
 
 

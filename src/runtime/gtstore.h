@@ -1,6 +1,8 @@
 //
 // Created by pradeep on 9/14/17.
 //
+#include <common/list.h>
+#include <nvmm/memory_manager.h>
 #include "nvs/store.h"
 #include "key.h"
 
@@ -20,6 +22,11 @@ namespace nvs {
         std::string storeId;
         store_t *srl_store; // serialized verison of this store object
         RuntimeManager *rt;
+
+        nvmm::MemoryManager *mm; // memory manager of the metadata heap
+
+        // shared memory list structure
+        List<objkey_t,std::string> *keyList;
 
         Key *findKey(std::string key);
 

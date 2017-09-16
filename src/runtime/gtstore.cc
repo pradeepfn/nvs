@@ -42,30 +42,12 @@ namespace nvs{
     /* traverse the list of key structs and create a new key if not found*/
     ErrorCode GTStore::create_obj(std::string key, uint64_t size, uint64_t **obj_addr)
     {
-        //create an key structure in shared heap
+        //create an key structure in shared heap and populate
         nvmm::GlobalPtr ptr=  this->heap->Alloc(sizeof(key_t));
-
-
-        this->srl_store->key_root = ptr.ToUINT64();
-
-
-        /*
-         * right now the key-region is formatted as an array structure.
-         */
-        objkey_t *prev_st;
-        for(objkey_t *st = this->lptr(key_head->next); st != nullptr;
-                prev_st = st, st = this->lptr(st->next)){
-            if(key.compare(st->keyId)){
-                return DUPLICATE_KEY;
-            }
-        }
-        //TODO: assert < mem-region-size
-        objkey_t *new_st = prev_st +1;
-        snprintf(new_st->keyId,100,key.c_str());
-        new_st->next = -1234;
-
-        //TODO: set the previous structure next to new one
-
+        objkey_t *obj = (objkey_t*)this->mm->GlobalToLocal(ptr);
+        obj->keyId =
+        obj->obj_addr =
+        this->keyList->addNode();
         return NO_ERROR;
     }
 
@@ -77,8 +59,17 @@ namespace nvs{
      */
     ErrorCode GTStore::put(std::string key, uint64_t version)
     {
-            Key *k = findKey(key);
-            return k->createVersion(version);
+
+            // first traverse the map and find the key object
+
+            objkey_t *obj;
+            // if not traverse the shared memory object structures
+            if(!this->keyList->findNode(key,&obj){
+            // new key object added to map, then create a new version
+
+
+            }
+            return ELEM_NOT_FOUND;
     }
 
     /*
@@ -86,8 +77,11 @@ namespace nvs{
      */
     ErrorCode GTStore::get(std::string key, uint64_t version, uint64_t **obj_addr)
     {
-        Key *k = findKey(key);
-        return k->getVersion(version,obj_addr);
+
+        // first traverse the map and find the key object
+
+
+
 
     }
 
