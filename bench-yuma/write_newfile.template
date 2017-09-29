@@ -1,0 +1,28 @@
+set $dir=/tmp
+set $nfiles=1024
+set $filesize=1m
+set $iosize=%(chunk_size)s
+set $nthreads=1
+
+set mode quit firstdone
+
+define fileset name=bigfileset,path=$dir,size=$filesize,entries=$nfiles
+
+define process name=filecreate,instances=1
+{
+  thread name=filecreatethread,memsize=10m,instances=$nthreads
+  {
+    flowop createfile name=createfile1,filesetname=bigfileset,fd=1
+    flowop writewholefile name=writefile1,fd=1,iosize=$iosize
+    flowop closefile name=closefile1,fd=1
+  }
+}
+run 20
+echo  "Createfiles Version 3.0 personality successfully loaded"
+usage "Usage: set \$dir=<dir>          defaults to $dir"
+usage "       set \$meanfilesize=<size>    defaults to $meanfilesize"
+usage "       set \$iosize=<size>      defaults to $iosize"
+usage "       set \$nfiles=<value>     defaults to $nfiles"
+usage "       set \$nthreads=<value>   defaults to $nthreads"
+usage "       set \$meandirwidth=<size> defaults to $meandirwidth"
+usage "       run"
