@@ -1,6 +1,6 @@
 set $dir=/tmp
-set $nfiles=1024
-set $filesize=1m
+set $nfiles=%(nfiles)s
+set $filesize=%(step_size)s
 set $iosize=%(chunk_size)s
 set $nthreads=1
 

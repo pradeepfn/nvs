@@ -6,13 +6,8 @@ import shutil
 
 DBG=1
 
-
-
-
 __home = os.getcwd()
-__fbench_root = '/home/pradeep/checkout/nvm-yuma/yuma/bench-yuma'  # root of fbench script location
-
-__chunk_size = [64, 256]
+__fbench_root = '/home/pradeep/yuma/bench-yuma'  # root of fbench script location
 
 __empty = ''
 __newfile = 'newfile'
@@ -24,11 +19,12 @@ __workload_l.append(__newfile)
 __workload_l.append(__bigfile)
 __workload_l.append(__mmap)
 
-
-
-
 parser = argparse.ArgumentParser(prog="runscript", description="script to run yuma")
 parser.add_argument('-w', dest='workload', default=__empty , help='', choices=__workload_l)
+parser.add_argument('-s', dest='stepsize', default=__empty , help='')
+parser.add_argument('-c', dest='chunksize', default=__empty , help='')
+parser.add_argument('-t', dest='totalsize', default=__empty , help='')
+
 
 try:
     args = parser.parse_args()
@@ -40,12 +36,8 @@ def dbg(s):
     if DBG==1:
         print s
 
-
-
 def msg(s):
     print '\n' + '>>>' +s + '\n'
-
-
 
 def cd(dirt):
 
@@ -105,17 +97,25 @@ def fb(wl, data):
 if __name__ == '__main__':
 
     w = args.workload
-    t_size = 1 * 1024 *1024
+    t = args.totalsize
+    s = args.stepsize
+    c = args.chunksize
 
     if w == __newfile:
-        for i in __chunk_size:
-            n = t_size/i
-            data = {"chunk_size": i, "nchunks": n}
-            fb('write_newfile', data)
+	__chunk_size = int(c)
+	__step_size = int(s)
+	__nfiles = int(t)/__step_size
+    	n = t_size/i
+	msg("chunk size : " + __chunk_size + " step_size : " + __step_size + " nfiles : " + __nfiles )
+        data = {"chunk_size": __chunk_size, "step_size": __step_size , "nfiles": __nfiles}
+        fb('write_newfile', data)
     elif w == __bigfile:
-        for i in __chunk_size:
-            data = {"chunk_size": i}
-            fb('write_bigfile', data)
+
+	__chunk_size = int(c)
+	__step_size = int(s)
+	__nchunks = int(t)/__chunk_size
+        data = {"chunk_size": __chunk_size, "nchunks": __nchunks}
+        fb('write_bigfile', data)
     elif w == __mmap:
         print "invalid"
     else:
