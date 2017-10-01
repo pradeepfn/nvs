@@ -7,7 +7,7 @@ import shutil
 DBG = 1
 
 __home = os.getcwd()
-__fbench_root = '/home/pradeep/yuma/bench-yuma'  # root of fbench script location
+__fbench_root = '/home/pradeep/checkout/nvm-yuma/yuma/bench-yuma'  # root of fbench script location
 
 __empty = ''
 __newfile = 'newfile'
@@ -115,7 +115,7 @@ if __name__ == '__main__':
         __chunk_size = c
         __step_size = s
         __nfiles = tonum(t) / tonum(s)
-        msg("chunk size : " + __chunk_size + " step_size : " + __step_size + " nfiles : " + __nfiles)
+        msg("chunk size : " + __chunk_size + " step_size : " + __step_size + " nfiles : " + str(__nfiles))
         data = {"chunk_size": __chunk_size, "step_size": __step_size, "nfiles": __nfiles}
         fb('write_newfile', data)
 
