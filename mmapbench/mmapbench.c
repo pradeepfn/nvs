@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include "utils.h"
 #include "config.h"
 #include "bench.h"
 
@@ -35,47 +36,44 @@
 //#define MAP_PERSISTENT MAP_SCM
 //#define MAP_FLAGS MAP_SHARED |MAP_PERSISTENT
 
-/*pVM related flags*/
-//#define MAP_FLAGS MAP_PRIVATE
-//#define __NR_nv_mmap_pgoff     301
+#define FILESIZE "2m"
 
- int nbufs = 128000; 
+
+int nbufs = 128000;
 char *shared_area = NULL;
 int flag[32];
 int ncores = 1;
 //char *filename = "/mnt/pmfs/share.dat";
-char *filename = "/mnt/mem/share.dat";
+char *filename = "share.dat";
+
+
 
 #ifdef __YUMA
-uint64_t filesize = 1 * 1024 * 1024;  //1MB
-uint64_t mmapsize = 1 * 1024 * 1024 *1024; // 1 GB
-int iosize = -1; // provided as a cmd argument
-void *data_chunk = NULL; // data chunk to be copied
-#endif
+
+char *data_chunk = NULL; // data chunk to be copied
+unsigned long stepsize, chunksize, filesize;
 
 void *
 memcpy_worker(void *args)
 {
     int id = (long) args;
-    int ret = 0;
     uint64_t i;
-	uint64_t j;
 
     affinity_set(id);
 
-	uint64_t nwrites = mmapsize/filesize;
-	uint64_t nchunks = filesize/iosize;
-	assert(iosize != -1);
+	uint64_t nsteps = stepsize/chunksize;
+	uint64_t nchunks = filesize/chunksize;
 
-    for (i = 0; i < nwrites; i++){
-		for(j=0; j < nchunks; j++){ 
-			memcpy(&shared_area[i*filesize + j*iosize],data_chunk,iosize);
-		}
-		//msync
+    for (i = 0; i < nchunks; i++){
+			memcpy(&shared_area[i*chunksize],data_chunk,chunksize);
+            //TODO: experiment point
+            flush_clflush(&shared_area[i*chunksize],chunksize);
+
 	}
     //printf("potato_test: thread#%d done.\n", core);
     return (void *) 0;
 }
+#endif
 
 void *
 worker(void *args){
@@ -133,12 +131,31 @@ int create_file(char* filename, size_t bytes) {
 }
 
 
+unsigned long tonum(char *ptr){
+
+    char str[100];
+    snprintf(str,100,"%s", ptr);
+    char c = str[strlen(str) - 1];
+    int temp = strlen(str);
+    str[temp - 1] = 0; // new null termination
+    switch (c) {
+        case 'k':
+            return atol(str) * 1024;
+        case 'm':
+            return atol(str) * 1024 * 1024;
+        case 'g':
+            return atol(str) * 1024 * 1024 * 1024;
+        default:
+            return atol(str);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
     int i, fd;
     pthread_t tid[32];
-    uint64_t start, end, usec;
+    uint64_t start, end, usec , sec;
     struct nvmap_arg_struct a;
     unsigned long offset = 0;
     int chunk_id = 120;
@@ -148,17 +165,43 @@ main(int argc, char **argv)
         flag[i] = 0;
     }
 #ifdef __YUMA
+    int c, err=0;
+    extern char *optarg;
+    extern int optind;
+    char *stepsizestr, *chunksizestr,*filesizestr = FILESIZE;
+
+
+
+    while((c = getopt(argc,argv,"s:c:")) != -1){
+        switch (c){
+            case 's':
+                stepsizestr = optarg;
+                break;
+            case 'c':
+                chunksizestr = optarg;
+                break;
+            case '?':
+                err = 1;
+                break;
+        }
+    }
+
+    filesize = tonum(filesizestr);
+    chunksize = tonum(chunksizestr);
+    stepsize = tonum(stepsizestr);
+
+    //debug
+    printf("file size  :  %s  ,  %ld \n", filesizestr,filesize);
+    printf("step size  :  %s  ,  %ld \n", stepsizestr,stepsize);
+    printf("chunk size :  %s  ,  %ld \n", chunksizestr,chunksize);
+#else
     if (argc > 1) {
         ncores = atoi(argv[1]);
     }
-#else
-    if (argc > 1) {
-        iosize = atoi(argv[1]);
-    }
 #endif
 #ifdef USEFILE
-#ifdef _YUMA
-    create_file(filename, (1 + nbufs) * 4096);
+#ifdef __YUMA
+    create_file(filename, filesize);
     fd = open(filename, O_RDONLY);
 #else
     create_file(filename, (1 + nbufs) * 4096);
@@ -174,19 +217,24 @@ main(int argc, char **argv)
     a.proc_id = proc_id;
     a.pflags = 1;
     a.noPersist = 0;
-    shared_area = mmap(0, (1 + nbufs) * 4096, PROT_READ, MAP_FLAGS, fd, 0);
 
-#ifdef _YUMA
-	data_chunk = malloc(iosize);
-	memset(data_chunk,1, iosize);
+#ifdef __YUMA
+    shared_area = mmap(NULL,filesize, PROT_READ|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+#else
+    shared_area = mmap(0, (1 + nbufs) * 4096, PROT_READ, MAP_FLAGS, fd, 0);
 #endif
-    //shared_area = (char *) syscall(__NR_nv_mmap_pgoff, 0,(1 + nbufs) * 4096,  PROT_READ | PROT_WRITE, MAP_PRIVATE| MAP_ANONYMOUS, &a);
     if (shared_area == MAP_FAILED) {
-            perror("Error mmapping the file");
-            exit(EXIT_FAILURE);
-     }   
-     printf("map %lu\n", (unsigned long)shared_area);
-         
+        perror("Error mmapping the file");
+        exit(EXIT_FAILURE);
+    }
+    printf("map %lu\n", (unsigned long)shared_area);
+
+#ifdef __YUMA
+	data_chunk = malloc(chunksize);
+	memset(data_chunk,1, chunksize);
+#endif
+
+    // TODO: mapping of pages prior running
     start = read_tsc();
     for (i = 0; i < ncores; i++) {
 #ifdef __YUMA
@@ -202,7 +250,15 @@ main(int argc, char **argv)
     
     end = read_tsc();
     usec = (end - start) * 1000000 / get_cpu_freq();
+
+    uint64_t mdata = filesize / (1024*1024); // in mb
+
+    float mbs = mdata * 1000000/(float)usec;
+
+    printf("mb/s : %f\n",mbs);
     printf("usec: %ld\t\n", usec);
+
+
 
     close(fd);
     return 0;
