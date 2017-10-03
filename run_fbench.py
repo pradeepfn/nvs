@@ -106,7 +106,10 @@ def fb(wl, data):
 def mmapb(mapsize, stepsize, chunksize):
 
     #clean /dev/shm
-    os.remove('/dev/shm/yumamapbench')
+    try:
+        os.remove('/dev/shm/yumamapbench')
+    except:
+        print '/dev/shm/yumamapbench does not exist'
 
     cd('mmapbench/build')
     cmd = 'bench -t' + mapsize + '-s' + stepsize + '-c' + chunksize
