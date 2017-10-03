@@ -6,8 +6,9 @@ set (MMAPBENCH_VERSION_MAJOR 1)
 set (MMAPBENCH_VERSION_MINOR 3)
 set(CMAKE_BUILD_TYPE Debug)
 
+add_definitions(-DNDEBUG)
 add_definitions(-D__YUMA)
-#set(CMAKE_C_FLAGS "-O2 -Wall")
+set(CMAKE_C_FLAGS "-O2 -Wall")
 
 set(SOURCES
         mmapbench.c)

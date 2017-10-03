@@ -41,8 +41,7 @@ int nbufs = 128000;
 char *shared_area = NULL;
 int flag[32];
 int ncores = 1;
-//char *filename = "/mnt/pmfs/share.dat";
-char *filename = "share.dat";
+char *filename = "/dev/shm/yumamapbench";
 
 
 

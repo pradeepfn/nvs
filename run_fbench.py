@@ -103,6 +103,16 @@ def fb(wl, data):
 
     cd(__home)
 
+def mmapb(mapsize, stepsize, chunksize):
+
+    #clean /dev/shm
+    os.remove('/dev/shm/yumamapbench')
+
+    cd('mmapbench/build')
+    cmd = 'bench -t' + mapsize + '-s' + stepsize + '-c' + chunksize
+    sh(cmd)
+    cd(__home)
+
 
 if __name__ == '__main__':
 
@@ -126,6 +136,6 @@ if __name__ == '__main__':
         data = {"chunk_size": __chunk_size, "nchunks": __nchunks}
         fb('write_bigfile', data)
     elif w == __mmap:
-        print "invalid"
+        mmapb(t, s, c)
     else:
         sys.exit(0)
