@@ -36,8 +36,6 @@
 //#define MAP_PERSISTENT MAP_SCM
 //#define MAP_FLAGS MAP_SHARED |MAP_PERSISTENT
 
-#define FILESIZE "2m"
-
 
 int nbufs = 128000;
 char *shared_area = NULL;
@@ -70,7 +68,6 @@ memcpy_worker(void *args)
             flush_clflush(&shared_area[i*chunksize],chunksize);
 
 	}
-    //printf("potato_test: thread#%d done.\n", core);
     return (void *) 0;
 }
 #endif
@@ -167,12 +164,15 @@ main(int argc, char **argv)
     int c, err=0;
     extern char *optarg;
     extern int optind;
-    char *stepsizestr, *chunksizestr,*filesizestr = FILESIZE;
+    char *stepsizestr, *chunksizestr,*filesizestr;
 
 
 
-    while((c = getopt(argc,argv,"s:c:")) != -1){
+    while((c = getopt(argc,argv,"t:s:c:")) != -1){
         switch (c){
+            case 't':
+                filesizestr = optarg;
+                break;
             case 's':
                 stepsizestr = optarg;
                 break;
