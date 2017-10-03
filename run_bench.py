@@ -112,7 +112,7 @@ def mmapb(mapsize, stepsize, chunksize):
         print '/dev/shm/yumamapbench does not exist'
 
     cd('mmapbench/build')
-    cmd = 'bench -t' + mapsize + '-s' + stepsize + '-c' + chunksize
+    cmd = './bench -t ' + mapsize + ' -s ' + stepsize + ' -c ' + chunksize
     sh(cmd)
     cd(__home)
 
