@@ -130,7 +130,6 @@ int create_file(char* filename, size_t bytes) {
 	return 0;
 }
 
-
 unsigned long tonum(char *ptr){
 
     char str[100];
@@ -202,7 +201,7 @@ main(int argc, char **argv)
 #ifdef USEFILE
 #ifdef __YUMA
     create_file(filename, filesize);
-    fd = open(filename, O_RDONLY);
+    fd = open(filename, O_RDWR);
 #else
     create_file(filename, (1 + nbufs) * 4096);
     fd = open(filename, O_RDONLY);
@@ -219,7 +218,7 @@ main(int argc, char **argv)
     a.noPersist = 0;
 
 #ifdef __YUMA
-    shared_area = mmap(NULL,filesize, PROT_READ|PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    shared_area = mmap(NULL,filesize, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 #else
     shared_area = mmap(0, (1 + nbufs) * 4096, PROT_READ, MAP_FLAGS, fd, 0);
 #endif
@@ -234,7 +233,12 @@ main(int argc, char **argv)
 	memset(data_chunk,1, chunksize);
 #endif
 
-    // TODO: mapping of pages prior running
+    uint64_t k;
+    uint64_t dummy = 0;
+    for(k=0; k< filesize; k=k+2048){
+        dummy += shared_area[k];
+    }
+    printf("dummy value access to preload pages : %ld\n", dummy );
     start = read_tsc();
     for (i = 0; i < ncores; i++) {
 #ifdef __YUMA
