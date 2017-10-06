@@ -41,7 +41,7 @@ int nbufs = 128000;
 char *shared_area = NULL;
 int flag[32];
 int ncores = 1;
-char *filename = "/dev/shm/yumamapbench";
+char *filename = "/mnt/pmfs/yumamapbench";
 
 
 
@@ -254,9 +254,9 @@ main(int argc, char **argv)
     end = read_tsc();
     usec = (end - start) * 1000000 / get_cpu_freq();
 
-    uint64_t mdata = filesize / (1024*1024); // in mb
+    uint64_t mdata = filesize / (1024*1024); // in Mb
 
-    float mbs = mdata * 1000000/(float)usec;
+    float mbs = mdata * 8 * 1000000/(float)usec;
 
     printf("mb/s : %f\n",mbs);
     printf("usec: %ld\t\n", usec);
