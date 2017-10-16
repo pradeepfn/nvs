@@ -1,4 +1,4 @@
-set $dir=/tmp
+set $dir=/mnt/pmfs
 set $nfiles=%(nfiles)s
 set $filesize=%(step_size)s
 set $iosize=%(chunk_size)s

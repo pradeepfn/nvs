@@ -7,17 +7,19 @@ import shutil
 DBG = 1
 
 __home = os.getcwd()
-__fbench_root = '/home/pradeep/checkout/nvm-yuma/yuma/bench-yuma'  # root of fbench script location
+__fbench_root = '/nethome/pfernando3/yuma/bench-yuma'  # root of fbench script location
 
 __empty = ''
 __newfile = 'newfile'
 __bigfile = 'bigfile'
 __mmap = 'mmap'
+__mmapnoflush = 'mmapnoflush'
 
 __workload_l = []
 __workload_l.append(__newfile)
 __workload_l.append(__bigfile)
 __workload_l.append(__mmap)
+__workload_l.append(__mmapnoflush)
 
 parser = argparse.ArgumentParser(prog="runscript", description="script to run yuma")
 parser.add_argument('-w', dest='workload', default=__empty, help='', choices=__workload_l)
@@ -112,7 +114,7 @@ def mmapb(mapsize, stepsize, chunksize):
         print '/dev/shm/yumamapbench does not exist'
 
     cd('mmapbench/build')
-    cmd = 'bench -t' + mapsize + '-s' + stepsize + '-c' + chunksize
+    cmd = './bench -t ' + mapsize + ' -s ' + stepsize + ' -c ' + chunksize
     sh(cmd)
     cd(__home)
 
@@ -139,6 +141,8 @@ if __name__ == '__main__':
         data = {"chunk_size": __chunk_size, "nchunks": __nchunks}
         fb('write_bigfile', data)
     elif w == __mmap:
+        mmapb(t, s, c)
+    elif w == __mmapnoflush:
         mmapb(t, s, c)
     else:
         sys.exit(0)

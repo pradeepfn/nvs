@@ -1,11 +1,11 @@
-set $dir=/tmp
+set $dir=/mnt/pmfs
 set $cached=false
 set $count=%(nchunks)s
 set $iosize=%(chunk_size)s
 set $nthreads=1
-set $sync=false
+set $sync=true
 
-define file name=bigfile,path=$dir,size=0,prealloc,cached=$cached
+define file name=bigfile,path=$dir,size=0,prealloc
 
 define process name=filewriter,instances=1
 {
