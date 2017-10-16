@@ -45,7 +45,7 @@ char *filename = "/dev/shm/yumamapbench";
 
 
 
-#ifdef __YUMA
+#if defined(__YUMA)
 
 char *data_chunk = NULL; // data chunk to be copied
 unsigned long stepsize, chunksize, filesize;
@@ -68,6 +68,36 @@ memcpy_worker(void *args)
 
 	}
     return (void *) 0;
+}
+
+#elif defined(__YUMA_STREAM)
+
+char *data_chunk = NULL; // data chunk to be copied
+unsigned long stepsize, chunksize, filesize;
+
+
+void *
+streamcpy_worker(void *args)
+{
+    int id = (long) args;
+    uint64_t i;
+
+    affinity_set(id);
+
+    uint64_t nsteps = stepsize/chunksize;
+    uint64_t nchunks = filesize/chunksize;
+
+    //char *aligned_shared_area = (char *)(((uintptr_t)shared_area + 15) & 15); // aligning the mapped memory to next 16 bytes
+    char *aligned_shared_area =  (((16-1) & (uintptr_t)shared_area) ? (((uintptr_t)shared_area + 16) & ~(16-1)):shared_area);
+
+    for (i = 0; i < nchunks; i++){
+        streaming_memcpy(&aligned_shared_area[i*chunksize],data_chunk,chunksize);
+        //TODO: experiment point
+        _mm_sfence();
+
+    }
+    return (void *) 0;
+
 }
 #endif
 
@@ -159,7 +189,7 @@ main(int argc, char **argv)
     for (i = 0; i < ncores; i++) {
         flag[i] = 0;
     }
-#ifdef __YUMA
+#if defined(__YUMA) || defined(__YUMA_STREAM)
     int c, err=0;
     extern char *optarg;
     extern int optind;
@@ -186,6 +216,10 @@ main(int argc, char **argv)
 
     filesize = tonum(filesizestr);
     chunksize = tonum(chunksizestr);
+    if(chunksize % 16){
+        log_err("chunks size should be multiples of 16");
+        exit(-1);
+    }
     stepsize = tonum(stepsizestr);
 
     //debug
@@ -198,8 +232,11 @@ main(int argc, char **argv)
     }
 #endif
 #ifdef USEFILE
-#ifdef __YUMA
+#if  defined(__YUMA)
     create_file(filename, filesize);
+    fd = open(filename, O_RDWR);
+#elif defined(__YUMA_STREAM)
+    create_file(filename, filesize+4096);
     fd = open(filename, O_RDWR);
 #else
     create_file(filename, (1 + nbufs) * 4096);
@@ -216,19 +253,27 @@ main(int argc, char **argv)
     a.pflags = 1;
     a.noPersist = 0;
 
-#ifdef __YUMA
+#if defined(__YUMA)
     shared_area = mmap(NULL,filesize, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+#elif  defined(__YUMA_STREAM)
+    shared_area = mmap(NULL,filesize+4096, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
 #else
     shared_area = mmap(0, (1 + nbufs) * 4096, PROT_READ, MAP_FLAGS, fd, 0);
 #endif
+
     if (shared_area == MAP_FAILED) {
         perror("Error mmapping the file");
         exit(EXIT_FAILURE);
     }
     printf("map %lu\n", (unsigned long)shared_area);
 
-#ifdef __YUMA
-	data_chunk = malloc(chunksize);
+#if defined(__YUMA) || defined(__YUMA_STREAM)
+	//data_chunk = malloc(chunksize);
+    int ret = posix_memalign((void **)&data_chunk, 16 , chunksize);
+    if (ret) {
+        perror("Error allocating aligned memory");
+        exit(EXIT_FAILURE);
+    }
 	memset(data_chunk,1, chunksize);
 #endif
 
@@ -240,11 +285,17 @@ main(int argc, char **argv)
     printf("dummy value access to preload pages : %ld\n", dummy );
     start = read_tsc();
     for (i = 0; i < ncores; i++) {
-#ifdef __YUMA
+#if defined(__YUMA)
         pthread_create(&tid[i], NULL, memcpy_worker, (void *) (long) i);
+        log_info("creating worker for YUMA");
+#elif defined(__YUMA_STREAM)
+        pthread_create(&tid[i], NULL, streamcpy_worker, (void *) (long) i);
+        log_info("creating worker for YUMA stream");
 #else
         pthread_create(&tid[i], NULL, worker, (void *) (long) i);
+        log_info("creating worker for regular");
 #endif
+
     }
 
     for (i = 0; i < ncores; i++) {

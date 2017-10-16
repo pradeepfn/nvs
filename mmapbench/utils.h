@@ -9,6 +9,8 @@
 #include <sched.h>
 #include <stdio.h>
 #include <x86intrin.h>
+#include <assert.h>
+#include "debug.h"
 
 #define FLUSH_ALIGN ((uintptr_t)64)
 
@@ -67,6 +69,42 @@ flush_clflushopt(const void *addr, size_t len)
 }*/
 
 
+
+/* Copies memory from src to dst, using SSE 4.1's MOVNTDQA to accelerate write performance
+ */
+void
+ streaming_memcpy(void *dst, void *src, size_t len)
+{
+    char *d = dst;
+    char *s = src;
+
+    /* If dst and src are not co-aligned, its an error */
+    if (((uintptr_t)d & 15) || ((uintptr_t)s & 15)) {
+        log_err("dst or source does not have 16 byte starting boundry");
+        exit(-1);
+    }
+
+    if (len%16){
+        log_err("no multiples of sixteen bytes");
+        exit(-1);
+    }
+
+    while (len >= 64) {
+        __m128i *dst_cacheline = (__m128i *)d;
+        __m128i *src_cacheline = (__m128i *)s;
+
+        _mm_store_si128(dst_cacheline + 0, src_cacheline[0]);
+        _mm_store_si128(dst_cacheline + 1, src_cacheline[1]);
+        _mm_store_si128(dst_cacheline + 2, src_cacheline[2]);
+        _mm_store_si128(dst_cacheline + 3, src_cacheline[3]);
+
+        d += 64;
+        s += 64;
+        len -= 64;
+    }
+
+    assert(len == 0);
+}
 
 
 
