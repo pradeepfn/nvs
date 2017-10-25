@@ -2,6 +2,7 @@ add_subdirectory(client)
 add_subdirectory(common)
 add_subdirectory(ns)
 add_subdirectory(runtime)
+add_subdirectory(sheap)
 
 #we populate YUMA_SRC variable within sub-directories
 

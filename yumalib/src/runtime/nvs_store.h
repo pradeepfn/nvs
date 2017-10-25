@@ -2,7 +2,6 @@
 // Created by pradeep on 9/14/17.
 //
 #include <common/list.h>
-#include <nvmm/memory_manager.h>
 #include "nvs/store.h"
 #include "key.h"
 
@@ -15,7 +14,7 @@ namespace nvs {
      * Store representation. This class abstraction mutate the
      * persistent state on the NVM transparent to the application
      */
-    class GTStore : public Store {
+    class NVSStore : public Store {
     private:
         objkey_t *key_head; // starting address of key-region
 
@@ -23,7 +22,7 @@ namespace nvs {
         store_t *srl_store; // serialized verison of this store object
         RuntimeManager *rt;
 
-        nvmm::MemoryManager *mm; // memory manager of the metadata heap
+        MemoryManager *mm; // memory manager of the metadata heap
 
         // shared memory list structure
         List<objkey_t,std::string> *keyList;
@@ -35,9 +34,9 @@ namespace nvs {
     protected:
     public:
 
-        GTStore(store_t *st);
+        NVSStore(store_t *st);
 
-        GTStore(uint64_t *addr, std::string storeId);
+        NVSStore(uint64_t *addr, std::string storeId);
 
         ~GTStore();
 

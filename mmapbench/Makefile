@@ -1,5 +1,5 @@
 CC=gcc
-CPPFLAGS=-D__YUMA
+CPPFLAGS=-D__YUMA_STREAM
 CFLAGS=-O2 -Wall -pthread
 
 default: mmapbench

@@ -5,14 +5,12 @@
 #include <cstdint>
 #include <nvs/runtimeManager.h>
 #include <common/nanassert.h>
-#include <nvmm/error_code.h>
-#include <nvmm/global_ptr.h>
 #include "serializationTypes.h"
-#include "gtstore.h"
+#include "nvs_store.h"
 
 namespace nvs{
 
-    GTStore::GTStore(store_t *st){
+    NVSStore::NVSStore(store_t *st){
 
         // store structure has the id to metadata heap
         Heap *heap = NULL;
@@ -26,21 +24,21 @@ namespace nvs{
 
     }
 
-    GTStore::GTStore(uint64_t *addr, std::string storeId):key_head((objkey_t *)addr),storeId(storeId)
+    NVSStore::NVSStore(uint64_t *addr, std::string storeId):key_head((objkey_t *)addr),storeId(storeId)
     {
         srl_store = (store_t *) addr;
-        I(GTStoreId.compare(std:string(srl_GTStore->GTStoreId)));
+        I(NVSStoreId.compare(std:string(srl_NVSStore->NVSStoreId)));
 
 
 
-        /* we create a region to GTStore keys for this GTStore */
-        //kr_addr = rt->findKeyRegion(GTStoreId);
+        /* we create a region to NVSStore keys for this NVSStore */
+        //kr_addr = rt->findKeyRegion(NVSStoreId);
     }
 
-    GTStore::~GTStore() {}
+    NVSStore::~NVSStore() {}
 
     /* traverse the list of key structs and create a new key if not found*/
-    ErrorCode GTStore::create_obj(std::string key, uint64_t size, uint64_t **obj_addr)
+    ErrorCode NVSStore::create_obj(std::string key, uint64_t size, uint64_t **obj_addr)
     {
         //create an key structure in shared heap and populate
         nvmm::GlobalPtr ptr=  this->heap->Alloc(sizeof(key_t));
@@ -57,7 +55,7 @@ namespace nvs{
      * address and size for put operation as the runtime already know that
      * detail.
      */
-    ErrorCode GTStore::put(std::string key, uint64_t version)
+    ErrorCode NVSStore::put(std::string key, uint64_t version)
     {
 
             // first traverse the map and find the key object
@@ -75,7 +73,7 @@ namespace nvs{
     /*
      *  the object address is redundant here
      */
-    ErrorCode GTStore::get(std::string key, uint64_t version, uint64_t **obj_addr)
+    ErrorCode NVSStore::get(std::string key, uint64_t version, uint64_t **obj_addr)
     {
 
         // first traverse the map and find the key object
@@ -85,16 +83,16 @@ namespace nvs{
 
     }
 
-    ErrorCode GTStore::close() {}
+    ErrorCode NVSStore::close() {}
 
 
-    Key * GTStore::findKey(std::string key) {
+    Key * NVSStore::findKey(std::string key) {
 
 
 
     }
 
-    objkey_t * GTStore::lptr(uint64_t offset) {
+    objkey_t * NVSStore::lptr(uint64_t offset) {
             return (objkey_t *)(key_head + offset);
         }
 }
