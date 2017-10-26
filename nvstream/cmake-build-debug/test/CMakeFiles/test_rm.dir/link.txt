@@ -1,0 +1,1 @@
+/usr/bin/c++   -g -std=c++11 -Wno-write-strings -g   CMakeFiles/test_rm.dir/test_rm.cc.o  -o test_rm  -L/usr/local/lib -rdynamic libyuma_test.a -lpthread ../third-party/gtest/libgtest.a /usr/local/lib/libboost_log.so -lboost_filesystem -lboost_system -lnvmm ../src/libyuma.a -lboost_thread -lboost_log -lpthread -Wl,-rpath,/usr/local/lib 

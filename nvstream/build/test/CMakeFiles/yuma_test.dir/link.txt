@@ -1,0 +1,2 @@
+/usr/bin/ar cq libyuma_test.a  CMakeFiles/yuma_test.dir/test.cc.o
+/usr/bin/ranlib libyuma_test.a

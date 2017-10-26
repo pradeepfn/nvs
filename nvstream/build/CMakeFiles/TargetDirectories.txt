@@ -1,0 +1,7 @@
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/example/CMakeFiles/writer.dir
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/example/CMakeFiles/reader.dir
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/src/CMakeFiles/yuma.dir
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/test/CMakeFiles/yuma_test.dir
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/third-party/gtest/CMakeFiles/gtest_main.dir
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/test/CMakeFiles/test_rm.dir
+/home/pradeep/checkout/nvm-yuma/yuma/nvstream/build/third-party/gtest/CMakeFiles/gtest.dir
