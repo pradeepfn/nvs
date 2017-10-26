@@ -7,6 +7,7 @@
 
 
 #include <string>
+#include <nvs/pool_id.h>
 
 #include "nvs/errorCode.h"
 
@@ -26,6 +27,10 @@ namespace nvs {
         ErrorCode Close();
         bool Exist();
         bool IsOpen();
+
+        ErrorCode addLog(PoolId id);
+        bool isLogExist(PoolId id);
+
         void *Addr();
 
     private:

@@ -16,6 +16,12 @@ namespace nvs {
 
         //key error codes
         KEY_NOT_EXIST,
+
+
+        // heap
+        HEAP_NOT_EXIST,
+        ID_IN_USE
+
     };
 
 }

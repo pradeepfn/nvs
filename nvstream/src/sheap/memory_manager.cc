@@ -64,17 +64,25 @@ namespace nvs {
                 exit(1);
             }
         }
+        ErrorCode e_ret = root_heap_.Open();
 
-        // init/create heap root
-
+        if(e_ret == HEAP_NOT_EXIST){
+            e_ret = root_heap_.Create();
+            if(e_ret != NO_ERROR){
+                LOG(fatal) << "NVS: failed to create new heap";
+                exit(1);
+            }
+            // heap creation successful
+            e_ret = root_heap_.Open();
+            if(e_ret != NO_ERROR){
+                LOG(fatal) << "NVS: fail opening heap";
+                exit(1);
+            }
+        }
 
         is_ready_ = true;
         return NO_ERROR;
     }
-
-
-
-
 
     ErrorCode MemoryManager::Impl_::Final()
     {
@@ -92,7 +100,32 @@ namespace nvs {
 
     ErrorCode MemoryManager::Impl_::CreateLog(PoolId id, size_t size)
     {
+        assert(is_ready_ == true);
+        assert(id > 0);
 
+        ErrorCode ret = NO_ERROR;
+
+        //TODO: heap root mod lock acquire
+
+        if (root_heap_.isLogExist(id)){
+            //TODO: release lock
+            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << "in use";
+            return ID_IN_USE;
+        }
+
+        // we create a new log
+        Log shared_log(id);
+        ret = shared_log.Create(size);
+
+        //store the log details on heap-root. pmem transaction
+        ret = root_heap_.addLog(id);
+        //TODO: heap root mod lock release
+
+        if(ret != NO_ERROR){
+            LOG(fatal) << "MemoryManager : error" << ret;
+        }
+
+        return ret;
     }
 
     ErrorCode MemoryManager::Impl_::DestroyLog(PoolId id)
