@@ -1,7 +1,5 @@
-//
-// Created by pradeep on 9/14/17.
-//
-#include <common/list.h>
+
+#include <nvs/memory_manager.h>
 #include "nvs/store.h"
 #include "key.h"
 
@@ -24,8 +22,6 @@ namespace nvs {
 
         MemoryManager *mm; // memory manager of the metadata heap
 
-        // shared memory list structure
-        List<objkey_t,std::string> *keyList;
 
         Key *findKey(std::string key);
 

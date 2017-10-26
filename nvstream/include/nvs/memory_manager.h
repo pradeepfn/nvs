@@ -28,6 +28,8 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <sheap/log.h>
+#include "global_ptr.h"
 
 
 namespace nvs{
@@ -44,9 +46,9 @@ namespace nvs{
 
         ErrorCode DestroyLog(PoolId id);
 
-        ErrorCode FindLog(PoolId id, Heap **heap);
+        ErrorCode FindLog(PoolId id, Log **log);
 
-        Heap *FindLog(PoolId id);
+        Log *FindLog(PoolId id);
 
     private:
         static std::atomic<MemoryManager*> instance_;

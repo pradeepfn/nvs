@@ -7,7 +7,6 @@
 
 #include <cstdint>
 #include <string>
-#include <common/list.h>
 #include "nvs/errorCode.h"
 #include "version.h"
 
@@ -23,7 +22,6 @@ namespace nvs {
 
         version_t *version_root; // root of the version stuctures
 
-        List<version_t,std::string> *versionList;
         /* bit field to keep track of modified pages of the buffer */
         char *barry;
         /*vector of versions */

@@ -1,6 +1,12 @@
 
 #ifndef NVS_GLOBAL_PTR_H_H
 #define NVS_GLOBAL_PTR_H_H
+
+#include <cstdint>
+#include <ostream>
+
+#include "pool_id.h"
+
 namespace  nvs{
 
     // NVStream GlobalPtr consists of two parts: pool ID of the log, and offset
@@ -10,7 +16,7 @@ namespace  nvs{
         static_assert(sizeof(GlobalPtrT)== 8, "Invalid GlobalPtrT");
         static_assert(sizeof(PoolIdT)*8 >= PoolIdTSize, "Invalid PoolIdT");
         static_assert(sizeof(OffsetT)*8 >= OffsetTSize, "Invalid OffsetT");
-        static_assert(ShelfIdTSize+ReserveTSize+OffsetTSize <= GlobalPtrTSize, "Invalid sizes");
+        static_assert(PoolIdTSize+OffsetTSize <= GlobalPtrTSize, "Invalid sizes");
         static_assert(GlobalPtrTSize<=64, "GlobalPtr is at most 8 bytes"); // must fit into one uint64_t
 
     public:
@@ -42,7 +48,7 @@ namespace  nvs{
 
         inline bool IsValid() const
         {
-            return GetShelfId().IsValid() && IsValidOffset(GetOffset());
+            return GetPoolId().IsValid() && IsValidOffset(GetOffset());
         }
 
         inline static bool IsValidOffset(OffsetT offset)
@@ -50,7 +56,7 @@ namespace  nvs{
             return offset != 0;
         }
 
-        inline ShelfIdT GetPoolId() const
+        inline PoolIdT GetPoolId() const
         {
             return DecodePoolId(global_ptr_);
         }
@@ -82,9 +88,9 @@ namespace  nvs{
             return ((GlobalPtrT)pool_id.GetPoolId() << (kPoolIdShift)) + offset;
         }
 
-        inline ShelfIdT DecodePoolId(GlobalPtrT global_ptr) const
+        inline PoolIdT DecodePoolId(GlobalPtrT global_ptr) const
         {
-            return ShelfIdT((PoolIdStorageType)(global_ptr >> kShelfIdShift));
+            return PoolIdT((PoolIdStorageType)(global_ptr >> kPoolIdShift));
         }
 
         inline OffsetT DecodeOffset(GlobalPtrT global_ptr) const

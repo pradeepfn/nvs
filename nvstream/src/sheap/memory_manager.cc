@@ -1,17 +1,12 @@
 
 #include <memory>
-
-#include <stddef.h>
-#include <stdint.h>
 #include <mutex>
 #include <atomic>
 #include <boost/filesystem.hpp>
 #include <nvs/log.h>
+
 #include "nvs/errorCode.h"
 #include "nvs/memory_manager.h"
-#include "nvs/pool_id.h"
-#include "nvs/global_ptr.h"
-#include "log.h"
 #include "root.h"
 
 #define NVS_BASE_DIR  "/dev/shm"
@@ -70,12 +65,16 @@ namespace nvs {
             }
         }
 
-
+        // init/create heap root
 
 
         is_ready_ = true;
         return NO_ERROR;
     }
+
+
+
+
 
     ErrorCode MemoryManager::Impl_::Final()
     {
@@ -101,7 +100,7 @@ namespace nvs {
 
     }
 
-    ErrorCode MemoryManager::Impl_::FindLog(PoolId id, Log **heap)
+    ErrorCode MemoryManager::Impl_::FindLog(PoolId id, Log **log)
     {
 
     }
@@ -110,9 +109,6 @@ namespace nvs {
     {
 
     }
-
-
-
 
     GlobalPtr MemoryManager::Impl_::LocalToGlobal(void *addr)
     {

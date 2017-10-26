@@ -7,6 +7,7 @@
 
 #include <stddef.h>
 #include <libpmemlog.h>
+#include <nvs/global_ptr.h>
 #include "nvs/errorCode.h"
 #include "nvs/pool_id.h"
 

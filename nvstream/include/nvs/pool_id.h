@@ -5,6 +5,8 @@
 #ifndef NVS_ID_H
 #define NVS_ID_H
 
+#include <cstdint>
+
 namespace nvs {
 
     using PoolIdStorageType = uint8_t;
