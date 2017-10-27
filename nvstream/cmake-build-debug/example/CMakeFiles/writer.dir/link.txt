@@ -1,1 +1,0 @@
-/usr/bin/c++   -g -std=c++11 -Wno-write-strings -g   CMakeFiles/writer.dir/writer.cc.o  -o writer  -L/usr/local/lib -rdynamic ../src/libyuma.a -lnvmm -lpthread -lboost_thread -lboost_log -Wl,-rpath,/usr/local/lib 
