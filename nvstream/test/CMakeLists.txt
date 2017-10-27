@@ -6,7 +6,7 @@ set(YUMA_TEST_SRC
         )
 
 add_library(yuma_test STATIC ${YUMA_TEST_SRC})
-target_link_libraries(yuma_test boost_thread boost_log boost_filesystem boost_system nvmm yuma)
+target_link_libraries(yuma_test boost_thread boost_log boost_filesystem boost_system pmemobj pmemlog yuma)
 
 function (add_yuma_test file_name)
     add_executable(${file_name} ${file_name}.cc)
@@ -16,4 +16,5 @@ function (add_yuma_test file_name)
     add_test(NAME ${file_name} COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${file_name})
 endfunction()
 
-add_yuma_test(test_rm)
+
+add_subdirectory(memory_manager)

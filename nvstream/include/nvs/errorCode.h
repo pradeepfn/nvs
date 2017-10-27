@@ -20,7 +20,12 @@ namespace nvs {
 
         // heap
         HEAP_NOT_EXIST,
-        ID_IN_USE
+        ID_IN_USE,
+        LOG_EXIST,
+        OPEN_FAILED,
+        PMEM_ERROR,
+        ID_NOT_FOUND,
+        ID_FOUND
 
     };
 

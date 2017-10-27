@@ -9,6 +9,9 @@ include_directories(/usr/include)
 link_directories(/usr/local/lib)
 include_directories(/usr/local/include)
 
+# nvml directories
+include_directories(${PROJECT_SOURCE_DIR}/../../nvml/src/include)
+link_directories(${PROJECT_SOURCE_DIR}/../../nvml/src/debug)
 
 #version number
 set (NVS_VERSION_MAJOR 1)
@@ -60,7 +63,7 @@ include_directories(${PROJECT_SOURCE_DIR}/third-party/gtest/include)
 
 add_subdirectory(src)
 add_subdirectory(test)
-add_subdirectory(example)
+#add_subdirectory(example)
 add_subdirectory(include)
 
 

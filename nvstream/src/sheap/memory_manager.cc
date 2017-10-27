@@ -143,6 +143,11 @@ namespace nvs {
 
     }
 
+    void* MemoryManager::Impl_::GlobalToLocal(GlobalPtr ptr) {
+
+
+    }
+
     GlobalPtr MemoryManager::Impl_::LocalToGlobal(void *addr)
     {
 

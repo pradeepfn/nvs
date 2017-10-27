@@ -35,9 +35,7 @@ namespace  nvs{
             return is_open_;
         }
 
-
-
-        GlobalPtr append (size_t size);
+        GlobalPtr append (char *data,size_t size);
         void Free (GlobalPtr global_ptr);
 
         void *GlobalToLocal(GlobalPtr global_ptr);
@@ -48,6 +46,7 @@ namespace  nvs{
         static int const kShelfIdx = 0; // this is the only shelf in the pool
 
         PoolId pool_id_;
+        std::string logPath;
         PMEMlogpool *lp;
         size_t size_;
         RootHeap *rootHeap;

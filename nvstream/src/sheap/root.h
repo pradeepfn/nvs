@@ -8,6 +8,7 @@
 
 #include <string>
 #include <nvs/pool_id.h>
+#include <libpmemobj.h>
 
 #include "nvs/errorCode.h"
 
@@ -34,9 +35,7 @@ namespace nvs {
         void *Addr();
 
     private:
-        static size_t const rootSize = 128*1024*1024; // 128MB
         std::string root_file_path;
-        struct root_heap *rp;
         PMEMobjpool *pop;
     };
 
