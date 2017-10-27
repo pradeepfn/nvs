@@ -54,10 +54,10 @@ namespace nvs {
     {
 
         // create SHELF_BASE_DIR if it does not exist
-        boost::filesystem::path shelf_base_path = boost::filesystem::path(NVS_BASE_DIR);
-        if (boost::filesystem::exists(shelf_base_path) == false)
+        boost::filesystem::path nvs_base_path = boost::filesystem::path(NVS_BASE_DIR);
+        if (boost::filesystem::exists(nvs_base_path) == false)
         {
-            bool ret = boost::filesystem::create_directory(shelf_base_path);
+            bool ret = boost::filesystem::create_directory(nvs_base_path);
             if (ret == false)
             {
                 LOG(fatal) << "NVS: Failed to create SHELF_BASE_DIR " << NVS_BASE_DIR;
