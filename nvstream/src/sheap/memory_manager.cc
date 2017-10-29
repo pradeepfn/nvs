@@ -135,22 +135,82 @@ namespace nvs {
 
     ErrorCode MemoryManager::Impl_::FindLog(PoolId id, Log **log)
     {
+        assert(is_ready);
+        assert(id>0);
 
+        ErrorCode  ret = NO_ERROR;
+
+        //TODO : heap root mod lock
+        if(!root_heap_.isLogExist(id)){
+            //TODO: release lock
+            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << ")";
+            return ID_IN_USE;
+        }
+        //TODO: release lock
+        *log = new Log(id);
+
+        return NO_ERROR;
     }
 
     Log *MemoryManager::Impl_::FindLog(PoolId id)
     {
+        assert(is_ready);
+        assert(id>0);
 
+        ErrorCode  ret = NO_ERROR;
+
+        //TODO : heap root mod lock
+        if(!root_heap_.isLogExist(id)){
+            //TODO: release lock
+            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << ")";
+        }
+        //TODO: release lock
+        Log *shared_log = new Log(id);
+        return shared_log;
     }
 
     void* MemoryManager::Impl_::GlobalToLocal(GlobalPtr ptr) {
+        assert(is_ready_ == true);
 
+        if (ptr.IsValid() == false)
+        {
+            LOG(error) << "MemoryManager: Invalid Global Pointer: " << ptr;
+            return NULL;
+        }
+
+        ErrorCode ret = NO_ERROR;
+        PoolId pool_id = ptr.GetPoolId();
+        Offset offset = ptr.GetOffset();
+        void *addr = RootHeap::FindLogBase(pool_id);
+        if (addr != NULL)
+        {
+            addr = (void*)((char*)addr+offset);
+            LOG(trace) << "GetLocalPtr: global ptr" << ptr
+                       << " offset " << offset
+                       << " returned ptr " << (uintptr_t)addr;
+        }
+        return addr;
 
     }
 
     GlobalPtr MemoryManager::Impl_::LocalToGlobal(void *addr)
     {
-
+        void *base = NULL;
+        PoolId pool_id = RootHeap::FindLogPool(addr, base); // pass by reference
+        if (pool_id.IsValid() == false)
+        {
+            LOG(error) << "GetGlobalPtr failed";
+            return GlobalPtr(); // return an invalid global pointer
+        }
+        else
+        {
+            Offset offset = (uintptr_t)addr - (uintptr_t)base;
+            GlobalPtr global_ptr = GlobalPtr(shelf_id, offset);
+            LOG(trace) << "GetGlobalPtr: local ptr " << (uintptr_t)addr
+                       << " offset " << offset
+                       << " returned ptr " << global_ptr;
+            return global_ptr;
+        }
     }
 
 
