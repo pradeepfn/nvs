@@ -190,7 +190,6 @@ namespace nvs {
                        << " returned ptr " << (uintptr_t)addr;
         }
         return addr;
-
     }
 
     GlobalPtr MemoryManager::Impl_::LocalToGlobal(void *addr)
@@ -205,7 +204,7 @@ namespace nvs {
         else
         {
             Offset offset = (uintptr_t)addr - (uintptr_t)base;
-            GlobalPtr global_ptr = GlobalPtr(shelf_id, offset);
+            GlobalPtr global_ptr = GlobalPtr(pool_id, offset);
             LOG(trace) << "GetGlobalPtr: local ptr " << (uintptr_t)addr
                        << " offset " << offset
                        << " returned ptr " << global_ptr;

@@ -4,7 +4,7 @@
 #include "test.h"
 
 /*
- * testing the runtime manager API
+ * testing the kvstore manager API
  */
 
 namespace nvs {

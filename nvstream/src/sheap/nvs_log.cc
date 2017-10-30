@@ -116,7 +116,7 @@ log_descr_check(PMEMlogpool *plp, size_t poolsize)
 }
 
 /*
- * log_runtime_init -- (internal) initialize log memory pool runtime data
+ * log_runtime_init -- (internal) initialize log memory pool kvstore data
  */
 static int
 log_runtime_init(PMEMlogpool *plp, int rdonly)
@@ -206,7 +206,7 @@ pmemlog_createU(const char *path, size_t poolsize, mode_t mode)
 	/* create pool descriptor */
 	log_descr_create(plp, rep->repsize);
 
-	/* initialize runtime parts */
+	/* initialize kvstore parts */
 	if (log_runtime_init(plp, 0) != 0) {
 		ERR("pool initialization failed");
 		goto err;
@@ -306,7 +306,7 @@ log_open_common(const char *path, int cow)
 		goto err;
 	}
 
-	/* initialize runtime parts */
+	/* initialize kvstore parts */
 	if (log_runtime_init(plp, set->rdonly) != 0) {
 		ERR("pool initialization failed");
 		goto err;

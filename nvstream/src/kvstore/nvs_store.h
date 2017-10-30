@@ -1,40 +1,31 @@
 
 #include <nvs/memory_manager.h>
+#include <map>
 #include "nvs/store.h"
 #include "key.h"
+#include "constants.h"
+#include "object.h"
 
 #ifndef YUMA_IGTStore_H
 #define YUMA_IGTStore_H
 
 namespace nvs {
 
-/*
-     * Store representation. This class abstraction mutate the
-     * persistent state on the NVM transparent to the application
-     */
     class NVSStore : public Store {
     private:
-        objkey_t *key_head; // starting address of key-region
 
         std::string storeId;
-        store_t *srl_store; // serialized verison of this store object
-        RuntimeManager *rt;
-
+        ProcessId pid;
         MemoryManager *mm; // memory manager of the metadata heap
-
-
         Key *findKey(std::string key);
-
         objkey_t *lptr(uint64_t offset);
+        std::map<std::string, Object *> objectMap;
 
     protected:
     public:
+        NVSStore(std::string storeId, ProcessId pid);
 
-        NVSStore(store_t *st);
-
-        NVSStore(uint64_t *addr, std::string storeId);
-
-        ~GTStore();
+        ~NVSStore();
 
         ErrorCode create_obj(std::string key, uint64_t size, uint64_t **obj_addr);
 
@@ -42,7 +33,6 @@ namespace nvs {
 
         ErrorCode get(std::string key, uint64_t version, uint64_t **obj_addr);
 
-        ErrorCode close();
     };
 
 }

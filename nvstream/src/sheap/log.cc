@@ -3,7 +3,8 @@
 
 namespace nvs{
 
-    Log::Log(PoolId pool_id):pool_id_(pool_id)
+    Log::Log(std::string logPath, PoolId pool_id)
+            :logPath(logPath),pool_id_(pool_id)
     {
     }
 

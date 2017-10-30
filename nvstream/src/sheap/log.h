@@ -20,7 +20,7 @@ namespace  nvs{
     {
     public:
         Log() = delete;
-        Log(PoolId pool_id);
+        Log(std::string logpath, PoolId pool_id);
         ~Log();
 
         ErrorCode Create(size_t shelf_size);
