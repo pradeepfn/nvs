@@ -45,6 +45,7 @@ namespace nvs {
 
         bool is_ready_;
         RootHeap root_heap_;
+        std::map<PoolId, Log *> idToLogMap;
 
     };
 
@@ -92,7 +93,6 @@ namespace nvs {
             LOG(fatal) << "NVS: Root Heap close failed" << rootHeapPath;
             exit(1);
         }
-
         is_ready_ = false;
         return NO_ERROR;
     }
@@ -113,11 +113,18 @@ namespace nvs {
             return ID_IN_USE;
         }
 
-        // we create a new log
-        Log shared_log(id);
-        ret = shared_log.Create(size);
+        // we create a new log add it to soft state
+        Log *log = new Log(this->rootHeapPath + std::to_string(id) ,id);
+        std::map<PoolId, Log *>::iterator it;
+        if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
+            this->idToLogMap[id] == log;
+        }else{
+            LOG(error) << "Log corresponding to PoolID already exists";
+        }
 
-        //store the log details on heap-root. pmem transaction
+        ret = log->Create(size);
+
+        //store the log details on heap-root. TODO: pmem transaction
         ret = root_heap_.addLog(id);
         //TODO: heap root mod lock release
 
@@ -140,33 +147,41 @@ namespace nvs {
 
         ErrorCode  ret = NO_ERROR;
 
-        //TODO : heap root mod lock
-        if(!root_heap_.isLogExist(id)){
+        // first look through soft state map
+        std::map<PoolId , Log *> :: iterator it;
+        if((it = this->idToLogMap.find(id)) != this->idToLogMap.end()){
+            *log = it->second;
+            return NO_ERROR;
+        }else {
+            //TODO : heap root mod lock
+            if (!root_heap_.isLogExist(id)) {
+                //TODO: release lock
+                LOG(error) << "MemoryManager : the log id (" << (uint64_t) id <<
+                           ") not found";
+                return ID_NOT_FOUND;
+            }
             //TODO: release lock
-            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << ")";
-            return ID_IN_USE;
-        }
-        //TODO: release lock
-        *log = new Log(id);
 
-        return NO_ERROR;
+            *log = new Log(this->rootHeapPath + std::to_string(id) ,id);
+            return NO_ERROR;
+        }
+
     }
+
+
+
 
     Log *MemoryManager::Impl_::FindLog(PoolId id)
     {
         assert(is_ready);
         assert(id>0);
 
-        ErrorCode  ret = NO_ERROR;
-
-        //TODO : heap root mod lock
-        if(!root_heap_.isLogExist(id)){
-            //TODO: release lock
-            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << ")";
+        Log *log;
+        ErrorCode ret = FindLog(id, &log);
+        if(ret != NO_ERROR){
+            return NULL;
         }
-        //TODO: release lock
-        Log *shared_log = new Log(id);
-        return shared_log;
+        return log;
     }
 
     void* MemoryManager::Impl_::GlobalToLocal(GlobalPtr ptr) {
