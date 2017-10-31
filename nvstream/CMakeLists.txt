@@ -26,7 +26,7 @@ set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
 include_directories("${PROJECT_BINARY_DIR}")
 
 #add_definitions(-DNCHECKPT)
-add_definitions(-DNDEBUG)
+#add_definitions(-DNDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-DTIMING)
 add_definitions(-DSTATS)

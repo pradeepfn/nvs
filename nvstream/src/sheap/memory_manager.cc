@@ -67,16 +67,10 @@ namespace nvs {
         }
         ErrorCode e_ret = root_heap_.Open();
 
-        if(e_ret == HEAP_NOT_EXIST){
+        if(e_ret == PMEM_ERROR){ //TODO figure out a better way to do this
             e_ret = root_heap_.Create();
             if(e_ret != NO_ERROR){
                 LOG(fatal) << "NVS: failed to create new heap";
-                exit(1);
-            }
-            // heap creation successful
-            e_ret = root_heap_.Open();
-            if(e_ret != NO_ERROR){
-                LOG(fatal) << "NVS: fail opening heap";
                 exit(1);
             }
         }
@@ -100,7 +94,7 @@ namespace nvs {
 
     ErrorCode MemoryManager::Impl_::CreateLog(PoolId id, size_t size)
     {
-        assert(is_ready_ == true);
+        assert(is_ready_);
         assert(id > 0);
 
         ErrorCode ret = NO_ERROR;
@@ -117,7 +111,7 @@ namespace nvs {
         Log *log = new Log(this->rootHeapPath + std::to_string(id) ,id);
         std::map<PoolId, Log *>::iterator it;
         if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
-            this->idToLogMap[id] == log;
+            this->idToLogMap[id] = log;
         }else{
             LOG(error) << "Log corresponding to PoolID already exists";
         }
@@ -142,7 +136,7 @@ namespace nvs {
 
     ErrorCode MemoryManager::Impl_::FindLog(PoolId id, Log **log)
     {
-        assert(is_ready);
+        assert(is_ready_);
         assert(id>0);
 
         ErrorCode  ret = NO_ERROR;
@@ -151,6 +145,7 @@ namespace nvs {
         std::map<PoolId , Log *> :: iterator it;
         if((it = this->idToLogMap.find(id)) != this->idToLogMap.end()){
             *log = it->second;
+            assert(*log != NULL);
             return NO_ERROR;
         }else {
             //TODO : heap root mod lock
@@ -173,7 +168,7 @@ namespace nvs {
 
     Log *MemoryManager::Impl_::FindLog(PoolId id)
     {
-        assert(is_ready);
+        assert(is_ready_);
         assert(id>0);
 
         Log *log;
@@ -196,7 +191,8 @@ namespace nvs {
         ErrorCode ret = NO_ERROR;
         PoolId pool_id = ptr.GetPoolId();
         Offset offset = ptr.GetOffset();
-        void *addr = RootHeap::FindLogBase(pool_id);
+        //void *addr = FindLogBase(pool_id);
+        void *addr;
         if (addr != NULL)
         {
             addr = (void*)((char*)addr+offset);
@@ -209,9 +205,9 @@ namespace nvs {
 
     GlobalPtr MemoryManager::Impl_::LocalToGlobal(void *addr)
     {
-        void *base = NULL;
-        PoolId pool_id = RootHeap::FindLogPool(addr, base); // pass by reference
-        if (pool_id.IsValid() == false)
+       /* void *base = NULL;
+        PoolId pool_id = FindLogPool(addr, base); // pass by reference
+        if (pool_id.IsValid())
         {
             LOG(error) << "GetGlobalPtr failed";
             return GlobalPtr(); // return an invalid global pointer
@@ -224,7 +220,7 @@ namespace nvs {
                        << " offset " << offset
                        << " returned ptr " << global_ptr;
             return global_ptr;
-        }
+        }*/
     }
 
 

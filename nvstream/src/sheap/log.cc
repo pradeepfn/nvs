@@ -10,7 +10,7 @@ namespace nvs{
 
     Log::~Log()
     {
-
+        assert(false);
     }
 
 
@@ -20,6 +20,7 @@ namespace nvs{
     ErrorCode Log::Open() {
         lp = pmemlog_open(this->logPath.c_str());
         if(lp == NULL){ return OPEN_FAILED;}
+
         return NO_ERROR;
     }
 
@@ -40,7 +41,7 @@ namespace nvs{
         return NO_ERROR;
     }
 
-    GlobalPtr Log::append(char *data, size_t size) {
+    ErrorCode Log::append(char *data, size_t size) {
 
         int ret = pmemlog_append(lp, data, size);
         if(ret<0){
@@ -48,6 +49,15 @@ namespace nvs{
         }
         return NO_ERROR;
     }
+
+    ErrorCode Log::metaWalk() {
+
+
+
+
+    }
+
+
 
 }
 

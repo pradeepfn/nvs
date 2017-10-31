@@ -35,15 +35,15 @@ namespace  nvs{
             return is_open_;
         }
 
-        GlobalPtr append (char *data,size_t size);
+        ErrorCode append (char *data,size_t size);
+        ErrorCode metaWalk();
+
+
+
+
         void Free (GlobalPtr global_ptr);
 
-        void *GlobalToLocal(GlobalPtr global_ptr);
-        // TODO: not implemented yet
-        GlobalPtr LocalToGlobal(void *addr);
-
     private:
-        static int const kShelfIdx = 0; // this is the only shelf in the pool
 
         PoolId pool_id_;
         std::string logPath;

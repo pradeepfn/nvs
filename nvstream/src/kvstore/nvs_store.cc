@@ -3,7 +3,6 @@
 //
 
 #include <cstdint>
-#include <nvs/runtimeManager.h>
 #include "nvs/log.h"
 #include "nvs_store.h"
 

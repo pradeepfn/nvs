@@ -48,7 +48,8 @@ namespace  nvs{
 
         inline bool IsValid() const
         {
-            return GetPoolId().IsValid() && IsValidOffset(GetOffset());
+            return true;
+            //return GetPoolId().IsValid() && IsValidOffset(GetOffset());
         }
 
         inline static bool IsValidOffset(OffsetT offset)

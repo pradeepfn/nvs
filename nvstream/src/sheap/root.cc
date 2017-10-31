@@ -41,6 +41,10 @@ namespace nvs{
             LOG(error) << "root.cc : error while creating root heap";
             return PMEM_ERROR;
         }
+        //TODO : persist
+        TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
+        D_RW(root_heap)->length = 0;
+
         return NO_ERROR;
     }
 
@@ -49,8 +53,9 @@ namespace nvs{
         TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
 
 
-        // TODO: transactional update
+        // TODO: persist
         D_RW(root_heap)->log_id[0] = id;
+        D_RW(root_heap)->length = D_RO(root_heap)->length + 1;
 
         return NO_ERROR;
 
@@ -67,6 +72,10 @@ namespace nvs{
     }
 
     bool RootHeap::isLogExist(PoolId id) {
-
+        TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
+            for(int i =0; i < D_RO(root_heap)->length;i++){
+                if(D_RO(root_heap)->log_id[i] == id){return true;}
+            }
+        return false;
     }
  }
