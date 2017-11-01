@@ -91,14 +91,18 @@ namespace nvs{
      */
     ErrorCode NVSStore::get(std::string key, uint64_t version, uint64_t **obj_addr)
     {
-
        /* 1. get hold of the read lock for the key
           2. Lookup key and version - the returned object contains the metadata to
           construct the data
           3. copy data in to return object
           4. given object can be null or already returned object address.
-
         */
+
+
+
+
+
+
 
     }
 
