@@ -17,6 +17,7 @@ namespace nvs {
         std::string storeId;
         ProcessId pid;
         MemoryManager *mm; // memory manager of the metadata heap
+        Log *log; // process local log
         Key *findKey(std::string key);
         objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap;

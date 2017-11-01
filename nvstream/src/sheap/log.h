@@ -36,6 +36,9 @@ namespace  nvs{
         }
 
         ErrorCode append (char *data,size_t size);
+        //TODO : get rid of pmem struct from the interface
+        ErrorCode appendv(struct iovec *iovp, int iovcnt);
+        ErrorCode printLog(); // debug purposes
         ErrorCode metaWalk();
 
 

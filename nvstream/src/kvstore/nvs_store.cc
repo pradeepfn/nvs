@@ -5,6 +5,7 @@
 #include <cstdint>
 #include "nvs/log.h"
 #include "nvs_store.h"
+#include "logentry.h"
 
 namespace nvs{
 
@@ -42,14 +43,41 @@ namespace nvs{
      */
     ErrorCode NVSStore::put(std::string key, uint64_t version)
     {
+            struct iovec *iovp, *next_iovp;
+            ErrorCode ret;
+            struct logentry l_entry;
 
             std::map<std::string, Object *>::iterator it;
             // first traverse the map and find the key object
             if((it = objectMap.find(key)) != objectMap.end()){
                 Object *obj = it->second;
                 uint64_t version = obj->getVersion();
-                // TODO: write to log
 
+                //construct IO vector
+                int iovcnt = 2; // data + header
+                iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
+
+                next_iovp = iovp;
+                //populate header
+                l_entry.version = version;
+                snprintf(l_entry.key, 64,"%s", obj->getName());
+                l_entry.len = obj->getSize();
+
+                next_iovp->iov_base = &l_entry;
+                next_iovp->iov_len = sizeof(l_entry);
+                next_iovp++;
+                //data
+
+                next_iovp->iov_base = obj->getPtr();
+                next_iovp->iov_len = obj->getSize();
+
+
+                ret = this->log->appendv(iovp,iovcnt);
+                if(ret != NO_ERROR){
+                    LOG(fatal) << "Store: append failed";
+                    exit(1);
+                }
+                free(iovp);
                 //increase the soft state
                 obj->setVersion(version+1);
                 return NO_ERROR;

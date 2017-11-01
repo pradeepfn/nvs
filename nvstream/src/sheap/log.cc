@@ -13,10 +13,6 @@ namespace nvs{
         assert(false);
     }
 
-
-
-
-
     ErrorCode Log::Open() {
         lp = pmemlog_open(this->logPath.c_str());
         if(lp == NULL){ return OPEN_FAILED;}
@@ -50,10 +46,16 @@ namespace nvs{
         return NO_ERROR;
     }
 
+    ErrorCode Log::appendv(struct iovec *iovp, int iovcnt) {
+
+        int ret = pmemlog_appendv(lp,iovp, iovcnt);
+        if(ret < 0){
+            return PMEM_ERROR;
+        }
+        return NO_ERROR;
+    }
+
     ErrorCode Log::metaWalk() {
-
-
-
 
     }
 
