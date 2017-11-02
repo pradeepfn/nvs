@@ -5,6 +5,11 @@
 #ifndef YUMA_STORE_H
 #define YUMA_STORE_H
 
+#include <cstdint>
+#include <string>
+
+#include "errorCode.h"
+
 namespace nvs {
     class Store {
     public:
