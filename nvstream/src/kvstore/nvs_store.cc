@@ -86,6 +86,32 @@ namespace nvs{
             return ELEM_NOT_FOUND;
     }
 
+
+    static int
+    processLog(const void *buf, size_t len, void *arg)
+    {
+        struct walkentry *wentry = (struct walkentry *) arg;
+
+        const void *endp = (char *)buf + len;
+        buf = (char *)buf + wentry->start_offset;
+        while(buf < endp){
+            struct logentry *headerp = (struct logentry *) buf;
+            buf = (char *)buf + sizeof(struct logentry);
+
+            //check for key and version
+            if(headerp->key   && headerp->version == wentry->version){
+                wentry->datap = buf;
+                wentry->len = headerp->len;
+                return 0; // no error
+            }else{
+                LOG(fatal) << "not implemented";
+                exit(1);
+            }
+        }
+    }
+
+
+
     /*
      *  the object address is redundant here
      */
