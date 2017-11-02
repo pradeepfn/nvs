@@ -1,15 +1,80 @@
 #include <nvs/log.h>
+#include <boost/filesystem/operations.hpp>
 #include "file_store.h"
 
 namespace nvs{
 
 
+    FileStore::FileStore(std::string storeId){
+        boost::filesystem::path fsPath = boost::filesystem::path(FILE_PATH);
+        if(!boost::filesystem::exists(fsPath)){
+            LOG(fatal) << "FileStore: directory does not exist";
+        }
+
+    }
+
     ErrorCode FileStore::put(std::string key, uint64_t version) {
 
+        std::map<std::string, Object *>::iterator it;
+        // first traverse the map and find the key object
+        if((it = objectMap.find(key)) != objectMap.end()) {
+
+            Object *obj = it->second;
+            // file name
+            std::string file_name = std::to_string(this->storeId) +
+                                    key + std::to_string(version);
+
+            FILE *file = fopen(file_name.c_str(), "w");
+            if (file == NULL) {
+                LOG(fatal) << "FileStore: file open failed";
+                exit(1);
+            }
+            size_t tsize = fwrite(obj->getPtr(),sizeof(char),
+                                  obj->getSize(),file);
+            assert(tsize == obj->getSize);
+
+            fsync(fileno(file));
+            fclose(file);
+            return NO_ERROR;
+        }
+        LOG(error) << "FileStore: key not found";
+        return ELEM_NOT_FOUND;
     }
 
 
     ErrorCode FileStore::get(std::string key, uint64_t version, uint64_t **addr) {
+
+
+
+            // file name
+            std::string file_name = std::to_string(this->storeId) +
+                                    key + std::to_string(version);
+
+            //find the size of the file
+            boost::filesystem::path path(file_name);
+            boost::system::error_code ec;
+            boost::uintmax_t  filesize = boost::filesystem::file_size(path, ec);
+        if(ec){
+            LOG(fatal) << "FileStore: file size error";
+            return ELEM_NOT_FOUND
+
+        }
+
+            FILE *file = fopen(file_name.c_str(), "w");
+            if (file == NULL) {
+                LOG(fatal) << "FileStore: file open failed";
+                return ELEM_NOT_FOUND;
+            }
+
+
+
+            size_t tsize = fwrite(*addr,sizeof(char),
+                                  filesize,file);
+            assert(tsize == filesize);
+
+            fsync(fileno(file));
+            fclose(file);
+            return NO_ERROR;
 
     }
 
@@ -27,11 +92,5 @@ namespace nvs{
         *obj_addr = (uint64_t *)tmp_ptr;
         return NO_ERROR;
     }
-
-
-
-
-
-
 
 }

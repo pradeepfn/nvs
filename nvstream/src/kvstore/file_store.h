@@ -22,6 +22,10 @@ namespace nvs{
 
     public:
 
+        FileStore(std::string storeId);
+
+        ~FileStore();
+
         ErrorCode create_obj(std::string key, uint64_t size, uint64_t **obj_addr);
 
         ErrorCode put(std::string key, uint64_t version);
