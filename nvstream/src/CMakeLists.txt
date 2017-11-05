@@ -13,6 +13,7 @@ set(MY_HEADERS
         ../include/nvs/store.h
         ../include/nvs/log.h
         ../include/nvs/errorCode.h
+        ../include/nvs/store_manager.h
         kvstore/logentry.h
         kvstore/file_store.h)
 

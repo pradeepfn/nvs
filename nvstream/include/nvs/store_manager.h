@@ -1,9 +1,8 @@
-//
-// Created by pradeep on 11/4/17.
-//
 
 #ifndef NVSTREAM_STORE_MANAGER_H
 #define NVSTREAM_STORE_MANAGER_H
+
+#include "store.h"
 
 namespace nvs{
 
