@@ -60,7 +60,7 @@ namespace nvs{
                 next_iovp = iovp;
                 //populate header
                 l_entry.version = version;
-                snprintf(l_entry.key, 64,"%s", obj->getName());
+                snprintf(l_entry.key, 64,"%s", obj->getName().c_str());
                 l_entry.len = obj->getSize();
 
                 next_iovp->iov_base = &l_entry;

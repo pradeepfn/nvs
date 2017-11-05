@@ -27,8 +27,9 @@ add_executable(sequential
 
 target_link_libraries(sequential
         ${PROJECT_SOURCE_DIR}/../nvstream/build/src/libyuma.a
-        ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmem.a
         ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmemlog.a
+        ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmem.a
+        pthread
         boost_thread boost_log boost_filesystem boost_system)
 
 #add_executable(parallel
