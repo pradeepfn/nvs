@@ -19,6 +19,9 @@ namespace nvs {
 
 //structure for log traversing
     struct walkentry {
+        size_t len;
+        void *datap;
+        uint64_t version;
         uint64_t start_offset;
         ErrorCode err;
 

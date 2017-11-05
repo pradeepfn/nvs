@@ -100,7 +100,7 @@ namespace nvs{
 
             //check for key and version
             if(headerp->key   && headerp->version == wentry->version){
-                wentry->datap = buf;
+                wentry->datap = (void *)buf;
                 wentry->len = headerp->len;
                 return 0; // no error
             }else{
