@@ -9,11 +9,6 @@ namespace nvs{
 
     }
 
-
-    uint64_t Object::getVersion() {
-        return this->version;
-    }
-
     void Object::setVersion(uint64_t version) {
         this->version = version;
     }

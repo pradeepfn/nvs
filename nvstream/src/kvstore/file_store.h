@@ -5,7 +5,7 @@
 #ifndef NVSTREAM_FILE_STORE_H
 #define NVSTREAM_FILE_STORE_H
 
-
+#include <map>
 #include <nvs/store.h>
 #include "object.h"
 
