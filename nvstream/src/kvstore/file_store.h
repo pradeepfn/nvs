@@ -26,11 +26,11 @@ namespace nvs{
 
         ~FileStore();
 
-        ErrorCode create_obj(std::string key, uint64_t size, uint64_t **obj_addr);
+        ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
 
         ErrorCode put(std::string key, uint64_t version);
 
-        ErrorCode get(std::string key, uint64_t version, uint64_t **obj_addr);
+        ErrorCode get(std::string key, uint64_t version, void **obj_addr);
 
 
     private:

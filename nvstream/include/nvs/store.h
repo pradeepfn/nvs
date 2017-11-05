@@ -16,11 +16,11 @@ namespace nvs {
 
         ~Store(){};
 
-        virtual ErrorCode create_obj(std::string key, uint64_t size, uint64_t **addr) = 0;
+        virtual ErrorCode create_obj(std::string key, uint64_t size, void **addr) = 0;
 
         virtual ErrorCode put(std::string key, uint64_t version)=0;
 
-        virtual ErrorCode get(std::string key, uint64_t version, uint64_t **addr)=0;
+        virtual ErrorCode get(std::string key, uint64_t version, void **addr)=0;
 
     };
 

@@ -2,7 +2,11 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "nvs/store.h"
+#include "nvs/store_manager.h"
 #include "nvs/errorCode.h"
+
+
+#define STORE_ID "seq_store"
 
 #define row 3
 #define column 4
@@ -15,8 +19,8 @@ int main(){
     int var[row][column] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};
     uint64_t size = row * sizeof(*var3) + row*(column * sizeof(**var3));
     void *ptr;
-    nvs::Store st(PID);
-    ret =  st.create_obj("var3", size, &ptr);
+    nvs::Store *st = nvs::StoreManager::GetInstance(STORE_ID);
+    ret =  st->create_obj("var3", size, &ptr);
 
     var3 = (int **)ptr;
 
@@ -33,7 +37,7 @@ int main(){
         }
     }
 
-    st.put("var3");
+    st->put("var3");
 
     return 0;
 }
