@@ -35,6 +35,7 @@ namespace nvs{
 
     private:
         std::map<std::string, Object *> objectMap;
+        std::string storeId;
 
     };
 }

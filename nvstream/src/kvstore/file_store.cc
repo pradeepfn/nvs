@@ -5,7 +5,7 @@
 namespace nvs{
 
 
-    FileStore::FileStore(std::string storeId){
+    FileStore::FileStore(std::string storeId):storeId(storeId){
         boost::filesystem::path fsPath = boost::filesystem::path(FILE_PATH);
         if(!boost::filesystem::exists(fsPath)){
             LOG(fatal) << "FileStore: directory does not exist";
@@ -21,7 +21,7 @@ namespace nvs{
 
             Object *obj = it->second;
             // file name
-            std::string file_name = std::to_string(this->storeId) +
+            std::string file_name = this->storeId +
                                     key + std::to_string(version);
 
             FILE *file = fopen(file_name.c_str(), "w");
@@ -31,7 +31,7 @@ namespace nvs{
             }
             size_t tsize = fwrite(obj->getPtr(),sizeof(char),
                                   obj->getSize(),file);
-            assert(tsize == obj->getSize);
+            assert(tsize == obj->getSize());
 
             fsync(fileno(file));
             fclose(file);
@@ -47,7 +47,7 @@ namespace nvs{
 
 
             // file name
-            std::string file_name = std::to_string(this->storeId) +
+            std::string file_name = this->storeId +
                                     key + std::to_string(version);
 
             //find the size of the file
@@ -56,7 +56,7 @@ namespace nvs{
             boost::uintmax_t  filesize = boost::filesystem::file_size(path, ec);
         if(ec){
             LOG(fatal) << "FileStore: file size error";
-            return ELEM_NOT_FOUND
+            return ELEM_NOT_FOUND;
 
         }
 
