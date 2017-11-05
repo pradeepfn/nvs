@@ -22,7 +22,6 @@ namespace nvs {
 
         virtual ErrorCode get(std::string key, uint64_t version, uint64_t **addr)=0;
 
-        virtual ErrorCode close() = 0;
     };
 
 }
