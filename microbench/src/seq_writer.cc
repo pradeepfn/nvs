@@ -1,19 +1,16 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
+#include <string>
 #include "nvs/store.h"
 #include "nvs/store_manager.h"
-#include "nvs/errorCode.h"
 
 
 #define STORE_ID "seq_store"
 
 #define row 3
 #define column 4
-#define PID 1
 
 int main(){
 
+    uint64_t  version = 0;
     int **var3;
     nvs::ErrorCode ret;
     int var[row][column] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};
@@ -37,7 +34,7 @@ int main(){
         }
     }
 
-    st->put("var3");
+    st->put("var3", ++version);
 
     return 0;
 }
