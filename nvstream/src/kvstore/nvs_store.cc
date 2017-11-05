@@ -10,7 +10,7 @@
 namespace nvs{
 
 
-    NVSStore::NVSStore(std::string storeId, ProcessId pid):
+    NVSStore::NVSStore(std::string storeId):
             storeId(storeId),pid(pid)
     {
 

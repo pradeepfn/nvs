@@ -30,6 +30,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 add_definitions(-DDEDUP)
 add_definitions(-DTIMING)
 add_definitions(-DSTATS)
+add_definitions(-D_FILE_STORE)
 
 
 #tests

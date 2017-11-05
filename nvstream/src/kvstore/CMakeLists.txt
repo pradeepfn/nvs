@@ -12,5 +12,6 @@ set(YUMA_SRC
         ${CMAKE_CURRENT_SOURCE_DIR}/serializationTypes.h
         ${CMAKE_CURRENT_SOURCE_DIR}/constants.h
         ${CMAKE_CURRENT_SOURCE_DIR}/file_store.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/store_manager.cc
         PARENT_SCOPE
         )

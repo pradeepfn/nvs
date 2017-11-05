@@ -24,7 +24,7 @@ namespace nvs {
 
     protected:
     public:
-        NVSStore(std::string storeId, ProcessId pid);
+        NVSStore(std::string storeId);
 
         ~NVSStore();
 
