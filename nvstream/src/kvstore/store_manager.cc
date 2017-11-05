@@ -1,6 +1,7 @@
 
 #include <atomic>
 #include <mutex>
+#include <memory>
 #include "nvs/store_manager.h"
 #include "nvs/store.h"
 
@@ -12,6 +13,9 @@
 
 namespace nvs{
 
+
+    std::atomic<Store *> StoreManager::instance_;
+    std::mutex StoreManager::mutex_;
 
     Store * StoreManager::GetInstance(std::string storePath) {
         Store *tmp = instance_.load(std::memory_order_relaxed);

@@ -2,6 +2,10 @@
 #ifndef NVSTREAM_STORE_MANAGER_H
 #define NVSTREAM_STORE_MANAGER_H
 
+#include <memory>
+#include <atomic>
+#include <mutex>
+
 #include "store.h"
 
 namespace nvs{
