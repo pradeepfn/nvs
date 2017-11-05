@@ -15,7 +15,20 @@ namespace nvs {
         Object(std::string name, uint64_t size, uint64_t version, void *ptr);
         ~Object();
 
-        uint64_t getVersion();
+        uint64_t getVersion(){
+            return version;
+        }
+        uint64_t getSize(){
+            return size;
+        }
+        void * getPtr(){
+            return ptr;
+        }
+
+        std::string getName(){
+            return name;
+        }
+
         void setVersion(uint64_t version);
 
 
