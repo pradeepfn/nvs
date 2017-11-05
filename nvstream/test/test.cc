@@ -15,7 +15,7 @@ namespace nvs{
             nvs::init_log(level, "mm.log");
         }
         // remove previous files in SHELF_BASE_DIR
-        std::string cmd = std::string("exec rm -f ") + NVS_BASE_DIR + "/" + NVS_USER + "* > /dev/null";
+        std::string cmd = std::string("exec rm -rf ") + NVS_BASE_DIR + "/" + NVS_USER + "* > /dev/null";
         system(cmd.c_str());
     }
 }

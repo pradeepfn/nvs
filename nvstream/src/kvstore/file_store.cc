@@ -6,11 +6,16 @@ namespace nvs{
 
 
     FileStore::FileStore(std::string storeId):storeId(storeId){
-        boost::filesystem::path fsPath = boost::filesystem::path(FILE_PATH);
+        boost::filesystem::path fsPath = boost::filesystem::path(ROOT_FILE_PATH);
         if(!boost::filesystem::exists(fsPath)){
-            LOG(fatal) << "FileStore: directory does not exist";
+            bool ret = boost::filesystem::create_directory(fsPath);
+            if (ret == false)
+            {
+                LOG(fatal) << "FileStore: Failed to create ROOT_FILE_PATH"
+                           << ROOT_FILE_PATH;
+                exit(1);
+            }
         }
-
     }
 
     ErrorCode FileStore::put(std::string key, uint64_t version) {
@@ -21,7 +26,7 @@ namespace nvs{
 
             Object *obj = it->second;
             // file name
-            std::string file_name = this->storeId +
+            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
                                     key + std::to_string(version);
 
             FILE *file = fopen(file_name.c_str(), "w");
@@ -44,10 +49,8 @@ namespace nvs{
 
     ErrorCode FileStore::get(std::string key, uint64_t version, void **addr) {
 
-
-
             // file name
-            std::string file_name = this->storeId +
+            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
                                     key + std::to_string(version);
 
             //find the size of the file
@@ -60,19 +63,15 @@ namespace nvs{
 
         }
 
-            FILE *file = fopen(file_name.c_str(), "w");
+            FILE *file = fopen(file_name.c_str(), "r");
             if (file == NULL) {
                 LOG(fatal) << "FileStore: file open failed";
                 return ELEM_NOT_FOUND;
             }
 
-
-
-            size_t tsize = fwrite(*addr,sizeof(char),
+            size_t tsize = fread(*addr,sizeof(char),
                                   filesize,file);
             assert(tsize == filesize);
-
-            fsync(fileno(file));
             fclose(file);
             return NO_ERROR;
 

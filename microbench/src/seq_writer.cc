@@ -21,15 +21,16 @@ int main(){
 
     var3 = (int **)ptr;
 
+    int *const data = (int *)(var3 + row);
+
     int i,j;
-    for(i=0; i< 3; i ++){
-        for(j=0; j < 4; j++){
-            var3[i][j] = (j+1) + i * column;
-        }
+    for(i=0; i< row; i++){
+            var3[i] = data + i * column;
     }
 
     for(i=0; i< 3; i ++){
         for(j=0; j < 4; j++){
+            var3[i][j] = i*column + (j+1);
             printf("%d ", var3[i][j]) ;
         }
     }

@@ -18,3 +18,4 @@ endfunction()
 
 
 add_subdirectory(memory_manager)
+add_subdirectory(store)

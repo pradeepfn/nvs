@@ -1,0 +1,1 @@
+add_yuma_test(test_store)

@@ -9,7 +9,7 @@
 #include <nvs/store.h>
 #include "object.h"
 
-#define FILE_PATH "/dev/shm"
+#define ROOT_FILE_PATH "/dev/shm/unity"
 
 /*
  *
