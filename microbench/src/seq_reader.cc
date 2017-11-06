@@ -32,9 +32,10 @@ int main(){
 
     for(i=0; i< 3; i ++){
         for(j=0; j < 4; j++){
-            printf("%d ", var3[i][j]) ;
+            printf("%d ", var3[i][j]);
         }
     }
+    st->stats();
 
     return 0;
 }

@@ -130,4 +130,9 @@ namespace nvs{
 
     }
 
+
+    void NVSStore::stats() {
+
+    }
+
 }

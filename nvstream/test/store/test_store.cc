@@ -25,11 +25,13 @@ TEST(StoreManager, store)
     //compare the returned object content
     EXPECT_EQ(0,strncmp(srcp,retp,15));
 
+    //st->stats();
+
 }
 
 int main(int argc, char** argv)
 {
-    InitTest(nvs::fatal, true);
+    InitTest(nvs::debug, true);
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }

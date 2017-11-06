@@ -62,10 +62,9 @@ memcpy_worker(void *args)
 	uint64_t nchunks = filesize/chunksize;
 
     for (i = 0; i < nchunks; i++){
-			memcpy(&shared_area[i*chunksize],data_chunk,chunksize);
+	    memcpy(&shared_area[i*chunksize],data_chunk,chunksize);
             //TODO: experiment point
             flush_clflush(&shared_area[i*chunksize],chunksize);
-
 	}
     return (void *) 0;
 }

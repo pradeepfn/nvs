@@ -92,4 +92,8 @@ namespace nvs{
         return NO_ERROR;
     }
 
+
+    void FileStore::stats() {
+
+    }
 }
