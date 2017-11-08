@@ -31,16 +31,18 @@ add_executable(seqreader
 target_link_libraries(seqwriter
         ${PROJECT_SOURCE_DIR}/../nvstream/build/src/libyuma.a
         ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmemlog.a
+        ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmemobj.a
         ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmem.a
         pthread
-        boost_thread boost_log boost_filesystem boost_system)
+        boost_thread boost_log boost_filesystem boost_system dl)
 
 target_link_libraries(seqreader
         ${PROJECT_SOURCE_DIR}/../nvstream/build/src/libyuma.a
         ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmemlog.a
+        ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmemobj.a
         ${PROJECT_SOURCE_DIR}/../nvstream/third-party/nvml/src/debug/libpmem.a
         pthread
-        boost_thread boost_log boost_filesystem boost_system)
+        boost_thread boost_log boost_filesystem boost_system dl)
 
 #add_executable(parallel
 #        ${PARALLEL_SOURCES})

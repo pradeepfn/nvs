@@ -23,6 +23,7 @@ namespace nvs {
         void *datap;
         uint64_t version;
         uint64_t start_offset;
+        char key[64];
         ErrorCode err;
 
     };

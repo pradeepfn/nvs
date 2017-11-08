@@ -13,10 +13,11 @@ int main(){
     uint64_t  version = 0;
     int **var3;
     nvs::ErrorCode ret;
+    std::string store_name = STORE_ID + std::string("/1");
     uint64_t size = row * sizeof(*var3) + row*(column * sizeof(**var3));
     void *ptr = malloc(size);
-    nvs::Store *st = nvs::StoreManager::GetInstance(STORE_ID);
-    ret = st->get("var3", 1, &ptr);
+    nvs::Store *st = nvs::StoreManager::GetInstance(store_name);
+    ret = st->get("var3", 1, ptr);
     if(ret != nvs::NO_ERROR){
         printf("get failed.\n");
         exit(1);

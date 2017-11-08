@@ -20,7 +20,7 @@ namespace nvs {
 
         virtual ErrorCode put(std::string key, uint64_t version)=0;
 
-        virtual ErrorCode get(std::string key, uint64_t version, void **addr)=0;
+        virtual ErrorCode get(std::string key, uint64_t version, void *addr)=0;
 
         virtual void stats() = 0;
 

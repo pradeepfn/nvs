@@ -18,7 +18,7 @@ namespace nvs{
 
         ErrorCode put(std::string key, uint64_t version);
 
-        ErrorCode get(std::string key, uint64_t version, void **obj_addr);
+        ErrorCode get(std::string key, uint64_t version, void *obj_addr);
 
         void stats();
 
@@ -43,7 +43,7 @@ namespace nvs{
         put_total=0;
     }
 
-    ErrorCode TimingStore::get(std::string key, uint64_t version, void **obj_addr) {
+    ErrorCode TimingStore::get(std::string key, uint64_t version, void *obj_addr) {
         ErrorCode ret;
         get_start = read_tsc();
         ret = this->store->get(key,version,obj_addr);

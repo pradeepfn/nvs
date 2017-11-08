@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(nvstream)
 
+
+
+
 #
 # default system include and link directories
 #
@@ -31,7 +34,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
-add_definitions(-D_FILE_STORE)
+#add_definitions(-D_FILE_STORE)
 
 
 #tests

@@ -2,6 +2,7 @@
 #include <atomic>
 #include <mutex>
 #include <memory>
+#include "nvs/log.h"
 #include "nvs/store_manager.h"
 
 #if defined(_FILE_STORE)
@@ -10,6 +11,7 @@
 
 #else
 #include "nvs_store.h"
+#include "timing_store.h"
 #endif
 
 namespace nvs{
