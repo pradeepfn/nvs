@@ -47,7 +47,7 @@ namespace nvs{
     }
 
 
-    ErrorCode FileStore::get(std::string key, uint64_t version, void **addr) {
+    ErrorCode FileStore::get(std::string key, uint64_t version, void *addr) {
 
             // file name
             std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
@@ -69,7 +69,7 @@ namespace nvs{
                 return ELEM_NOT_FOUND;
             }
 
-            size_t tsize = fread(*addr,sizeof(char),
+            size_t tsize = fread(addr,sizeof(char),
                                   filesize,file);
             assert(tsize == filesize);
             fclose(file);

@@ -14,11 +14,12 @@ int main(){
     uint64_t  version = 0;
     int **var3;
     nvs::ErrorCode ret;
+    std::string store_name = STORE_ID + std::string("/1");
     int var[row][column] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};
     uint64_t size = row * sizeof(*var3) + row*(column * sizeof(**var3));
     void *ptr;
     nvs::init_log(nvs::SeverityLevel::all,"");
-    nvs::Store *st = nvs::StoreManager::GetInstance(STORE_ID);
+    nvs::Store *st = nvs::StoreManager::GetInstance(store_name);
     ret =  st->create_obj("var3", size, &ptr);
 
     var3 = (int **)ptr;
@@ -33,7 +34,7 @@ int main(){
     for(i=0; i< 3; i ++){
         for(j=0; j < 4; j++){
             var3[i][j] = i*column + (j+1);
-            printf("%d ", var3[i][j]) ;
+            printf("%d ", var3[i][j]);
         }
     }
 

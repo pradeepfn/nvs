@@ -59,7 +59,17 @@ namespace nvs{
 
     }
 
+    ErrorCode Log::walk(int (*process_chunk)(const void *buf, size_t len, void *arg), void *arg) {
 
+        int ret= 0;
+        pmemlog_walk(this->lp, 0, process_chunk, arg);
+
+        if(ret < 0){
+            return PMEM_ERROR;
+        }
+        return NO_ERROR;
+
+    }
 
 }
 

@@ -158,6 +158,11 @@ namespace nvs {
             //TODO: release lock
 
             *log = new Log(this->rootHeapPath + std::to_string(id) ,id);
+            ret = (*log)->Open();
+            if(ret != NO_ERROR){
+                LOG(fatal) << "MemoryManager : log open";
+                exit(1);
+            }
             return NO_ERROR;
         }
 

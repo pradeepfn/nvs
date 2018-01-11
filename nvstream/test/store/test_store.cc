@@ -9,7 +9,7 @@ using namespace nvs;
 TEST(StoreManager, store)
 {
 
-    Store *st = StoreManager::GetInstance("my_store");
+    Store *st = StoreManager::GetInstance("my_store/1");
 
     char *srcp;
     char *retp = (char *)malloc(15 * sizeof(char));

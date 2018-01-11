@@ -7,16 +7,42 @@
 #include "nvs_store.h"
 #include "logentry.h"
 
+#define LOG_SIZE 10 * 1024 * 1024LLU
+
 namespace nvs{
 
-
     NVSStore::NVSStore(std::string storeId):
-            storeId(storeId),pid(pid)
+            storeId(storeId)
     {
+        ErrorCode ret;
+        PoolId poolId;
 
+        std::string delimeter = "/";
+        std::string heapId =  storeId.substr(0,storeId.find(delimeter));
+        std::string plid = storeId.substr(storeId.find(delimeter) + delimeter.length());
+        poolId = std::stoi(plid);
+
+        MemoryManager *mm = MemoryManager::GetInstance();
+        ret = mm->FindLog(poolId, &(this->log));
+        if(ret == ID_NOT_FOUND){
+            ret = mm->CreateLog(poolId, LOG_SIZE);
+            if(ret != NO_ERROR){
+                LOG(fatal) << "NVSStore: error creating log";
+                exit(1);
+            }
+            ret = mm->FindLog(poolId, &(this->log));
+            if(ret != NO_ERROR){
+                LOG(fatal) << "NVSStore: error finding log";
+                exit(1);
+            }
+        }
     }
 
-    NVSStore::~NVSStore() {}
+    NVSStore::~NVSStore() {
+
+
+
+    }
 
     ErrorCode NVSStore::create_obj(std::string key, uint64_t size, void **obj_addr)
     {
@@ -51,7 +77,7 @@ namespace nvs{
             // first traverse the map and find the key object
             if((it = objectMap.find(key)) != objectMap.end()){
                 Object *obj = it->second;
-                uint64_t version = obj->getVersion();
+                //uint64_t version = obj->getVersion();
 
                 //construct IO vector
                 int iovcnt = 2; // data + header
@@ -79,7 +105,7 @@ namespace nvs{
                 }
                 free(iovp);
                 //increase the soft state
-                obj->setVersion(version+1);
+                obj->setVersion(version);
                 return NO_ERROR;
             }
             LOG(error) << "element not found";
@@ -90,6 +116,7 @@ namespace nvs{
     static int
     processLog(const void *buf, size_t len, void *arg)
     {
+        // getting result from the callback -- walkentry structure
         struct walkentry *wentry = (struct walkentry *) arg;
 
         const void *endp = (char *)buf + len;
@@ -99,9 +126,10 @@ namespace nvs{
             buf = (char *)buf + sizeof(struct logentry);
 
             //check for key and version
-            if(headerp->key   && headerp->version == wentry->version){
+            if(!strncmp(headerp->key, wentry->key,64) && headerp->version == wentry->version){
                 wentry->datap = (void *)buf;
                 wentry->len = headerp->len;
+                wentry->err = NO_ERROR;
                 return 0; // no error
             }else{
                 LOG(fatal) << "not implemented";
@@ -115,14 +143,23 @@ namespace nvs{
     /*
      *  the object address is redundant here
      */
-    ErrorCode NVSStore::get(std::string key, uint64_t version, void **obj_addr)
+    ErrorCode NVSStore::get(std::string key, uint64_t version, void *obj_addr)
     {
-       /* 1. get hold of the read lock for the key
-          2. Lookup key and version - the returned object contains the metadata to
-          construct the data
-          3. copy data in to return object
-          4. given object can be null or already returned object address.
-        */
+        struct walkentry wentry;
+        wentry.version = version;
+        wentry.start_offset = 0;
+        snprintf(wentry.key,64,"%s",key.c_str());
+
+        this->log->walk(processLog, &wentry);
+
+        if(wentry.err != NO_ERROR){
+            return ID_NOT_FOUND;
+        }
+
+        //*obj_addr = wentry.datap;
+        memcpy(obj_addr,wentry.datap,wentry.len);
+        return NO_ERROR;
+
     }
 
 

@@ -43,7 +43,7 @@ namespace nvs{
         void *GlobalToLocal(GlobalPtr ptr);
         GlobalPtr LocalToGlobal(void *addr);
 
-        ErrorCode CreateLog(PoolId id, size_t shelf_size);
+        ErrorCode CreateLog(PoolId id, size_t log_size);
 
         ErrorCode DestroyLog(PoolId id);
 
