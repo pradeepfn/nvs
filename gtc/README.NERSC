@@ -1,0 +1,163 @@
+About GTC
+==============
+
+GTC is used for Gyrokinetic Particle Simulation of
+Turbulent Transport in Burning Plasmas.  It is a fully self-consistent,
+3D Particle-in-cell code (PIC) with a 
+non-spectral Poisson solver and a grid that 
+follows the magnetic field lines (twisting around the torus).
+It solves the gyro-averaged Vlasov equation in real space;
+the Vlasov equation describes the evolution of a system of particles 
+under the effects of self-consistent electromagnetic fields. 
+The unknown is the flux, f(t,x,v), which is a function of time t , 
+position x, and velocity v, and represents the distribution function 
+of particles (electrons, ions,...) in phase space.
+
+Coding
+=================
+The GTC code has been optimized to achieve high efficiency on both 
+cache-based super scalar and vector nodes. Both vector and super scalar 
+code for the Poisson Equation solver are provided.  
+This version of GTC is written entirely in free-format Fortran90/95, with
+about 5360 lines of code (according to SLOCCOUNT) in 27 source files, 
+including routines for which multiple versions are provided.
+
+Relationship to the NERSC Workload
+=================
+
+GTC is used for fusion energy research via the DOE SciDAC program 
+[FUS] and for the international fusion collaboration [ITER]. 
+Support for it comes from the DOE office of Fusion Energy Science. 
+It is used for studying neoclassical and turbulent transport 
+in tokamaks and stellarators as well as for investigating 
+hot-particle physics, toroidal Alfven modes, and neoclassical tearing modes. [LEE].
+
+
+Building the Code
+=================
+
+1. You need GNUmake to compile GTC. The Makefile contains some
+   gmake syntax, such as VARIABLE:=
+
+2. The Makefile runs the command "uname -s"
+   to determine the OS of the current computer. 
+   There are different
+   sections of the Makefile for various systems, such as IRIX64,
+   AIX, Linux, SUPER-UX, and UNICOS/mp.  You will have to edit
+   compiler name (CMP and F90C), compiler options (OPT), and other symbols.
+
+3. There are a variety of build options listed at the top of the Makefile.
+   Most important of these are OPENMP, DOUBLE_PRECISION, and 64BITS.
+   You should use DOUBLE_PRECISION=n and 64BITS=y.  Just below the
+   comments explaining the list of options you will see the settings.
+   The code contains separate code paths for OpenMP which are defined with
+   the _OPENMP macro, which should be set by the compiler. 
+
+4. Note that currently the max number of OpenMP threads is set to 32. 
+   To increase beyond that change:  line 15 shifti.f90 
+                  2nd index of msleft & msright is max_no_OpenMP threads. 
+
+5. The MPI-only executable is called "gtcmpi". The mixed MPI/OpenMP executable
+   is called "gtcomp."  The code contains OpenMP compiler annotations for
+   DO-loops in several subroutines and files. The default is to build the OpenMP version.
+   To build the non-OpenMP version, build with 'make OPENMP=n'
+
+6. After editing the makefile just type 'gmake' to build the code.
+
+
+Running the Code
+=================
+
+GTC reads an input file called "gtc.input". The distribution contains
+two input files. 
+To run one of the cases, copy the chosen input file into "gtc.input".
+All input files use 100 particles par cell (micell=100).
+
+The series of input files provided all keep the grid-based 1-D toroidal domain
+decomposition constant (mzetamax=64) and increase the particle
+decomposition within a domain (from npartdom = 1 for 64 cores to
+npartdom = 300 for 19,200 cores).  For example, for
+npartdom=300 (the 19200p input file), the particles within each 
+toroidal domain are split equally between
+two cores.  The number of particles per cell is also increased
+concomitantly (from 100 per cell for 64 cores to
+30000 per cell for 16,384 cores).
+
+Memory requirements for the code are approx 32 GB total for the 64p case
+and approx 10TB for the 19200p case.
+
+To run the code do something like:
+
+cp gtc.input.64p gtc.input
+mpirun -np 64 ../gtcmpi
+
+Running the OpenMP version will entail setting the OMP_NUM_THREADS macro in your
+run script in and editing the launch command to account for the thread count. For example,
+on the Cray XE6
+
+export OMP_NUM_THREADS=2
+aprun -n 64 -d 2 ../gtcmpi
+
+in order to run with 64 MPI tasks and two OpenMP threads.
+
+Required Runs
+====================
+
+The NERSC-8 "base case"
+runs are for 64- and 19200-MPI process configurations.   Use
+the gtc.input.64p and gtc.input.19200p input files for these runs,
+respectively.  
+
+Note that these values, 64 and 19200, represent the MAXIMUM mpi concurrency that these problem size can be run with. Runs with greater MPI concurrencies will
+produce incorrect results and are invalid.
+
+The value of "NERSC_TIME" should be reported.
+
+Capability Improvement Runs
+============================
+
+Capability improvement runs are enabled by increasing three parameters in the input file. For the 19200 MPI rank large case these have the values 
+
+
+  micell=30000
+  mecell=30000,
+  npartdom=300,
+
+
+To increase the size of the problem:
+
+1) Increase npartdom. The total number of MPI ranks = 64*npartdom 
+
+2) Increase micell & mecell simultaneously. They should be equal to 100*mpartdom
+
+For example, to increase the max MPI concurrency by a factor of 3 over the large problem nicell=mecell=90000 & npartdom=900. In this case the increase in problem size will be 3 and the capability increase will be 3 times the runtime change.
+
+
+Verification
+====================
+
+Verfication is challenging. The initial configuration is a function
+of the number of MPI ranks and thus runs using the same input at different MPI
+concurrencies cannot be compared. (After the system has been run for enough
+timesteps the simulations will produce the same statistical averages, but the 
+benchmark as currently configured does not run long enough to reach this point.)
+
+Thus although offerors may report their best runtimes at any MPI concurrency
+below the max verification must be performed at the 'selected' concurrencies
+of 64 and 19200 MPI tasks and any code modifications made should pass
+these checks.
+
+The code checks itself after
+the last time step and compares a computed value  with the corresponding value
+calculated on the Cray XE6 system at NERSC using the PGI compiler.  
+The difference reported should be less than .01.  The internal error
+will only report with the # of MPI tasks equal  64, or 19200.
+
+
+Authorship
+===========================================================================
+
+The code comes from
+the SciDAC GPSC Center based at the Princeton Plasma Physics Laboratory
+(lead P.I. W.W. Lee), with collaborators Stephane Ethier (PPPL) and
+Prof. Zhihong Lin (now at UC Irvine)

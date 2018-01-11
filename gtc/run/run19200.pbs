@@ -1,0 +1,17 @@
+#!/bin/csh
+#PBS -l mppwidth=19200
+#PBS -l walltime=00:30:00
+#PBS -q debug
+#PBS -j oe
+#PBS -N gtc19200
+#PBS -o gtc19200-$PBS_JOBID.out
+
+
+set echo
+cd $PBS_O_WORKDIR
+
+cp  gtc.input.19200p gtc.input
+
+time aprun -n 19200 ./gtcmpi
+
+rm gtc.input
