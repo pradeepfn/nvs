@@ -36,6 +36,7 @@ program micro
 
 
     if(mype==0) print *, "Micro_C/R - Starting computation"
+    print *,  mype
     call nvs_init(mype,nproc)
 
     nsize = 10
@@ -47,12 +48,12 @@ program micro
     call nvs_snapshot(mype)
 
     call nvs_finalize()
-
+    if(mype == 0) write(0,*)'End of benchmark. Bye!!'
 
     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
     call MPI_FINALIZE(ierr)
 
-    if(mype == 0) write(0,*)'End of benchmark. Bye!!'
+
 end program micro
 
 

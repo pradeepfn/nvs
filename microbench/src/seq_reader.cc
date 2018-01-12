@@ -13,7 +13,7 @@ int main(){
     uint64_t  version = 0;
     int **var3;
     nvs::ErrorCode ret;
-    std::string store_name = STORE_ID + std::string("/1");
+    std::string store_name = STORE_ID + std::string("/0");
     uint64_t size = row * sizeof(*var3) + row*(column * sizeof(**var3));
     void *ptr = malloc(size);
     nvs::Store *st = nvs::StoreManager::GetInstance(store_name);

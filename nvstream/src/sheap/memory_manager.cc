@@ -95,7 +95,7 @@ namespace nvs {
     ErrorCode MemoryManager::Impl_::CreateLog(PoolId id, size_t size)
     {
         assert(is_ready_);
-        assert(id > 0);
+        assert(id >= 0);
 
         ErrorCode ret = NO_ERROR;
 
@@ -137,7 +137,7 @@ namespace nvs {
     ErrorCode MemoryManager::Impl_::FindLog(PoolId id, Log **log)
     {
         assert(is_ready_);
-        assert(id>0);
+        assert(id>=0);
 
         ErrorCode  ret = NO_ERROR;
 
