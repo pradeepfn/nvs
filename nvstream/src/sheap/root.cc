@@ -34,6 +34,7 @@ namespace nvs{
      }
 
     ErrorCode RootHeap::Create() {
+        LOG(error) << "This path should not be executed!!!";
         pop = pmemobj_create(root_file_path.c_str(),
                              POBJ_LAYOUT_NAME(nvstream_store),
                              PMEMOBJ_MIN_POOL, 0666);
