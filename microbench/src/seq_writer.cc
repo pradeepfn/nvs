@@ -9,12 +9,19 @@
 #define row 3
 #define column 4
 
-int main(){
+int main(int argc, char *argv[]){
+
+    if(argc < 2) {
+        std::cout << "invalid arguments" << std::endl;
+        return 1;
+    }
+    std::string rank = std::string(argv[1]);
+
 
     uint64_t  version = 0;
     int **var3;
     nvs::ErrorCode ret;
-    std::string store_name = STORE_ID + std::string("/0");
+    std::string store_name = std::string(STORE_ID) + "/" + rank;
     int var[row][column] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};
     uint64_t size = row * sizeof(*var3) + row*(column * sizeof(**var3));
     void *ptr;

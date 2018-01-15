@@ -27,6 +27,4 @@ int main(int argc, char **argv){
 	log_info("successfully created and formatted shm region");
 	return 0;
 
-error:
-	exit(1);
 }

@@ -8,6 +8,8 @@
 
 #define MAX_LOGS 256
 
+#include <libpmemobj/base.h>
+#include <libpmemobj.h>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 POBJ_LAYOUT_BEGIN(nvstream_store);

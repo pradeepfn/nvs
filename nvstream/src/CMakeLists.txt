@@ -1,8 +1,8 @@
-#add_subdirectory(client)
+
 add_subdirectory(common)
 add_subdirectory(kvstore)
 add_subdirectory(sheap)
-
+add_subdirectory(tools)
 #we populate YUMA_SRC variable within sub-directories
 
 # IDE support

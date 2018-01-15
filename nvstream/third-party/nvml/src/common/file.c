@@ -513,13 +513,13 @@ util_file_open(const char *path, size_t *size, size_t minsize, int flags)
 		ERR("!open \"%s\"", path);
 		return -1;
 	}
-
+	/*
 	if (os_flock(fd, OS_LOCK_EX | OS_LOCK_NB) < 0) {
 		ERR("!flock \"%s\"", path);
 		(void) os_close(fd);
 		return -1;
 	}
-
+	*/
 	if (size || minsize) {
 		if (size)
 			ASSERTeq(*size, 0);
@@ -547,8 +547,8 @@ util_file_open(const char *path, size_t *size, size_t minsize, int flags)
 	return fd;
 err:
 	oerrno = errno;
-	if (os_flock(fd, OS_LOCK_UN))
-		ERR("!flock unlock");
+	//if (os_flock(fd, OS_LOCK_UN))
+	//	ERR("!flock unlock");
 	(void) os_close(fd);
 	errno = oerrno;
 	return -1;
