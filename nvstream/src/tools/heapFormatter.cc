@@ -30,7 +30,7 @@ int main(int argc, char *argv[]) {
     //TODO : persist
     TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
             D_RW(root_heap)->length = 0;
-
+    pmemobj_close(pop);
     std::cout << "successfully created the root heap";
 
     return nvs::ErrorCode::NO_ERROR;

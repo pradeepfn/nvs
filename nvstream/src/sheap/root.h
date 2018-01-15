@@ -9,6 +9,8 @@
 #include <string>
 #include <nvs/pool_id.h>
 #include <libpmemobj.h>
+#include <boost/interprocess/managed_shared_memory.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 #include "nvs/errorCode.h"
 
@@ -37,6 +39,8 @@ namespace nvs {
     private:
         std::string root_file_path;
         PMEMobjpool *pop;
+        boost::interprocess::managed_shared_memory managed_shm;
+        boost::interprocess::interprocess_mutex *mtx;
     };
 
 } // namespace nvs

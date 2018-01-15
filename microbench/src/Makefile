@@ -2,7 +2,7 @@ FC=mpif90
 CC=g++
 CFLAGS=-g  -std=c++11 -I/home/pradeep/nvs/nvstream/include
 FFLAGS=-g
-LDFLAGS=-g ../../nvstream/build/src/libyuma.a ../../nvstream/third-party/nvml/src/debug/libpmemlog.a ../../nvstream/third-party/nvml/src/debug/libpmemobj.a ../../nvstream/third-party/nvml/src/debug/libpmem.a  -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lstdc++ -ldl
+LDFLAGS=-g ../../nvstream/build/src/libyuma.a ../../nvstream/third-party/nvml/src/debug/libpmemlog.a ../../nvstream/third-party/nvml/src/debug/libpmemobj.a ../../nvstream/third-party/nvml/src/debug/libpmem.a  -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lrt -lstdc++ -ldl
 #LDFLAGS=-g  -lpthread -lssl -lcrypto
 main: parallel_writer.o allocate.o wrapper.o
 	$(FC) -o $@ $^ $(LDFLAGS)

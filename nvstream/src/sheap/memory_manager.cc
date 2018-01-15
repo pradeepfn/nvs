@@ -54,7 +54,7 @@ namespace nvs {
     ErrorCode MemoryManager::Impl_::Init()
     {
 
-        // create SHELF_BASE_DIR if it does not exist
+        /*// create SHELF_BASE_DIR if it does not exist
         boost::filesystem::path nvs_base_path = boost::filesystem::path(NVS_BASE_DIR);
         if (boost::filesystem::exists(nvs_base_path) == false)
         {
@@ -68,12 +68,9 @@ namespace nvs {
         ErrorCode e_ret = root_heap_.Open();
 
         if(e_ret == PMEM_ERROR){ //TODO figure out a better way to do this
-            e_ret = root_heap_.Create();
-            if(e_ret != NO_ERROR){
-                LOG(fatal) << "NVS: failed to create new heap";
-                exit(1);
-            }
-        }
+            LOG(fatal) << "NVS: failed to open heap";
+            return PMEM_ERROR;
+        }*/
 
         is_ready_ = true;
         return NO_ERROR;
@@ -81,12 +78,12 @@ namespace nvs {
 
     ErrorCode MemoryManager::Impl_::Final()
     {
-        ErrorCode ret = root_heap_.Close();
+        /*ErrorCode ret = root_heap_.Close();
         if (ret!=NO_ERROR)
         {
             LOG(fatal) << "NVS: Root Heap close failed" << rootHeapPath;
             exit(1);
-        }
+        }*/
         is_ready_ = false;
         return NO_ERROR;
     }
