@@ -219,7 +219,7 @@ program gtc
 !  call system_stats()
 #endif
 #ifdef _YUMA
-  call px_finalize()
+  call nvs_finalize()
 
 #endif
 

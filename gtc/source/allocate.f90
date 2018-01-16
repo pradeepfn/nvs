@@ -94,8 +94,4 @@ contains
         call c_f_pointer(cptr,arr,[row,col,z])
     end subroutine
 
-    subroutine free_1d_real(arr)
-        real, pointer :: arr(:)
-        call px_free(arr)
-    end subroutine
 end module

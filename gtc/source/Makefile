@@ -55,9 +55,11 @@ OPENMP=n
 ESSL=y
 
 DFLAG= -g -D_YUMA
-CFLAG= -I/net/hu21/pfernand/checkout/phoenix/include
-LDFLAG=-L/net/hu21/pfernand/checkout/phoenix/lib -lphoenix -lstdc++  -larmci
-
+#DFLAG= -g
+CFLAG=
+CPLUSFLAGS=-std=c++11 -I/home/pradeep/nvs/nvstream/include
+LDFLAG= -g
+FLDFLAGS= -g /home/pradeep/nvs/nvstream/build/src/libyuma.a /home/pradeep/nvs/nvstream/third-party/nvml/src/debug/libpmemlog.a /home/pradeep/nvs/nvstream/third-party/nvml/src/debug/libpmemobj.a /home/pradeep/nvs/nvstream/third-party/nvml/src/debug/libpmem.a  -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lrt -lstdc++ -ldl
 
 # Default names of some platform-dependent files
 SETUP:=setup.o
@@ -282,8 +284,7 @@ OBJ:=allocate.o module.o main.o function.o $(SETUP) ran_num_gen.o set_random_val
 # selectmode.o volume.o 
 
 $(CMD): $(OBJ)
-	$(CMP) $(OMPOPT) $(OPT) -o $(CMD) $(OBJ) $(LIB) -L/net/hu21/pfernand/checkout/phoenix/lib \
-	-lphoenix -lssl -lstdc++ 
+	$(CMP) $(OMPOPT) $(OPT) -o $(CMD) $(OBJ) $(LIB) $(FLDFLAGS)
 
 $(OBJ): module.o
 
@@ -301,6 +302,10 @@ track_analysis: module.o track_analysis.o
 
 %.o:    %.c 
 	mpicc -g $(CFLAG) -c $<
+
+
+%.o:    %.cc
+	g++ $(CPLUSFLAGS) -c $<
 
 # The following tag is meant to "clean" the directory by removing the
 # executable along with all the object files created by the compilation 

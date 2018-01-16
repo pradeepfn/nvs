@@ -23,7 +23,7 @@ subroutine snapshot
 ! write particle data for re-run
  !call restart_write
 #ifdef _YUMA
-  call px_snapshot()
+  call nvs_snapshot()
 #endif
 ! number of poloidal grid
   jm=mtheta(mpsi/2)

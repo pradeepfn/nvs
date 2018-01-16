@@ -100,7 +100,7 @@ namespace nvs {
 
         if (root_heap_.isLogExist(id)){
             //TODO: release lock
-            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << "in use";
+            LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << ") in use";
             return ID_IN_USE;
         }
 
