@@ -21,6 +21,8 @@ namespace nvs{
 
         ErrorCode put(std::string key, uint64_t version);
 
+        ErrorCode put_all();
+
         ErrorCode get(std::string key, uint64_t version, void *obj_addr);
 
         void stats();
@@ -36,6 +38,11 @@ namespace nvs{
         uint64_t put_end;
         uint64_t put_total;
         uint64_t put_niterations;
+
+        uint64_t putall_start;
+        uint64_t putall_end;
+        uint64_t putall_total;
+        uint64_t putall_niterations;
     };
 
 
@@ -74,15 +81,28 @@ namespace nvs{
         return ret;
     }
 
+
+    ErrorCode TimingStore::put_all() {
+        ErrorCode ret;
+        putall_start = read_tsc();
+        ret = this->store->put_all();
+        putall_end = read_tsc();
+        putall_total += (putall_end - putall_start);
+        putall_niterations++;
+        return ret;
+    }
+
     void TimingStore::stats() {
-        float  ave_get=0, ave_put=0;
+        float  ave_get=0, ave_put=0, ave_putall=0;
 
         if(get_niterations){ ave_get = (float)get_total * MEGA/ (get_niterations * get_cpu_freq());}
         if(put_niterations){ ave_put = (float)put_total * MEGA/ (put_niterations * get_cpu_freq());}
+        if(putall_niterations){ ave_putall = (float)putall_total * MEGA/ (putall_niterations * get_cpu_freq());}
 
         std::cout << std::endl;
         std::cout << "average get time (micro-sec) : " << ave_get << std::endl;
         std::cout << "average put time (micro-sec) : " << ave_put << std::endl;
+        std::cout << "average put_all time (micro-sec) : " << ave_putall << std::endl;
 
     }
 

@@ -46,11 +46,10 @@ program micro
     array_1d = 1
 
     call nvs_snapshot(mype)
-
-    call nvs_finalize()
     if(mype == 0) write(0,*)'End of benchmark. Bye!!'
 
     call MPI_BARRIER(MPI_COMM_WORLD,ierr)
+    call nvs_finalize()
     call MPI_FINALIZE(ierr)
 
 

@@ -25,9 +25,10 @@ extern "C" {
     }
 
     void nvs_snapshot_(int *proc_id) {
-        //st->put_all();
+        st->put_all();
     }
 
     int nvs_finalize_() {
+        st->stats();
     }
 }

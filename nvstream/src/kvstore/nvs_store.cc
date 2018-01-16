@@ -51,6 +51,7 @@ namespace nvs{
         Object *obj = new Object(key,size,0,tmp_ptr);
         std::map<std::string, Object *>::iterator it =   objectMap.find(key);
         if(it == objectMap.end()){
+            obj->setVersion(0);
             objectMap[key] = obj;
         }else{
             LOG(fatal) << "not implemented yet";
@@ -111,6 +112,56 @@ namespace nvs{
             LOG(error) << "element not found";
             return ELEM_NOT_FOUND;
     }
+
+
+    /*
+     * implements the bulk snapshot method.
+     * TODO: use our own log. PmemLog does not suport multi-process data edits
+     * TODO: optimize with only two fences per bulk write
+     */
+    ErrorCode NVSStore::put_all() {
+
+        struct iovec *iovp, *next_iovp;
+        ErrorCode ret;
+        struct logentry l_entry;
+
+        std::map<std::string, Object *>::iterator it;
+        for(it = objectMap.begin(); it != objectMap.end(); it++){
+            Object *obj = it->second;
+            uint64_t version = obj->getVersion()+1;
+
+            //construct IO vector
+            int iovcnt = 2; // data + header
+            iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
+
+            next_iovp = iovp;
+            //populate header
+            l_entry.version = version;
+            snprintf(l_entry.key, 64,"%s", obj->getName().c_str());
+            l_entry.len = obj->getSize();
+
+            next_iovp->iov_base = &l_entry;
+            next_iovp->iov_len = sizeof(l_entry);
+            next_iovp++;
+            //data
+
+            next_iovp->iov_base = obj->getPtr();
+            next_iovp->iov_len = obj->getSize();
+
+
+            ret = this->log->appendv(iovp,iovcnt);
+            LOG(debug)<< "Object  - " << obj->getName() << " saved on successfully";
+            if(ret != NO_ERROR){
+                LOG(fatal) << "Store: append failed";
+                exit(1);
+            }
+            free(iovp);
+            //increase the soft state
+            obj->setVersion(version);
+        }
+        return NO_ERROR;
+    }
+
 
 
     static int

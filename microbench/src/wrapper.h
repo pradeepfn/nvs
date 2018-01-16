@@ -18,6 +18,7 @@ void nvs_free_(void* ptr);
 
 void nvs_snapshot_(int *proc_id);
 
+
 int nvs_finalize_();
 
 #ifdef __cplusplus
