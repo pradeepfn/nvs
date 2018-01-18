@@ -64,7 +64,7 @@ memcpy_worker(void *args)
     for (i = 0; i < nchunks; i++){
 			memcpy(&shared_area[i*chunksize],data_chunk,chunksize);
             //TODO: experiment point
-            flush_clflush(&shared_area[i*chunksize],chunksize);
+            //flush_clflush(&shared_area[i*chunksize],chunksize);
 
 	}
     return (void *) 0;
@@ -162,13 +162,15 @@ unsigned long tonum(char *ptr){
     snprintf(str,100,"%s", ptr);
     char c = str[strlen(str) - 1];
     int temp = strlen(str);
-    str[temp - 1] = 0; // new null termination
     switch (c) {
         case 'k':
+    	    str[temp - 1] = 0;
             return atol(str) * 1024;
         case 'm':
+    	    str[temp - 1] = 0;
             return atol(str) * 1024 * 1024;
         case 'g':
+    	    str[temp - 1] = 0;
             return atol(str) * 1024 * 1024 * 1024;
         default:
             return atol(str);
@@ -216,16 +218,19 @@ main(int argc, char **argv)
 
     filesize = tonum(filesizestr);
     chunksize = tonum(chunksizestr);
-    if(chunksize % 16){
-        log_err("chunks size should be multiples of 16");
-        exit(-1);
-    }
     stepsize = tonum(stepsizestr);
 
     //debug
     printf("file size  :  %s  ,  %ld \n", filesizestr,filesize);
     printf("step size  :  %s  ,  %ld \n", stepsizestr,stepsize);
     printf("chunk size :  %s  ,  %ld \n", chunksizestr,chunksize);
+    fflush(stdout);
+
+    if(chunksize % 16){
+        log_err("chunks size should be multiples of 16");
+        exit(-1);
+    }
+
 #else
     if (argc > 1) {
         ncores = atoi(argv[1]);

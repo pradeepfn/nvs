@@ -8,6 +8,7 @@ set(CMAKE_BUILD_TYPE Debug)
 
 add_definitions(-DNDEBUG)
 add_definitions(-D__YUMA)
+#add_definitions(-D__YUMA_STREAM)
 set(CMAKE_C_FLAGS "-O2 -Wall")
 
 set(SOURCES

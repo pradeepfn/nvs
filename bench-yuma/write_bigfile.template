@@ -1,4 +1,4 @@
-set $dir=/mnt/pmfs
+set $dir=/dev/shm
 set $cached=false
 set $count=%(nchunks)s
 set $iosize=%(chunk_size)s

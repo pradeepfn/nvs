@@ -1,4 +1,4 @@
-set $dir=/mnt/pmfs
+set $dir=/dev/shm
 set $nfiles=%(nfiles)s
 set $filesize=%(step_size)s
 set $iosize=%(chunk_size)s

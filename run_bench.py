@@ -12,14 +12,20 @@ __fbench_root = '/nethome/pfernando3/yuma/bench-yuma'  # root of fbench script l
 __empty = ''
 __newfile = 'newfile'
 __bigfile = 'bigfile'
+__tmpfsnewfile = 'tmpfsnewfile'
+__tmpfsbigfile = 'tmpfsbigfile'
 __mmap = 'mmap'
 __mmapnoflush = 'mmapnoflush'
+__mmapstream = 'mmapstream'
 
 __workload_l = []
 __workload_l.append(__newfile)
 __workload_l.append(__bigfile)
+__workload_l.append(__tmpfsnewfile)
+__workload_l.append(__tmpfsbigfile)
 __workload_l.append(__mmap)
 __workload_l.append(__mmapnoflush)
+__workload_l.append(__mmapstream)
 
 parser = argparse.ArgumentParser(prog="runscript", description="script to run yuma")
 parser.add_argument('-w', dest='workload', default=__empty, help='', choices=__workload_l)
@@ -133,6 +139,14 @@ if __name__ == '__main__':
         msg("chunk size : " + __chunk_size + " step_size : " + __step_size + " nfiles : " + str(__nfiles))
         data = {"chunk_size": __chunk_size, "step_size": __step_size, "nfiles": __nfiles}
         fb('write_newfile', data)
+    elif w == __tmpfsnewfile:
+        __chunk_size = c
+        __step_size = s
+        __nfiles = tonum(t) / tonum(s)
+        msg("chunk size : " + __chunk_size + " step_size : " + __step_size + " nfiles : " + str(__nfiles))
+        data = {"chunk_size": __chunk_size, "step_size": __step_size, "nfiles": __nfiles}
+        fb('write_newfile', data)
+
 
     elif w == __bigfile:
         __chunk_size = c
@@ -140,9 +154,20 @@ if __name__ == '__main__':
         __nchunks = tonum(t) / tonum(c)
         data = {"chunk_size": __chunk_size, "nchunks": __nchunks}
         fb('write_bigfile', data)
+   
+    elif w == __tmpfsbigfile:
+        __chunk_size = c
+        __step_size = s
+        __nchunks = tonum(t) / tonum(c)
+        data = {"chunk_size": __chunk_size, "nchunks": __nchunks}
+        fb('write_bigfile', data)
+
+
     elif w == __mmap:
         mmapb(t, s, c)
     elif w == __mmapnoflush:
+        mmapb(t, s, c)
+    elif w == __mmapstream:
         mmapb(t, s, c)
     else:
         sys.exit(0)
