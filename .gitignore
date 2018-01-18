@@ -31,3 +31,5 @@
 armci/
 filebench/*
 results/*
+
+*/nvstream/build/*

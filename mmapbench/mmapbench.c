@@ -62,10 +62,9 @@ memcpy_worker(void *args)
 	uint64_t nchunks = filesize/chunksize;
 
     for (i = 0; i < nchunks; i++){
-			memcpy(&shared_area[i*chunksize],data_chunk,chunksize);
+	    memcpy(&shared_area[i*chunksize],data_chunk,chunksize);
             //TODO: experiment point
-            //flush_clflush(&shared_area[i*chunksize],chunksize);
-
+            flush_clflush(&shared_area[i*chunksize],chunksize);
 	}
     return (void *) 0;
 }
@@ -164,13 +163,13 @@ unsigned long tonum(char *ptr){
     int temp = strlen(str);
     switch (c) {
         case 'k':
-    	    str[temp - 1] = 0;
+            str[temp - 1] = 0;
             return atol(str) * 1024;
         case 'm':
-    	    str[temp - 1] = 0;
+            str[temp - 1] = 0;
             return atol(str) * 1024 * 1024;
         case 'g':
-    	    str[temp - 1] = 0;
+            str[temp - 1] = 0;
             return atol(str) * 1024 * 1024 * 1024;
         default:
             return atol(str);
@@ -218,6 +217,10 @@ main(int argc, char **argv)
 
     filesize = tonum(filesizestr);
     chunksize = tonum(chunksizestr);
+<<<<<<< HEAD
+=======
+
+>>>>>>> 0f853285d7c364b1b14550790b1c29edbff87cc7
     stepsize = tonum(stepsizestr);
 
     //debug
@@ -230,7 +233,6 @@ main(int argc, char **argv)
         log_err("chunks size should be multiples of 16");
         exit(-1);
     }
-
 #else
     if (argc > 1) {
         ncores = atoi(argv[1]);
