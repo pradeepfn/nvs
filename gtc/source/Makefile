@@ -59,7 +59,7 @@ DFLAG= -g -D_YUMA
 CFLAG=
 CPLUSFLAGS=-std=c++11 -I../../nvstream/include
 LDFLAG= -g
-FLDFLAGS= -g ../../nvstream/build/src/libyuma.a ../../nvstream/third-party/nvml/src/debug/libpmemlog.a ../../nvstream/third-party/nvml/src/debug/libpmemobj.a ../../nvstream/third-party/nvml/src/debug/libpmem.a   /usr/local/gcc-7.1/lib64/libstdc++.a -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lrt -ldl
+FLDFLAGS= -g ../../nvstream/build/src/libyuma.a ../../nvstream/third-party/nvml/src/debug/libpmemlog.a ../../nvstream/third-party/nvml/src/debug/libpmemobj.a ../../nvstream/third-party/nvml/src/debug/libpmem.a -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lrt -lstdc++ -ldl
 
 # Default names of some platform-dependent files
 SETUP:=setup.o

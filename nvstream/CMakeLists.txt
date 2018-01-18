@@ -13,8 +13,8 @@ link_directories(/usr/local/lib)
 include_directories(/usr/local/include)
 
 # nvml directories
-include_directories(${PROJECT_SOURCE_DIR}/../../nvml/src/include)
-link_directories(${PROJECT_SOURCE_DIR}/../../nvml/src/debug)
+include_directories(${PROJECT_SOURCE_DIR}/third-party/nvml/src/include)
+link_directories(${PROJECT_SOURCE_DIR}/third-party/nvml/src/debug)
 
 #version number
 set (NVS_VERSION_MAJOR 1)
