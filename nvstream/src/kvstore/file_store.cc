@@ -11,7 +11,7 @@ namespace nvs{
             bool ret = boost::filesystem::create_directory(fsPath);
             if (ret == false)
             {
-                LOG(fatal) << "FileStore: Failed to create ROOT_FILE_PATH"
+                LOG(fatal) << "FileStore: Failed to create ROOT_FILE_PATH : "
                            << ROOT_FILE_PATH;
                 exit(1);
             }
@@ -31,7 +31,8 @@ namespace nvs{
 
             FILE *file = fopen(file_name.c_str(), "w");
             if (file == NULL) {
-                LOG(fatal) << "FileStore: file open failed";
+                LOG(fatal) << "FileStore: file open failed : "
+                            << file_name;
                 exit(1);
             }
             size_t tsize = fwrite(obj->getPtr(),sizeof(char),
@@ -60,7 +61,8 @@ namespace nvs{
 
             FILE *file = fopen(file_name.c_str(), "w");
             if (file == NULL) {
-                LOG(fatal) << "FileStore: file open failed";
+                LOG(fatal) << "FileStore: file open failed : "
+                            << file_name;
                 exit(1);
             }
             size_t tsize = fwrite(obj->getPtr(),sizeof(char),
