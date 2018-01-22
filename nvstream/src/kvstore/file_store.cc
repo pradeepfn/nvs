@@ -46,6 +46,35 @@ namespace nvs{
         return ELEM_NOT_FOUND;
     }
 
+    ErrorCode FileStore::put_all() {
+        std::map<std::string, Object *>::iterator it;
+        // first traverse the map and find the key object
+        for(it=objectMap.begin(); it!=objectMap.end(); it++) {
+
+            Object *obj = it->second;
+            std::string key = it->first;
+            uint64_t version = obj->getVersion()+1;
+            // file name
+            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
+                                    key + std::to_string(version);
+
+            FILE *file = fopen(file_name.c_str(), "w");
+            if (file == NULL) {
+                LOG(fatal) << "FileStore: file open failed";
+                exit(1);
+            }
+            size_t tsize = fwrite(obj->getPtr(),sizeof(char),
+                                  obj->getSize(),file);
+            assert(tsize == obj->getSize());
+
+            fsync(fileno(file));
+            fclose(file);
+            obj->setVersion(version);
+            return NO_ERROR;
+        }
+        LOG(error) << "FileStore: key not found";
+        return ELEM_NOT_FOUND;
+    }
 
     ErrorCode FileStore::get(std::string key, uint64_t version, void *addr) {
 

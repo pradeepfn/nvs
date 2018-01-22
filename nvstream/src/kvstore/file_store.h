@@ -30,6 +30,8 @@ namespace nvs{
 
         ErrorCode put(std::string key, uint64_t version);
 
+        ErrorCode put_all();
+
         ErrorCode get(std::string key, uint64_t version, void *obj_addr);
 
         void stats();
