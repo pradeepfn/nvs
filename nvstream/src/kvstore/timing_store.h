@@ -108,7 +108,7 @@ namespace nvs{
         std::cout << "average get time (micro-sec) : " << ave_get << std::endl;
         std::cout << "average put time (micro-sec) : " << ave_put << std::endl;
         std::cout << "average put_all time (micro-sec) : " << ave_putall << std::endl;
-        std::cout << "snapshot size (MB) : " << (total_size/(1024*1024)) << std::endl;
+        std::cout << "snapshot size (MB) : " << ((float)total_size/(1024*1024)) << std::endl;
 
     }
 
