@@ -13,7 +13,7 @@
 
 /*
  *
- * I/O happens through fiel API. New file is created for each version
+ * I/O happens through file API. New file is created for each version
  *
  */
 

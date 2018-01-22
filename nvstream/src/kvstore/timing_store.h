@@ -43,6 +43,10 @@ namespace nvs{
         uint64_t putall_end;
         uint64_t putall_total;
         uint64_t putall_niterations;
+
+
+        uint64_t total_size;
+
     };
 
 
@@ -51,6 +55,7 @@ namespace nvs{
         get_total = 0;
         put_niterations = 0;
         put_total=0;
+        total_size=0;
     }
 
     ErrorCode TimingStore::get(std::string key, uint64_t version, void *obj_addr) {
@@ -67,7 +72,7 @@ namespace nvs{
         ErrorCode ret;
 
         ret = this->store->create_obj(key,size,obj_addr);
-
+        total_size += size;
         return ret;
     }
 
@@ -103,6 +108,7 @@ namespace nvs{
         std::cout << "average get time (micro-sec) : " << ave_get << std::endl;
         std::cout << "average put time (micro-sec) : " << ave_put << std::endl;
         std::cout << "average put_all time (micro-sec) : " << ave_putall << std::endl;
+        std::cout << "snapshot size (MB) : " << total_size/1024*1024 << std::endl;
 
     }
 
