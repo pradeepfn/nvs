@@ -6,9 +6,9 @@ namespace nvs{
 
 
     FileStore::FileStore(std::string storeId):storeId(storeId){
-        boost::filesystem::path fsPath = boost::filesystem::path(ROOT_FILE_PATH);
+        boost::filesystem::path fsPath = boost::filesystem::path(std::string(ROOT_FILE_PATH) + "/" + this->storeId);
         if(!boost::filesystem::exists(fsPath)){
-            bool ret = boost::filesystem::create_directory(fsPath);
+            bool ret = boost::filesystem::create_directories(fsPath);
             if (ret == false)
             {
                 LOG(fatal) << "FileStore: Failed to create ROOT_FILE_PATH : "
@@ -26,7 +26,7 @@ namespace nvs{
 
             Object *obj = it->second;
             // file name
-            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
+            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
                                     key + std::to_string(version);
 
             FILE *file = fopen(file_name.c_str(), "w");
@@ -56,7 +56,7 @@ namespace nvs{
             std::string key = it->first;
             uint64_t version = obj->getVersion()+1;
             // file name
-            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
+            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
                                     key + std::to_string(version);
 
             FILE *file = fopen(file_name.c_str(), "w");
