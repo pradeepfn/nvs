@@ -36,6 +36,8 @@ namespace nvs {
 
         ErrorCode get(std::string key, uint64_t version, void *obj_addr);
 
+        ErrorCode get_with_malloc(std::string key, uint64_t version, void **addr);
+
         void stats();
 
     };

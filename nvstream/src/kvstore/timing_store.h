@@ -25,6 +25,8 @@ namespace nvs{
 
         ErrorCode get(std::string key, uint64_t version, void *obj_addr);
 
+        ErrorCode get_with_malloc(std::string key, uint64_t version, void **addr);
+
         void stats();
 
     private:
@@ -67,6 +69,18 @@ namespace nvs{
         get_niterations++;
         return ret;
     }
+
+
+    ErrorCode TimingStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
+        ErrorCode ret;
+        get_start = read_tsc();
+        ret = this->store->get_with_malloc(key,version,addr);
+        get_end = read_tsc();
+        get_total += (get_end - get_start);
+        get_niterations++;
+        return ret;
+    }
+
 
     ErrorCode TimingStore::create_obj(std::string key, uint64_t size, void **obj_addr) {
         ErrorCode ret;

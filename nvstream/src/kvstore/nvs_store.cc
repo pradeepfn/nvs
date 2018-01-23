@@ -213,6 +213,35 @@ namespace nvs{
 
     }
 
+    ErrorCode NVSStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
+
+        struct walkentry wentry;
+        wentry.version = version;
+        wentry.start_offset = 0;
+        snprintf(wentry.key,64,"%s",key.c_str());
+
+        this->log->walk(processLog, &wentry);
+
+        if(wentry.err != NO_ERROR){
+            return ID_NOT_FOUND;
+        }
+
+        //find the object from the object map, if not found -- > create one
+        std::map<std::string, Object *>::iterator it;
+        Object *obj;
+        if((it=objectMap.find(key)) != objectMap.end()){
+            obj = it->second;
+        }else{
+            void *tmp_ptr = malloc(wentry.len);
+            obj = new Object(key,wentry.len,version,tmp_ptr);
+            objectMap[key] = obj;
+        }
+        obj->setVersion(version);
+        //*obj_addr = wentry.datap;
+        memcpy(obj->getPtr(),wentry.datap,wentry.len);
+        *addr = obj->getPtr();
+        return NO_ERROR;
+    }
 
     Key * NVSStore::findKey(std::string key) {
 
