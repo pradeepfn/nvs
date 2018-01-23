@@ -1,5 +1,6 @@
 #include <nvs/log.h>
 #include <boost/filesystem/operations.hpp>
+#include <boost/algorithm/string.hpp>
 #include "file_store.h"
 
 namespace nvs{
@@ -19,7 +20,7 @@ namespace nvs{
     }
 
     ErrorCode FileStore::put(std::string key, uint64_t version) {
-
+        boost::trim_right(key);
         std::map<std::string, Object *>::iterator it;
         // first traverse the map and find the key object
         if((it = objectMap.find(key)) != objectMap.end()) {
@@ -81,8 +82,9 @@ namespace nvs{
     ErrorCode FileStore::get(std::string key, uint64_t version, void *addr) {
 
             // file name
+            boost::trim_right(key);
             std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
-                                    key + std::to_string(version);
+                                     key + std::to_string(version);
 
             //find the size of the file
             boost::filesystem::path path(file_name);
@@ -110,14 +112,44 @@ namespace nvs{
 
 
     ErrorCode FileStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
+        // file name
+        boost::trim_right(key);
+        std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
+                                key + std::to_string(version);
+        //find the size of the file
+        boost::filesystem::path path(file_name);
+        boost::system::error_code ec;
+        boost::uintmax_t  filesize = boost::filesystem::file_size(path, ec);
+        if(ec){
+            LOG(fatal) << "FileStore: file size error";
+            return ELEM_NOT_FOUND;
+        }
+        FILE *file = fopen(file_name.c_str(), "r");
+        if (file == NULL) {
+            LOG(fatal) << "FileStore: file open failed";
+            return ELEM_NOT_FOUND;
+        }
 
-
-
-
+        std::map<std::string, Object *>::iterator it;
+        Object *obj;
+        if((it=objectMap.find(key)) != objectMap.end()){
+            obj=it->second;
+        }else{
+            void *tmp_ptr = malloc(filesize);
+            obj = new Object(key,filesize,version,tmp_ptr);
+            objectMap[key] = obj;
+        }
+        obj->setVersion(version);
+        size_t tsize = fread(obj->getPtr(),sizeof(char),
+                             filesize,file);
+        assert(tsize == filesize);
+        fclose(file);
+        *addr = obj->getPtr();
+        return NO_ERROR;
     }
 
     ErrorCode FileStore::create_obj(std::string key, uint64_t size, void **obj_addr) {
-
+        boost::trim_right(key);
         void *tmp_ptr = malloc(size);
         Object *obj = new Object(key,size,0,tmp_ptr);
         std::map<std::string, Object *>::iterator it =   objectMap.find(key);
