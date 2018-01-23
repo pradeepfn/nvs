@@ -39,9 +39,11 @@ int main(int argc, char **argv)
     nvs::init_log(nvs::SeverityLevel::all,"");
 
     // we have to read variables one by one. Bulk read make no sense...
-for(int v =0; v < N_VERSIONS;v++)
+
+    void *dataPtr;
+    for(int v =0; v < N_VERSIONS;v++)
     for(int i =0; i < var_array->length(); i++){
-        st->get(var_array[i],v);
+        st->get_with_malloc(var_array[i],v, &dataPtr);
     }
 
 

@@ -83,7 +83,7 @@ namespace nvs{
 
             // file name
             boost::trim_right(key);
-            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
+            std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
                                      key + std::to_string(version);
 
             //find the size of the file
@@ -114,7 +114,7 @@ namespace nvs{
     ErrorCode FileStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
         // file name
         boost::trim_right(key);
-        std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId +
+        std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
                                 key + std::to_string(version);
         //find the size of the file
         boost::filesystem::path path(file_name);
