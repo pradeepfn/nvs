@@ -108,6 +108,14 @@ namespace nvs{
 
     }
 
+
+    ErrorCode FileStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
+
+
+
+
+    }
+
     ErrorCode FileStore::create_obj(std::string key, uint64_t size, void **obj_addr) {
 
         void *tmp_ptr = malloc(size);

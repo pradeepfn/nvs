@@ -24,6 +24,9 @@ namespace nvs {
 
         virtual ErrorCode get(std::string key, uint64_t version, void *addr)=0;
 
+        /* returns object. Runtime allocates the memory for returned object */
+        virtual ErrorCode get_with_malloc(std::string key, uint64_t version, void **addr) = 0;
+
         virtual void stats() = 0;
 
     };
