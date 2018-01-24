@@ -40,11 +40,13 @@ program micro
     call nvs_init(mype,nproc)
 
     nsize = 10
-    call alloc_1d_real(array_1d, nsize, "array_1d", mype, nsize)
+    varname = "array_1d"//char(0)
+    call alloc_1d_real(array_1d, nsize,varname, mype, nsize)
     !populate the array
 
     array_1d = 1
 
+    call nvs_snapshot(mype)
     call nvs_snapshot(mype)
     if(mype == 0) write(0,*)'End of benchmark. Bye!!'
 

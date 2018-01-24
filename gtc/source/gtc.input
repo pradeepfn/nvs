@@ -3,6 +3,7 @@
   mstep=10,
   msnap=1,
   ndiag=1,
+  nhybrid=1,
   nonlinear=1.0,
   paranl=1.0
   mode00=1

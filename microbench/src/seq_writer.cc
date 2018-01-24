@@ -46,6 +46,8 @@ int main(int argc, char *argv[]){
     }
 
     st->put("var3", ++version);
+    st->put("var3", ++version);
+    st->put("var3", ++version);
 
     st->stats();
     return 0;

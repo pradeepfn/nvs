@@ -47,6 +47,7 @@ namespace nvs{
     ErrorCode NVSStore::create_obj(std::string key, uint64_t size, void **obj_addr)
     {
 
+        LOG(debug) << "Object created : " + key;
         void *tmp_ptr = malloc(size);
         Object *obj = new Object(key,size,0,tmp_ptr);
         std::map<std::string, Object *>::iterator it =   objectMap.find(key);
@@ -183,10 +184,13 @@ namespace nvs{
                 wentry->err = NO_ERROR;
                 return 0; // no error
             }else{
-                LOG(fatal) << "not implemented";
-                exit(1);
+                LOG(debug) << "looking for : " + std::string(wentry->key) + " , " +  std::to_string(wentry->version) +
+                              "   current entry : " + std::string(headerp->key) + " , " + std::to_string(headerp->version);
             }
+            buf = (char *) buf + headerp->len;
         }
+        wentry->err = ID_NOT_FOUND;
+        return -1;
     }
 
 
@@ -204,6 +208,7 @@ namespace nvs{
         this->log->walk(processLog, &wentry);
 
         if(wentry.err != NO_ERROR){
+            LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
             return ID_NOT_FOUND;
         }
 
@@ -223,6 +228,7 @@ namespace nvs{
         this->log->walk(processLog, &wentry);
 
         if(wentry.err != NO_ERROR){
+            LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
             return ID_NOT_FOUND;
         }
 
