@@ -97,7 +97,7 @@ namespace nvs{
 
     ErrorCode TimingStore::create_obj(std::string key, uint64_t size, void **obj_addr) {
         ErrorCode ret;
-
+        boost::trim_right(key);
         ret = this->store->create_obj(key,size,obj_addr);
         total_size += size;
         return ret;

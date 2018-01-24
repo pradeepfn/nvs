@@ -106,10 +106,10 @@ end module particle_decomp
 #ifdef _YUMA
   !varname = "phip00"  -- gives a segfault
   !call alloc_1d_real(phip00,mpsi+1,varname, mype, cmtsize)
-  varname = "zonali"
+  varname = "zonali"//char(0)
   cmtsize = mpsi+1
   call alloc_1d_real(zonali,mpsi+1,varname, mype, cmtsize)
-  varname = "zonale"
+  varname = "zonale"//char(0)
   call alloc_1d_real(zonale,mpsi+1,varname, mype, cmtsize)
   
   allocate (qtinv(0:mpsi),itran(0:mpsi),mtheta(0:mpsi),&
@@ -196,7 +196,7 @@ end module particle_decomp
   if(mype == 0)write(stdout,run_parameters)
 
 #ifdef _YUMA
-  varname = "phi"
+  varname = "phi"//char(0)
   cmtsize = (mzeta+1) * mgrid
   call alloc_2d_real(phi,mzeta+1,mgrid,varname, mype, cmtsize)
 
@@ -286,10 +286,10 @@ end module particle_decomp
      nparam=6
   endif
 #ifdef _YUMA
-   varname = "zion"
+   varname = "zion"//char(0)
    cmtsize = nparam * mimax
    call alloc_2d_real(zion,nparam,mimax,varname, mype, cmtsize)
-   varname = "zion0"
+   varname = "zion0"//char(0)
    cmtsize = nparam*mimax 
    call alloc_2d_real(zion0,nparam,mimax,varname, mype, cmtsize)
   allocate(jtion0(4,mimax),&
@@ -314,14 +314,14 @@ end module particle_decomp
   if(nhybrid>0)then
 #ifdef _YUMA
      cmtsize = 6*memax
-     varname = "zelectron"
+     varname = "zelectron"//char(0)
      call alloc_2d_real(zelectron,INT8(6),memax,varname, mype, cmtsize)
 
      cmtsize = 6*memax
-     varname = "zelectron0"
+     varname = "zelectron0"//char(0)
      call alloc_2d_real(zelectron0,INT8(6),memax,varname, mype, cmtsize)
  
-     varname = "phisave"
+     varname = "phisave"//char(0)
      cmtsize = (mzeta+1) * mgrid * 2*nhybrid
      call alloc_3d_real(phisave,mzeta+1,mgrid,2*nhybrid,varname,mype,cmtsize)
 

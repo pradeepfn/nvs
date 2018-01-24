@@ -99,6 +99,7 @@ namespace nvs{
             for (int i = 0; i < D_RO(root_heap)->length; i++) {
                 if (D_RO(root_heap)->log_id[i] == id) {
                     this->Close();
+                    this->mtx->unlock();
                     return true;
                 }
             }
