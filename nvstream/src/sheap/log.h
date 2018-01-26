@@ -11,6 +11,29 @@
 #include "nvs/errorCode.h"
 #include "nvs/pool_id.h"
 
+
+
+#define WORD_LENGTH 8
+#define COMMIT_FLAG -123456
+
+
+/* log header at the start of the log*/
+struct lhdr_t{
+
+    uint64_t magic_number;
+    uint64_t len;
+    // locking
+
+};
+
+/* log entry header */
+struct lehdr{
+    char kname[20];
+    uint64_t version; // only if a single data item
+    uint64_t len; // entry lenth
+    uint8_t entry_t; // entry type
+};
+
 namespace  nvs{
 
     class RootHeap;
@@ -22,18 +45,6 @@ namespace  nvs{
         Log() = delete;
         Log(std::string logpath, PoolId pool_id);
         ~Log();
-
-        ErrorCode Create(size_t shelf_size);
-        ErrorCode Destroy();
-        bool Exist();
-
-        ErrorCode Open();
-        ErrorCode Close();
-        size_t Size();
-        bool IsOpen()
-        {
-            return is_open_;
-        }
 
         ErrorCode append (char *data,size_t size);
         //TODO : get rid of pmem struct from the interface
@@ -49,12 +60,19 @@ namespace  nvs{
 
     private:
 
+        char* to_addr(uint64_t offset);
+        void persist();
+
         PoolId pool_id_;
         std::string logPath;
-        PMEMlogpool *lp;
+        char *pmemaddr;
+        size_t mapped_len;
+
         size_t size_;
+        uint64_t end_offset;
+        uint64_t write_offset;
         RootHeap *rootHeap;
-        bool is_open_;
+
     };
 
 }
