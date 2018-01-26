@@ -491,7 +491,8 @@ pmem_is_pmem_init(void)
 		 * for systems where pmem_is_pmem() isn't correctly detecting
 		 * true persistent memory.
 		 */
-		char *ptr = os_getenv("PMEM_IS_PMEM_FORCE");
+		//char *ptr = os_getenv("PMEM_IS_PMEM_FORCE");
+		char *ptr = "1";
 		if (ptr) {
 			int val = atoi(ptr);
 

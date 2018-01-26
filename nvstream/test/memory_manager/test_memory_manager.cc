@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include <nvs/pool_id.h>
+#include <nvs/log_id.h>
 #include <nvs/memory_manager.h>
 
 #include "../test.h"

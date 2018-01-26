@@ -41,28 +41,9 @@ namespace nvs{
            return NO_ERROR;
      }
 
-   /*
-     ErrorCode RootHeap::Create() {
-        LOG(error) << "This path should not be executed!!!";
-        pop = pmemobj_create(root_file_path.c_str(),
-                             POBJ_LAYOUT_NAME(nvstream_store),
-                             PMEMOBJ_MIN_POOL, 0666);
-        if (pop == NULL){
-            LOG(error) << "root.cc : error while creating root heap";
-            return PMEM_ERROR;
-        }
-        //TODO : persist
-        TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
-        D_RW(root_heap)->length = 0;
 
-        return NO_ERROR;
-    }
-    */
+    ErrorCode RootHeap::addLog(LogId id) {
 
-    ErrorCode RootHeap::addLog(PoolId id) {
-
-       /*boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
-               lock(*(this->mtx));*/
        this->mtx->lock();
        {
            this->Open();
@@ -88,9 +69,8 @@ namespace nvs{
         pop = NULL;
     }
 
-    bool RootHeap::isLogExist(PoolId id) {
-        /*boost::interprocess::scoped_lock<boost::interprocess::interprocess_mutex>
-                lock(*(this->mtx));*/
+    bool RootHeap::isLogExist(LogId id) {
+
         this->mtx->lock();
         {
             this->Open();
