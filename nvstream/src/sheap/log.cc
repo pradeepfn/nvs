@@ -127,10 +127,10 @@ namespace nvs{
 
         while(data_offset < write_offset){
 
-            if(!(*process_chunk)(&pmemaddr[data_offset], ((struct lehdr *) (pmemaddr+data_offset))->len, arg)){
+            if(!(*process_chunk)(&pmemaddr[data_offset], ((struct lehdr_t *) (pmemaddr+data_offset))->len, arg)){
                 break;
             }
-            data_offset += ((struct lehdr *) (pmemaddr+data_offset))->len + WORD_LENGTH;
+            data_offset += ((struct lehdr_t *) (pmemaddr+data_offset))->len + WORD_LENGTH;
 
         }
         //unlock

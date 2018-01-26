@@ -50,7 +50,7 @@ struct walkentry {
     uint64_t version;
     uint64_t start_offset;
     char key[KEY_LEN];
-    ErrorCode err;
+    nvs::ErrorCode err;
 
 };
 

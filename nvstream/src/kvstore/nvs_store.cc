@@ -3,9 +3,10 @@
 //
 
 #include <cstdint>
+#include <cstdlib>
 #include "nvs/log.h"
 #include "nvs_store.h"
-#include "logentry.h"
+
 
 #define LOG_SIZE 700 * 1024 * 1024LLU
 
@@ -190,7 +191,7 @@ namespace nvs{
     }
 
 
-
+/*
     static int
     processLog(const void *buf, size_t len, void *arg)
     {
@@ -200,11 +201,11 @@ namespace nvs{
         const void *endp = (char *)buf + len;
         buf = (char *)buf + wentry->start_offset;
         while(buf < endp){
-            struct logentry *headerp = (struct logentry *) buf;
+            struct lehdr_t *headerp = (struct lehdr_t *) buf;
             buf = (char *)buf + sizeof(struct logentry);
 
             //check for key and version
-            if(!strncmp(headerp->key, wentry->key,64) && headerp->version == wentry->version){
+            if(!strncmp(headerp->kname, wentry->key,64) && headerp->version == wentry->version){
                 wentry->datap = (void *)buf;
                 wentry->len = headerp->len;
                 wentry->err = NO_ERROR;
@@ -217,7 +218,7 @@ namespace nvs{
         }
         wentry->err = ID_NOT_FOUND;
         return -1;
-    }
+    }*/
 
 
 
@@ -259,7 +260,7 @@ namespace nvs{
         //wentry.start_offset = 0;
         snprintf(wentry.key,KEY_LEN,"%s",key.c_str());
 
-        this->log->walk(processLog, &wentry);
+        this->log->walk(process_chunks, &wentry);
 
         if(wentry.err != NO_ERROR){
             LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
@@ -279,7 +280,7 @@ namespace nvs{
         wentry.start_offset = 0;
         snprintf(wentry.key,KEY_LEN,"%s",key.c_str());
 
-        this->log->walk(processLog, &wentry);
+        this->log->walk(process_chunks, &wentry);
 
         if(wentry.err != NO_ERROR){
             LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);

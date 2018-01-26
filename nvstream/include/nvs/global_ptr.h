@@ -10,13 +10,13 @@
 namespace  nvs{
 
     // NVStream GlobalPtr consists of two parts: pool ID of the log, and offset
-    template<class GlobalPtrT, size_t GlobalPtrTSize, class PoolIdT, size_t PoolIdTSize,class OffsetT, size_t OffsetTSize>
+    template<class GlobalPtrT, size_t GlobalPtrTSize, class PoolIdT, size_t LogIdTSize,class OffsetT, size_t OffsetTSize>
     class GlobalPtrClass
     {
         static_assert(sizeof(GlobalPtrT)== 8, "Invalid GlobalPtrT");
-        static_assert(sizeof(PoolIdT)*8 >= PoolIdTSize, "Invalid PoolIdT");
+        static_assert(sizeof(PoolIdT)*8 >= LogIdTSize, "Invalid LogIdT");
         static_assert(sizeof(OffsetT)*8 >= OffsetTSize, "Invalid OffsetT");
-        static_assert(PoolIdTSize+OffsetTSize <= GlobalPtrTSize, "Invalid sizes");
+        static_assert(LogIdTSize+OffsetTSize <= GlobalPtrTSize, "Invalid sizes");
         static_assert(GlobalPtrTSize<=64, "GlobalPtr is at most 8 bytes"); // must fit into one uint64_t
 
     public:
@@ -82,16 +82,16 @@ namespace  nvs{
         }
 
     private:
-        static int const kPoolIdShift = OffsetTSize;
+        static int const kLogIdShift = OffsetTSize;
 
         inline GlobalPtrT EncodeGlobalPtr(PoolIdT pool_id, OffsetT offset) const
         {
-            return ((GlobalPtrT)pool_id.GetPoolId() << (kPoolIdShift)) + offset;
+            return ((GlobalPtrT)pool_id.GetLogId() << (kLogIdShift)) + offset;
         }
 
         inline PoolIdT DecodePoolId(GlobalPtrT global_ptr) const
         {
-            return PoolIdT((PoolIdStorageType)(global_ptr >> kPoolIdShift));
+            return PoolIdT((LogIdStorageType)(global_ptr >> kLogIdShift));
         }
 
         inline OffsetT DecodeOffset(GlobalPtrT global_ptr) const
@@ -109,7 +109,7 @@ namespace  nvs{
     using Offset = uint64_t;
 
 // GlobalPtr
-    using GlobalPtr = GlobalPtrClass<GlobalPtrStorageType, 64, PoolId, 8, Offset, 56>;
+    using GlobalPtr = GlobalPtrClass<GlobalPtrStorageType, 64, LogId, 8, Offset, 56>;
 
 
 }
