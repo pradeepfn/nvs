@@ -26,22 +26,51 @@ namespace nvs{
             :logPath(logPath),log_id_(log_id)
     {
 
-
         int is_pmem;
-        // if not exist we create the pmem segment
+
         if ((this->pmemaddr = (char *)pmem_map_file(logPath.c_str(), log_size,
                                       PMEM_FILE_CREATE|PMEM_FILE_EXCL,
-                                      0666, &(this->mapped_len), &is_pmem)) == NULL) {
-            LOG(fatal) << ("pmem_map_file");
+                                      0666, &(this->mapped_len), &is_pmem)) != NULL) {
+            //new map segment, populate the header
+            struct lhdr_t hdr;
+            hdr.magic_number = MAGIC_NUMBER;
+            hdr.len = this->mapped_len;
+
+            this->start_offset = sizeof(struct lhdr_t);
+            this->end_offset = this->mapped_len;
+            this->write_offset = this->start_offset;
+
+            pmem_memcpy_persist(this->pmemaddr,&hdr,sizeof(struct lhdr_t));
+
+        }else{
+            LOG(warn) << ("pmem_file may be already exist?");
+        }
+
+
+        if((this->pmemaddr == NULL) &&
+                ((this->pmemaddr = (char *)pmem_map_file(logPath.c_str(), log_size, 0, 0666,
+                        &(this->mapped_len), &is_pmem)) != NULL)){
+            //verify the segment header
+
+            struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
+            if(hdr->magic_number != MAGIC_NUMBER){
+                LOG(error) << "wrong magic number";
+                exit(1);
+            }
+            this->start_offset = sizeof(struct lhdr_t);
+            this->end_offset = this->mapped_len;
+            assert(hdr->len == this->mapped_len);
+            this->write_offset = -1; //TODO
+
+        }else{
+            LOG(error) << "map segment";
             exit(1);
         }
+
+
         if(is_pmem != 1){
             LOG(error) << "not recognized as pmem region";
         }
-        //populate the soft state.
-
-        write_offset = 1; // TODO
-
 
     }
 

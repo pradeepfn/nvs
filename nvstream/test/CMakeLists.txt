@@ -11,7 +11,7 @@ add_library(yuma_test STATIC ${YUMA_TEST_SRC})
 function (add_yuma_test file_name)
     add_executable(${file_name} ${file_name}.cc)
 
-    target_link_libraries(${file_name} yuma_test  yuma pthread gtest boost_log boost_system)
+    target_link_libraries(${file_name} yuma_test  yuma pthread gtest boost_log boost_system pmem)
     target_link_libraries(${file_name} ${ARCH_LIBS} rt)
     add_test(NAME ${file_name} COMMAND ${CMAKE_CURRENT_BINARY_DIR}/${file_name})
 endfunction()

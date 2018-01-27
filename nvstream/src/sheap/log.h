@@ -15,6 +15,7 @@
 
 #define WORD_LENGTH 8
 #define COMMIT_FLAG -123456
+#define MAGIC_NUMBER 555555
 
 #define KEY_LEN 20
 

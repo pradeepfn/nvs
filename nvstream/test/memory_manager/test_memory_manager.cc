@@ -10,17 +10,17 @@ using namespace nvs;
 TEST(MemoryManager, Log)
 {
 
-    PoolId poolId = 1;
+    LogId logId = 1;
     size_t size = 10 * 1024 * 1024LLU; // 10 MB
 
     MemoryManager *mm = MemoryManager::GetInstance();
     Log *log = NULL;
 
 
-    EXPECT_EQ(ID_NOT_FOUND, mm->FindLog(poolId, &log));
-    EXPECT_EQ(NO_ERROR, mm->CreateLog(poolId, size));
-    EXPECT_EQ(ID_IN_USE, mm->CreateLog(poolId,size));
-    EXPECT_EQ(NO_ERROR, mm->FindLog(poolId, &log));
+    EXPECT_EQ(ID_NOT_FOUND, mm->FindLog(logId, &log));
+    EXPECT_EQ(NO_ERROR, mm->CreateLog(logId, size));
+    EXPECT_EQ(ID_IN_USE, mm->CreateLog(logId,size));
+    EXPECT_EQ(NO_ERROR, mm->FindLog(logId, &log));
     assert(log != NULL);
 
     //EXPECT_EQ(NO_ERROR,mm->DestroyLog(poolId))
@@ -33,7 +33,7 @@ TEST(MemoryManager, Log)
 TEST(MemoryManager, append)
 {
 
-    PoolId poolId = 1;
+    LogId logId = 1;
     size_t size = 10 * 1024 * 1024LLU; // 10 MB
 
     MemoryManager *mm = MemoryManager::GetInstance();
@@ -41,7 +41,7 @@ TEST(MemoryManager, append)
 
 
    //EXPECT_EQ(NO_ERROR, mm->(poolId, size));
-    EXPECT_EQ(NO_ERROR, mm->FindLog(poolId, &log));
+    EXPECT_EQ(NO_ERROR, mm->FindLog(logId, &log));
 
     char *data = "hello world";
     //append value
