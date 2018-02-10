@@ -25,7 +25,11 @@ namespace nvs {
         OPEN_FAILED,
         PMEM_ERROR,
         ID_NOT_FOUND,
-        ID_FOUND
+        ID_FOUND,
+
+
+        //log write
+        NOT_ENOUGH_SPACE
 
     };
 

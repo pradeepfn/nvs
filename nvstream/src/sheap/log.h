@@ -9,7 +9,53 @@
 #include <libpmemlog.h>
 #include <nvs/global_ptr.h>
 #include "nvs/errorCode.h"
-#include "nvs/pool_id.h"
+#include "nvs/log_id.h"
+
+
+
+#define WORD_LENGTH 8
+#define COMMIT_FLAG -123456
+#define MAGIC_NUMBER 555555
+
+#define KEY_LEN 20
+
+enum HdrType {
+    single =0,
+    multiple,
+    delta
+};
+
+
+
+/* log header at the start of the log*/
+struct lhdr_t{
+
+    uint64_t magic_number;
+    uint64_t len;
+    // locking
+
+};
+
+/* log entry header */
+struct lehdr_t{
+    char kname[20];
+    uint64_t version; // only if a single data item
+    uint64_t len; // entry lenth
+    HdrType type; // entry type
+};
+
+//structure for log traversing
+struct walkentry {
+    size_t len;
+    void *datap;
+    uint64_t version;
+    uint64_t start_offset;
+    char key[KEY_LEN];
+    nvs::ErrorCode err;
+
+};
+
+
 
 namespace  nvs{
 
@@ -20,27 +66,15 @@ namespace  nvs{
     {
     public:
         Log() = delete;
-        Log(std::string logpath, PoolId pool_id);
+        Log(std::string logpath,uint64_t log_size,LogId log_id);
         ~Log();
-
-        ErrorCode Create(size_t shelf_size);
-        ErrorCode Destroy();
-        bool Exist();
-
-        ErrorCode Open();
-        ErrorCode Close();
-        size_t Size();
-        bool IsOpen()
-        {
-            return is_open_;
-        }
 
         ErrorCode append (char *data,size_t size);
         //TODO : get rid of pmem struct from the interface
         ErrorCode appendv(struct iovec *iovp, int iovcnt);
         ErrorCode walk(int (*process_chunk)(const void *buf, size_t len, void *arg),void *arg);
         ErrorCode printLog(); // debug purposes
-        ErrorCode metaWalk();
+
 
 
 
@@ -49,12 +83,20 @@ namespace  nvs{
 
     private:
 
-        PoolId pool_id_;
+        char* to_addr(uint64_t offset);
+        void persist();
+
+        LogId log_id_;
         std::string logPath;
-        PMEMlogpool *lp;
+        char *pmemaddr;
+        size_t mapped_len;
+
         size_t size_;
+        uint64_t start_offset;
+        uint64_t end_offset;
+        uint64_t write_offset;
         RootHeap *rootHeap;
-        bool is_open_;
+
     };
 
 }

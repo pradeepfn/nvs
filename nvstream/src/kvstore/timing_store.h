@@ -60,6 +60,8 @@ namespace nvs{
         get_total = 0;
         put_niterations = 0;
         put_total=0;
+        putall_total=0;
+        putall_niterations = 0;
         total_size=0;
     }
 
@@ -127,10 +129,14 @@ namespace nvs{
     void TimingStore::stats() {
         float  ave_get=0, ave_put=0, ave_putall=0;
 
-        if(get_niterations){ ave_get = (float)get_total * MEGA/ (get_niterations * get_cpu_freq());}
-        if(put_niterations){ ave_put = (float)put_total * MEGA/ (put_niterations * get_cpu_freq());}
-        if(putall_niterations){ ave_putall = (float)putall_total * MEGA/ (putall_niterations * get_cpu_freq());}
+        if(get_niterations){ ave_get = ((float)get_total * MEGA)/ (get_niterations * get_cpu_freq());}
+        if(put_niterations){ ave_put = ((float)put_total * MEGA)/ (put_niterations * get_cpu_freq());}
+        if(putall_niterations){ ave_putall = ((float)putall_total * MEGA)/ (putall_niterations * get_cpu_freq());}
 
+        std::cout << std::endl;
+	std::cout << "cpu freq : " + std::to_string(get_cpu_freq()) << std::endl;
+	std::cout << "putall total  : " + std::to_string(putall_total) << std::endl;
+	std::cout << "putall niterations : " + std::to_string(putall_niterations) << std::endl;
         std::cout << std::endl;
         std::cout << "average get time (micro-sec) : " << ave_get << std::endl;
         std::cout << "average put time (micro-sec) : " << ave_put << std::endl;

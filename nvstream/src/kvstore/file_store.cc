@@ -73,10 +73,8 @@ namespace nvs{
             fsync(fileno(file));
             fclose(file);
             obj->setVersion(version);
-            return NO_ERROR;
         }
-        LOG(error) << "FileStore: key not found";
-        return ELEM_NOT_FOUND;
+            return NO_ERROR;
     }
 
     ErrorCode FileStore::get(std::string key, uint64_t version, void *addr) {

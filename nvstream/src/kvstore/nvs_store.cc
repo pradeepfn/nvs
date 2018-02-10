@@ -3,11 +3,12 @@
 //
 
 #include <cstdint>
+#include <cstdlib>
 #include "nvs/log.h"
 #include "nvs_store.h"
-#include "logentry.h"
 
-#define LOG_SIZE 10 * 1024 * 1024 * 30LLU
+
+#define LOG_SIZE 700 * 1024 * 1024LLU
 
 namespace nvs{
 
@@ -15,22 +16,22 @@ namespace nvs{
             storeId(storeId)
     {
         ErrorCode ret;
-        PoolId poolId;
+        LogId logId;
 
         std::string delimeter = "/";
         std::string heapId =  storeId.substr(0,storeId.find(delimeter));
-        std::string plid = storeId.substr(storeId.find(delimeter) + delimeter.length());
-        poolId = std::stoi(plid);
+        std::string logIdStr = storeId.substr(storeId.find(delimeter) + delimeter.length());
+        logId = std::stoi(logIdStr);
 
         MemoryManager *mm = MemoryManager::GetInstance();
-        ret = mm->FindLog(poolId, &(this->log));
+        ret = mm->FindLog(logId, &(this->log));
         if(ret == ID_NOT_FOUND){
-            ret = mm->CreateLog(poolId, LOG_SIZE);
+            ret = mm->CreateLog(logId, LOG_SIZE);
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error creating log";
                 exit(1);
             }
-            ret = mm->FindLog(poolId, &(this->log));
+            ret = mm->FindLog(logId, &(this->log));
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error finding log";
                 exit(1);
@@ -39,7 +40,7 @@ namespace nvs{
     }
 
     NVSStore::~NVSStore() {
-
+        LOG(debug) << "destructor, not implemented";
 
 
     }
@@ -73,7 +74,7 @@ namespace nvs{
     {
             struct iovec *iovp, *next_iovp;
             ErrorCode ret;
-            struct logentry l_entry;
+            struct lehdr_t l_entry;// stack variable
 
             std::map<std::string, Object *>::iterator it;
             // first traverse the map and find the key object
@@ -82,22 +83,23 @@ namespace nvs{
                 //uint64_t version = obj->getVersion();
 
                 //construct IO vector
-                int iovcnt = 2; // data + header
+                int iovcnt = 2; // header + data
                 iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
 
-                next_iovp = iovp;
+
                 //populate header
                 l_entry.version = version;
-                snprintf(l_entry.key, 64,"%s", obj->getName().c_str());
+                snprintf(l_entry.kname, KEY_LEN,"%s", obj->getName().c_str());
                 l_entry.len = obj->getSize();
+                l_entry.type = single;
 
-                next_iovp->iov_base = &l_entry;
-                next_iovp->iov_len = sizeof(l_entry);
-                next_iovp++;
+                iovp->iov_base = &l_entry;
+                iovp->iov_len = sizeof(l_entry);
+                iovp++;
+
                 //data
-
-                next_iovp->iov_base = obj->getPtr();
-                next_iovp->iov_len = obj->getSize();
+                iovp->iov_base = obj->getPtr();
+                iovp->iov_len = obj->getSize();
 
 
                 ret = this->log->appendv(iovp,iovcnt);
@@ -110,6 +112,7 @@ namespace nvs{
                 obj->setVersion(version);
                 return NO_ERROR;
             }
+
             LOG(error) << "element not found";
             return ELEM_NOT_FOUND;
     }
@@ -117,54 +120,78 @@ namespace nvs{
 
     /*
      * implements the bulk snapshot method.
-     * TODO: use our own log. PmemLog does not suport multi-process data edits
-     * TODO: optimize with only two fences per bulk write
+     *
      */
     ErrorCode NVSStore::put_all() {
 
-        struct iovec *iovp, *next_iovp;
-        ErrorCode ret;
-        struct logentry l_entry;
+        struct iovec *iovp, *tmp_iovp;
+        ErrorCode ret = NO_ERROR;
+        struct lehdr_t *l_entry, *tmp_l_entry;
+        uint64_t nvar, iovcnt,tot_cnt=0;
 
+        if(!(nvar = objectMap.size())){
+            LOG(warning) << "no objects found";
+        }
+        /* figure out number of iovec needed.
+            1 - lehdr of type multiple
+            2* nvars - each variable has lehdr of type 'single' and data
+        */
+
+        iovcnt = 1+2*nvar;
+        iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
+        l_entry = (struct lehdr_t *)malloc(sizeof(struct lehdr_t) * 1+nvar);
+        tmp_iovp = iovp+1; // start with inner elements
+        tmp_l_entry = l_entry+1;
         std::map<std::string, Object *>::iterator it;
         for(it = objectMap.begin(); it != objectMap.end(); it++){
             Object *obj = it->second;
             uint64_t version = obj->getVersion()+1;
-
-            //construct IO vector
-            int iovcnt = 2; // data + header
-            iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
-
-            next_iovp = iovp;
             //populate header
-            l_entry.version = version;
-            snprintf(l_entry.key, 64,"%s", obj->getName().c_str());
-            l_entry.len = obj->getSize();
-
-            next_iovp->iov_base = &l_entry;
-            next_iovp->iov_len = sizeof(l_entry);
-            next_iovp++;
-            //data
-
-            next_iovp->iov_base = obj->getPtr();
-            next_iovp->iov_len = obj->getSize();
+            tmp_l_entry->version = version;
+            snprintf(tmp_l_entry->kname, KEY_LEN,"%s", obj->getName().c_str());
+            tmp_l_entry->len = obj->getSize();
+            tmp_l_entry->type = single;
 
 
-            ret = this->log->appendv(iovp,iovcnt);
-            LOG(debug)<< "Object  - " << obj->getName() << " saved on successfully";
-            if(ret != NO_ERROR){
-                LOG(fatal) << "Store: append failed";
-                exit(1);
-            }
-            free(iovp);
-            //increase the soft state
-            obj->setVersion(version);
+            tmp_iovp->iov_base = tmp_l_entry;
+            tmp_iovp->iov_len = sizeof(struct lehdr_t);
+            tmp_iovp++;
+
+            tmp_iovp->iov_base = obj->getPtr();
+            tmp_iovp->iov_len = obj->getSize();
+            tot_cnt += (sizeof(struct lehdr_t) + obj->getSize());
+            tmp_iovp++;
+            tmp_l_entry++;
         }
-        return NO_ERROR;
+
+        l_entry->version = 0;
+        l_entry->type = multiple;
+        l_entry->len  = tot_cnt;
+
+        iovp->iov_base = l_entry;
+        iovp->iov_len = sizeof(struct lehdr_t);
+
+        if(this->log->appendv(iovp,iovcnt) != NO_ERROR){
+            LOG(error) << "append error";
+            ret = PMEM_ERROR;
+            goto end;
+
+        }
+
+        //increase the soft state
+        for(it = objectMap.begin(); it != objectMap.end(); it++) {
+            Object *obj = it->second;
+            obj->setVersion(obj->getVersion()+1);
+        }
+
+        end:
+            free(l_entry);
+            free(iovp);
+            return ret;
     }
 
 
-
+/*
     static int
     processLog(const void *buf, size_t len, void *arg)
     {
@@ -174,11 +201,11 @@ namespace nvs{
         const void *endp = (char *)buf + len;
         buf = (char *)buf + wentry->start_offset;
         while(buf < endp){
-            struct logentry *headerp = (struct logentry *) buf;
+            struct lehdr_t *headerp = (struct lehdr_t *) buf;
             buf = (char *)buf + sizeof(struct logentry);
 
             //check for key and version
-            if(!strncmp(headerp->key, wentry->key,64) && headerp->version == wentry->version){
+            if(!strncmp(headerp->kname, wentry->key,64) && headerp->version == wentry->version){
                 wentry->datap = (void *)buf;
                 wentry->len = headerp->len;
                 wentry->err = NO_ERROR;
@@ -191,9 +218,37 @@ namespace nvs{
         }
         wentry->err = ID_NOT_FOUND;
         return -1;
+    }*/
+
+
+
+    static int
+    process_chunks(const void *buf, size_t len, void *arg)
+    {
+
+        // getting result from the callback -- walkentry structure
+        struct walkentry *wentry = (struct walkentry *) arg;
+        wentry->err = ID_NOT_FOUND;
+
+        struct lehdr_t *hdr = (struct lehdr_t *) buf;
+
+        if(hdr->type == single){
+            char *data = (char *)buf + sizeof(struct lehdr_t);
+            if(!strncmp(hdr->kname, wentry->key,KEY_LEN) && hdr->version == wentry->version){
+                wentry->datap = data;
+                wentry->len = hdr->len;
+                wentry->err = NO_ERROR;
+                return 0;
+            }else{
+                LOG(debug) << "looking for : " + std::string(wentry->key) + " , " +  std::to_string(wentry->version) +
+                              "   current entry : " + std::string(hdr->kname) + " , " + std::to_string(hdr->version);
+                return 1; // process next chunk
+            }
+
+        }else if(hdr->type == multiple){
+            LOG(error) << "not supported";
+        }
     }
-
-
 
     /*
      *  the object address is redundant here
@@ -202,10 +257,10 @@ namespace nvs{
     {
         struct walkentry wentry;
         wentry.version = version;
-        wentry.start_offset = 0;
-        snprintf(wentry.key,64,"%s",key.c_str());
+        //wentry.start_offset = 0;
+        snprintf(wentry.key,KEY_LEN,"%s",key.c_str());
 
-        this->log->walk(processLog, &wentry);
+        this->log->walk(process_chunks, &wentry);
 
         if(wentry.err != NO_ERROR){
             LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
@@ -223,9 +278,9 @@ namespace nvs{
         struct walkentry wentry;
         wentry.version = version;
         wentry.start_offset = 0;
-        snprintf(wentry.key,64,"%s",key.c_str());
+        snprintf(wentry.key,KEY_LEN,"%s",key.c_str());
 
-        this->log->walk(processLog, &wentry);
+        this->log->walk(process_chunks, &wentry);
 
         if(wentry.err != NO_ERROR){
             LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
@@ -233,6 +288,7 @@ namespace nvs{
         }
 
         //find the object from the object map, if not found -- > create one
+        // this is a consumer side volatile state
         std::map<std::string, Object *>::iterator it;
         Object *obj;
         if((it=objectMap.find(key)) != objectMap.end()){

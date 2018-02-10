@@ -43,13 +43,13 @@ namespace nvs{
         void *GlobalToLocal(GlobalPtr ptr);
         GlobalPtr LocalToGlobal(void *addr);
 
-        ErrorCode CreateLog(PoolId id, size_t log_size);
+        ErrorCode CreateLog(LogId id, size_t log_size);
 
-        ErrorCode DestroyLog(PoolId id);
+        ErrorCode DestroyLog(LogId id);
 
-        ErrorCode FindLog(PoolId id, Log **log);
+        ErrorCode FindLog(LogId id, Log **log);
 
-        Log *FindLog(PoolId id);
+        Log *FindLog(LogId id);
 
     private:
         static std::atomic<MemoryManager*> instance_;
