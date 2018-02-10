@@ -36,7 +36,7 @@ namespace nvs{
                                POBJ_LAYOUT_NAME(nvstream_store));
            if(pop == NULL){
                LOG(error) << "root.cc : error while opening root heap";
-               return PMEM_ERROR;
+               exit(1);
            }
            return NO_ERROR;
      }
