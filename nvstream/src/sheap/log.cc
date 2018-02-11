@@ -37,17 +37,12 @@ namespace nvs{
             hdr.len = this->mapped_len;
 
             this->start_offset = sizeof(struct lhdr_t);
-            this->end_offset = this->mapped_len;
+            this->end_offset = this->mapped_len-1;
             this->write_offset = this->start_offset;
 
             pmem_memcpy_persist(this->pmemaddr,&hdr,sizeof(struct lhdr_t));
 
-        }else{
-            LOG(warn) << ("pmem_file may be already exist?");
-        }
-
-
-        if((this->pmemaddr == NULL) &&
+        }else if((this->pmemaddr == NULL) &&
                 ((this->pmemaddr = (char *)pmem_map_file(logPath.c_str(), log_size, 0, 0666,
                         &(this->mapped_len), &is_pmem)) != NULL)){
             //verify the segment header
@@ -58,7 +53,7 @@ namespace nvs{
                 exit(1);
             }
             this->start_offset = sizeof(struct lhdr_t);
-            this->end_offset = this->mapped_len;
+            this->end_offset = this->mapped_len-1;
             assert(hdr->len == this->mapped_len);
             this->write_offset = -1; //TODO
 
@@ -66,7 +61,6 @@ namespace nvs{
             LOG(error) << "map segment";
             exit(1);
         }
-
 
         if(is_pmem != 1){
             LOG(error) << "not recognized as pmem region";
@@ -115,7 +109,7 @@ namespace nvs{
 
         uint64_t tot_cnt = 0;
 
-        //lock
+        //lock this log file
         if(write_offset >= end_offset){
             LOG(fatal) << "no space in log";
             errorCode =  NOT_ENOUGH_SPACE;
@@ -139,7 +133,7 @@ namespace nvs{
             pmem_memcpy_nodrain(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
-
+        //TODO:
         persist();
 
         end:
@@ -159,7 +153,11 @@ namespace nvs{
             if(!(*process_chunk)(&pmemaddr[data_offset], ((struct lehdr_t *) (pmemaddr+data_offset))->len, arg)){
                 break;
             }
-            data_offset += ((struct lehdr_t *) (pmemaddr+data_offset))->len + WORD_LENGTH;
+
+            //next log header
+            data_offset += ( sizeof(struct lehdr_t) + // current header length
+                            ((struct lehdr_t *) (pmemaddr+data_offset))->len + // data lengh
+                             WORD_LENGTH);  // commit flag length
 
         }
         //unlock

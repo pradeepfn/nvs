@@ -51,7 +51,7 @@ namespace nvs{
     ErrorCode FileStore::put_all() {
         std::map<std::string, Object *>::iterator it;
         // first traverse the map and find the key object
-        for(it=objectMap.begin(); it!=objectMap.end(); it++) {
+        for(it=objectMap.begin(); it != objectMap.end(); it++) {
 
             Object *obj = it->second;
             std::string key = it->first;

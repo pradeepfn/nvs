@@ -31,7 +31,7 @@ namespace nvs{
                 LOG(fatal) << "NVSStore: error creating log";
                 exit(1);
             }
-            ret = mm->FindLog(logId, &(this->log));
+            ret = mm->FindLog(logId, &(this->log)); //TODO: this code block is useless.. remove it
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error finding log";
                 exit(1);
@@ -93,13 +93,12 @@ namespace nvs{
                 l_entry.len = obj->getSize();
                 l_entry.type = single;
 
-                iovp->iov_base = &l_entry;
-                iovp->iov_len = sizeof(l_entry);
-                iovp++;
+                iovp[0].iov_base = &l_entry;
+                iovp[0].iov_len = sizeof(l_entry);
 
                 //data
-                iovp->iov_base = obj->getPtr();
-                iovp->iov_len = obj->getSize();
+                iovp[1].iov_base = obj->getPtr();
+                iovp[1].iov_len = obj->getSize();
 
 
                 ret = this->log->appendv(iovp,iovcnt);

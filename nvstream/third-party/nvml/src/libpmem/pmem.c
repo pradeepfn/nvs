@@ -492,7 +492,7 @@ pmem_is_pmem_init(void)
 		 * true persistent memory.
 		 */
 		//char *ptr = os_getenv("PMEM_IS_PMEM_FORCE");
-		char *ptr = "1";
+		/*char *ptr = "1";
 		if (ptr) {
 			int val = atoi(ptr);
 
@@ -504,7 +504,10 @@ pmem_is_pmem_init(void)
 			VALGRIND_ANNOTATE_HAPPENS_BEFORE(&Func_is_pmem);
 
 			LOG(4, "PMEM_IS_PMEM_FORCE=%d", val);
-		}
+		}*/
+		// we consider our all memory mapped files. pmem movnt ready
+		Func_is_pmem = is_pmem_always;
+
 
 		if (!util_bool_compare_and_swap32(&init, 1, 2))
 			FATAL("util_bool_compare_and_swap32");
