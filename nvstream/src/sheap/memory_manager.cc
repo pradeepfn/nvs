@@ -38,15 +38,15 @@ namespace nvs {
         void *GlobalToLocal(GlobalPtr ptr);
         GlobalPtr LocalToGlobal(void *addr);
 
-        ErrorCode CreateLog(PoolId id, size_t shelf_size);
-        ErrorCode DestroyLog(PoolId id);
-        ErrorCode FindLog(PoolId id, Log **log);
-        Log *FindLog(PoolId id);
+        ErrorCode CreateLog(LogId id, size_t shelf_size);
+        ErrorCode DestroyLog(LogId id);
+        ErrorCode FindLog(LogId id, Log **log);
+        Log *FindLog(LogId id);
 
 
         bool is_ready_;
         RootHeap root_heap_;
-        std::map<PoolId, Log *> idToLogMap;
+        std::map<LogId, Log *> idToLogMap;
 
     };
 
@@ -55,42 +55,19 @@ namespace nvs {
     ErrorCode MemoryManager::Impl_::Init()
     {
 
-        /*// create SHELF_BASE_DIR if it does not exist
-        boost::filesystem::path nvs_base_path = boost::filesystem::path(NVS_BASE_DIR);
-        if (boost::filesystem::exists(nvs_base_path) == false)
-        {
-            bool ret = boost::filesystem::create_directory(nvs_base_path);
-            if (ret == false)
-            {
-                LOG(fatal) << "NVS: Failed to create SHELF_BASE_DIR " << NVS_BASE_DIR;
-                exit(1);
-            }
-        }
-        ErrorCode e_ret = root_heap_.Open();
-
-        if(e_ret == PMEM_ERROR){ //TODO figure out a better way to do this
-            LOG(fatal) << "NVS: failed to open heap";
-            return PMEM_ERROR;
-        }*/
-
         is_ready_ = true;
         return NO_ERROR;
     }
 
     ErrorCode MemoryManager::Impl_::Final()
     {
-        /*ErrorCode ret = root_heap_.Close();
-        if (ret!=NO_ERROR)
-        {
-            LOG(fatal) << "NVS: Root Heap close failed" << rootHeapPath;
-            exit(1);
-        }*/
+
         is_ready_ = false;
         return NO_ERROR;
     }
 
 
-    ErrorCode MemoryManager::Impl_::CreateLog(PoolId id, size_t size)
+    ErrorCode MemoryManager::Impl_::CreateLog(LogId id, size_t size)
     {
         assert(is_ready_);
         assert(id >= 0);
@@ -106,15 +83,13 @@ namespace nvs {
         }
 
         // we create a new log add it to soft state
-        Log *log = new Log(this->rootHeapPath + std::to_string(id) ,id);
-        std::map<PoolId, Log *>::iterator it;
+        Log *log = new Log(this->rootHeapPath + std::to_string(id) , size ,id);
+        std::map<LogId, Log *>::iterator it;
         if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
             this->idToLogMap[id] = log;
         }else{
             LOG(error) << "Log corresponding to PoolID already exists";
         }
-
-        ret = log->Create(size);
 
         //store the log details on heap-root. TODO: pmem transaction
         ret = root_heap_.addLog(id);
@@ -127,12 +102,12 @@ namespace nvs {
         return ret;
     }
 
-    ErrorCode MemoryManager::Impl_::DestroyLog(PoolId id)
+    ErrorCode MemoryManager::Impl_::DestroyLog(LogId id)
     {
 
     }
 
-    ErrorCode MemoryManager::Impl_::FindLog(PoolId id, Log **log)
+    ErrorCode MemoryManager::Impl_::FindLog(LogId id, Log **log)
     {
         assert(is_ready_);
         assert(id>=0);
@@ -140,7 +115,7 @@ namespace nvs {
         ErrorCode  ret = NO_ERROR;
 
         // first look through soft state map
-        std::map<PoolId , Log *> :: iterator it;
+        std::map<LogId , Log *> :: iterator it;
         if((it = this->idToLogMap.find(id)) != this->idToLogMap.end()){
             *log = it->second;
             assert(*log != NULL);
@@ -155,12 +130,8 @@ namespace nvs {
             }
             //TODO: release lock
 
-            *log = new Log(this->rootHeapPath + std::to_string(id) ,id);
-            ret = (*log)->Open();
-            if(ret != NO_ERROR){
-                LOG(fatal) << "MemoryManager : log open";
-                exit(1);
-            }
+            *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id);
+
             return NO_ERROR;
         }
 
@@ -169,7 +140,7 @@ namespace nvs {
 
 
 
-    Log *MemoryManager::Impl_::FindLog(PoolId id)
+    Log *MemoryManager::Impl_::FindLog(LogId id)
     {
         assert(is_ready_);
         assert(id>0);
@@ -192,7 +163,7 @@ namespace nvs {
         }
 
         ErrorCode ret = NO_ERROR;
-        PoolId pool_id = ptr.GetPoolId();
+        LogId pool_id = ptr.GetPoolId();
         Offset offset = ptr.GetOffset();
         //void *addr = FindLogBase(pool_id);
         void *addr;
@@ -266,22 +237,22 @@ namespace nvs {
     }
 
 
-    ErrorCode MemoryManager::CreateLog(PoolId id, size_t size)
+    ErrorCode MemoryManager::CreateLog(LogId id, size_t size)
     {
         return pimpl_->CreateLog(id, size);
     }
 
-    ErrorCode MemoryManager::DestroyLog(PoolId id)
+    ErrorCode MemoryManager::DestroyLog(LogId id)
     {
         return pimpl_->DestroyLog(id);
     }
 
-    ErrorCode MemoryManager::FindLog(PoolId id, Log **log)
+    ErrorCode MemoryManager::FindLog(LogId id, Log **log)
     {
         return pimpl_->FindLog(id, log);
     }
 
-    Log *MemoryManager::FindLog(PoolId id)
+    Log *MemoryManager::FindLog(LogId id)
     {
         return pimpl_->FindLog(id);
     }

@@ -8,7 +8,9 @@
 #if defined(_FILE_STORE)
 #include "file_store.h"
 #include "timing_store.h"
-
+#elif defined(_DELTA_STORE)
+#include "delta_store.h"
+#include "timing_store.h"
 #else
 #include "nvs_store.h"
 #include "timing_store.h"
@@ -29,17 +31,29 @@ namespace nvs{
             if (tmp == nullptr) {
                 LOG(debug) << "testing log";
 #if defined(_FILE_STORE)
+
 #if defined (_TIMING)
                 tmp = new TimingStore(new FileStore(storePath));
 #else
                 tmp = new FileStore(storePath);
 #endif
+
+#elif defined(_DELTA_STORE)
+
+#if defined (_TIMING)
+                tmp = new TimingStore(new DeltaStore(storePath));
 #else
+                tmp = new DeltaStore(storePath);
+#endif
+
+#else
+
 #if defined (_TIMING)
                 tmp = new TimingStore(new NVSStore(storePath));
 #else
                 tmp = new NVSStore(storePath);
 #endif
+
 #endif
                 std::atomic_thread_fence(std::memory_order_release);
                 instance_.store(tmp, std::memory_order_relaxed);

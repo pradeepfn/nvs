@@ -7,7 +7,7 @@
 
 
 #include <string>
-#include <nvs/pool_id.h>
+#include <nvs/log_id.h>
 #include <libpmemobj.h>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
@@ -31,8 +31,8 @@ namespace nvs {
         bool Exist();
         bool IsOpen();
 
-        ErrorCode addLog(PoolId id);
-        bool isLogExist(PoolId id);
+        ErrorCode addLog(LogId id);
+        bool isLogExist(LogId id);
 
         void *Addr();
 

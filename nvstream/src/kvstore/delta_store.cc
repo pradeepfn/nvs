@@ -5,13 +5,18 @@
 #include <cstdint>
 #include <cstdlib>
 #include "nvs/log.h"
-#include "nvs_store.h"
+#include "delta_store.h"
 
-#define LOG_SIZE 3 * 1024 * 1024 * 1024LLU
+
+#define LOG_SIZE 700 * 1024 * 1024LLU
 
 namespace nvs{
 
-    NVSStore::NVSStore(std::string storeId):
+
+    struct sigaction DeltaStore::old_sa;
+
+
+    DeltaStore::DeltaStore(std::string storeId):
             storeId(storeId)
     {
         ErrorCode ret;
@@ -27,31 +32,45 @@ namespace nvs{
         if(ret == ID_NOT_FOUND){
             ret = mm->CreateLog(logId, LOG_SIZE);
             if(ret != NO_ERROR){
-                LOG(fatal) << "NVSStore: error creating log";
+                LOG(fatal) << "DeltaStore: error creating log";
                 exit(1);
             }
             ret = mm->FindLog(logId, &(this->log)); //TODO: this code block is useless.. remove it
             if(ret != NO_ERROR){
-                LOG(fatal) << "NVSStore: error finding log";
+                LOG(fatal) << "DeltaStore: error finding log";
                 exit(1);
             }
         }
+
+        /* install signal handler */
+        //install_sighandler(this->delta_handler,&DeltaStore::old_sa);
+
     }
 
-    NVSStore::~NVSStore() {
+    DeltaStore::~DeltaStore() {
         LOG(debug) << "destructor, not implemented";
 
 
     }
 
-    ErrorCode NVSStore::create_obj(std::string key, uint64_t size, void **obj_addr)
+    ErrorCode DeltaStore::create_obj(std::string key, uint64_t size, void **obj_addr)
     {
 
+        int ret;
+        void *tmp_ptr;
+
         LOG(debug) << "Object created : " + key;
-        void *tmp_ptr = malloc(size);
-        Object *obj = new Object(key,size,0,tmp_ptr);
+        //page aligned object allocation
+        uint64_t aligned_size = (size + PAGE_SIZE-1) & ~(PAGE_SIZE-1);
+        ret = posix_memalign(&tmp_ptr, PAGE_SIZE, aligned_size);
+        if(ret != 0){
+            LOG(error) << "error allocating aligned memory";
+        }
+
+
         std::map<std::string, Object *>::iterator it =   objectMap.find(key);
         if(it == objectMap.end()){
+            Object *obj = new Object(key,size,0,tmp_ptr);
             obj->setVersion(0);
             objectMap[key] = obj;
         }else{
@@ -69,58 +88,78 @@ namespace nvs{
      * address and size for put operation as the kvstore already know that
      * detail.
      */
-    ErrorCode NVSStore::put(std::string key, uint64_t version)
+    ErrorCode DeltaStore::put(std::string key, uint64_t version)
     {
-            struct iovec *iovp, *next_iovp;
-            ErrorCode ret;
-            struct lehdr_t l_entry;// stack variable
+        struct iovec *iovp, *next_iovp;
+        ErrorCode ret;
+        struct lehdr_t l_entry;// stack variable
+        uint64_t delta_len = 0;
 
-            std::map<std::string, Object *>::iterator it;
-            // first traverse the map and find the key object
-            if((it = objectMap.find(key)) != objectMap.end()){
-                Object *obj = it->second;
-                //uint64_t version = obj->getVersion();
+        std::map<std::string, Object *>::iterator it;
+        // first traverse the map and find the key object
+        if((it = objectMap.find(key)) != objectMap.end()){
+            Object *obj = it->second;
+            /* log layout
+             *
+             * |struct lehdr_t|delta chunks|commit_flag|
+             *
+             */
+            std::vector<struct delta_t> dc = obj->get_delta_chunks();
 
-                //construct IO vector
-                int iovcnt = 2; // header + data
-                iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
+            //construct IO vector
+            iovp = (struct iovec *)malloc(sizeof(struct iovec) * (1+dc.size()));
 
+            std::vector<struct delta_t>::iterator it;
+            int i;
+            for(it = dc.begin(),i=1; it != dc.end(); it++,i++){
 
-                //populate header
-                l_entry.version = version;
-                snprintf(l_entry.kname, KEY_LEN,"%s", obj->getName().c_str());
-                l_entry.len = obj->getSize();
-                l_entry.type = HdrType::single;
+                iovp[i].iov_base = (char *)obj->getPtr() + dc[i].start_offset;
+                iovp[i].iov_len = dc[i].len;
 
-                iovp[0].iov_base = &l_entry;
-                iovp[0].iov_len = sizeof(l_entry);
-
-                //data
-                iovp[1].iov_base = obj->getPtr();
-                iovp[1].iov_len = obj->getSize();
-
-
-                ret = this->log->appendv(iovp,iovcnt);
-                if(ret != NO_ERROR){
-                    LOG(fatal) << "Store: append failed";
-                    exit(1);
-                }
-                free(iovp);
-                //increase the soft state
-                obj->setVersion(version);
-                return NO_ERROR;
+                l_entry.deltas[i-1].start_offset = dc[i].start_offset ;
+                l_entry.deltas[i-1].len = dc[i].len;
+                delta_len += it->len;
             }
 
-            LOG(error) << "element not found";
-            return ELEM_NOT_FOUND;
+            //populate log header
+            l_entry.version = version;
+            snprintf(l_entry.kname, KEY_LEN,"%s", obj->getName().c_str());
+            l_entry.len = obj->getSize();
+            l_entry.delta_len = delta_len;
+            l_entry.type = HdrType::single;
+
+            iovp[0].iov_base = &l_entry;
+            iovp[0].iov_len = sizeof(l_entry);
+
+
+            ret = this->log->appendv(iovp,1+dc.size());
+            if(ret != NO_ERROR){
+                LOG(fatal) << "Store: append failed";
+                exit(1);
+            }
+            free(iovp);
+            /* 1. increase the soft state
+             * 2. write protect the volatile buffers
+             * 3. reset the bitset vector
+             */
+            obj->setVersion(version);
+            /* delta compression tracking */
+            enable_write_protection(obj->getPtr(), obj->get_aligned_size());
+
+            obj->reset_bit_vector();
+            return NO_ERROR;
+        }
+
+        LOG(error) << "element not found";
+        return ELEM_NOT_FOUND;
     }
 
 
     /*
-     * implements thesnapshot method.
+     * implements the snapshot method.
      *
      */
-    ErrorCode NVSStore::put_all() {
+    ErrorCode DeltaStore::put_all() {
 
         struct iovec *iovp, *tmp_iovp;
         ErrorCode ret = NO_ERROR;
@@ -183,40 +222,10 @@ namespace nvs{
         }
 
         end:
-            free(l_entry);
-            free(iovp);
-            return ret;
+        free(l_entry);
+        free(iovp);
+        return ret;
     }
-
-
-/*
-    static int
-    processLog(const void *buf, size_t len, void *arg)
-    {
-        // getting result from the callback -- walkentry structure
-        struct walkentry *wentry = (struct walkentry *) arg;
-
-        const void *endp = (char *)buf + len;
-        buf = (char *)buf + wentry->start_offset;
-        while(buf < endp){
-            struct lehdr_t *headerp = (struct lehdr_t *) buf;
-            buf = (char *)buf + sizeof(struct logentry);
-
-            //check for key and version
-            if(!strncmp(headerp->kname, wentry->key,64) && headerp->version == wentry->version){
-                wentry->datap = (void *)buf;
-                wentry->len = headerp->len;
-                wentry->err = NO_ERROR;
-                return 0; // no error
-            }else{
-                LOG(debug) << "looking for : " + std::string(wentry->key) + " , " +  std::to_string(wentry->version) +
-                              "   current entry : " + std::string(headerp->key) + " , " + std::to_string(headerp->version);
-            }
-            buf = (char *) buf + headerp->len;
-        }
-        wentry->err = ID_NOT_FOUND;
-        return -1;
-    }*/
 
 
 
@@ -235,7 +244,11 @@ namespace nvs{
             if(!strncmp(hdr->kname, wentry->key,KEY_LEN) && hdr->version == wentry->version){
                 wentry->datap = data;
                 wentry->len = hdr->len;
+                /* copy the delta chunk metadata */
+                memcpy(&wentry->deltas, &hdr->deltas, sizeof(struct ledelta_t) * 5);
+                wentry->delta_len = hdr->delta_len;
                 wentry->err = NO_ERROR;
+
                 return 0;
             }else{
                 LOG(debug) << "looking for : " + std::string(wentry->key) + " , " +  std::to_string(wentry->version) +
@@ -244,32 +257,7 @@ namespace nvs{
             }
 
         }else if(hdr->type == HdrType::multiple){
-            /* inner data packet starts after the outer header */
-            char *i_buf = (char *)buf + sizeof(struct lehdr_t);
-
-            /* traverse the inner data packet */
-
-            struct lehdr_t *i_hdr = (struct lehdr_t *)i_buf;
-            char *i_data = (char *)i_buf + sizeof(struct lehdr_t);
-            uint64_t i_index = sizeof(struct lehdr_t) + i_hdr->len;
-
-            while(i_index < hdr->len){
-                if(!strncmp(i_hdr->kname,wentry->key, KEY_LEN) && hdr->version == wentry->version){
-                    wentry->datap = i_data;
-                    wentry->len = i_hdr->len;
-                    wentry->err = NO_ERROR;
-                    return 0;
-                }
-                /* process the next data point in inner-chunk */
-                i_hdr = (struct lehdr_t *)(i_buf + i_index);
-                i_data = i_buf + i_index + sizeof(struct lehdr_t);
-                i_index += (sizeof(struct lehdr_t) + i_hdr->len);
-            }
-
-            // we did not find the data within our inner chunk. process next chunk
-            LOG(debug) << "variable not found in chunk:multiple";
-            return 1;
-
+            LOG(error) << "not suported";
         }else if(hdr->type == HdrType::delta){
             LOG(error) << "not supported";
         }else{
@@ -281,27 +269,13 @@ namespace nvs{
     /*
      *  the object address is redundant here
      */
-    ErrorCode NVSStore::get(std::string key, uint64_t version, void *obj_addr)
+    ErrorCode DeltaStore::get(std::string key, uint64_t version, void *obj_addr)
     {
-        struct walkentry wentry;
-        wentry.version = version;
-        //wentry.start_offset = 0;
-        snprintf(wentry.key,KEY_LEN,"%s",key.c_str());
-
-        this->log->walk(process_chunks, &wentry);
-
-        if(wentry.err != NO_ERROR){
-            LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
-            return ID_NOT_FOUND;
-        }
-
-        //*obj_addr = wentry.datap;
-        memcpy(obj_addr,wentry.datap,wentry.len);
-        return NO_ERROR;
+        LOG(error) << "not supported";
 
     }
 
-    ErrorCode NVSStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
+    ErrorCode DeltaStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
 
         struct walkentry wentry;
         wentry.version = version;
@@ -321,25 +295,45 @@ namespace nvs{
         Object *obj;
         if((it=objectMap.find(key)) != objectMap.end()){
             obj = it->second;
+            /* copying deltas */
+            delta_memcpy((char *)obj->getPtr(), (char *)wentry.datap ,
+                         &wentry.deltas[0],wentry.delta_len);
+            obj->setVersion(version);
+            *addr = obj->getPtr();
+            return NO_ERROR;
+
         }else{
             void *tmp_ptr = malloc(wentry.len);
             obj = new Object(key,wentry.len,version,tmp_ptr);
             objectMap[key] = obj;
+            /* copying delta is not enough, we have construct the full data*/
+
+            return NO_ERROR;
         }
-        obj->setVersion(version);
-        //*obj_addr = wentry.datap;
-        memcpy(obj->getPtr(),wentry.datap,wentry.len);
-        *addr = obj->getPtr();
-        return NO_ERROR;
+
     }
 
-    Key * NVSStore::findKey(std::string key) {
+    Key * DeltaStore::findKey(std::string key) {
 
     }
 
 
-    void NVSStore::stats() {
+    void DeltaStore::stats() {
 
     }
+
+
+
+    void DeltaStore::delta_memcpy(char *dst, char *src,
+                                struct ledelta_t *deltas, uint64_t delta_len){
+        uint64_t src_offset = 0;
+        for(int i = 0; i < delta_len; i ++){
+            memcpy(dst+deltas[i].start_offset,src + src_offset, deltas[i].len);
+            src_offset += deltas[i].len;
+        }
+    }
+
 
 }
+
+

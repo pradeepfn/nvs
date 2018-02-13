@@ -35,6 +35,7 @@ add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
 add_definitions(-D_FILE_STORE)
+#add_definitions(-D_DELTA_STORE)
 
 
 #tests

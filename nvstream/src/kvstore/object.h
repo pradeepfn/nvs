@@ -7,12 +7,33 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
+
+
+#define PAGE_SIZE 4096
 
 namespace nvs {
+
+#ifdef _DELTA_STORE
+    /* structure to keep track of delta chunks */
+    struct delta_t{
+        uint64_t start_offset;
+        uint64_t len;
+
+        bool operator <(const delta_t& rhs) const{
+            return len < rhs.len;
+        }
+
+    };
+#endif
+
+
+
     class Object {
 
     public:
-        Object(std::string name, uint64_t size, uint64_t version, void *ptr);
+        Object(std::string name, uint64_t size,
+               uint64_t version, void *ptr);
         ~Object();
 
         uint64_t getVersion(){
@@ -21,6 +42,7 @@ namespace nvs {
         uint64_t getSize(){
             return size;
         }
+
         void * getPtr(){
             return ptr;
         }
@@ -28,6 +50,31 @@ namespace nvs {
         std::string getName(){
             return name;
         }
+
+#ifdef _DELTA_STORE
+        uint64_t get_aligned_size(){
+            return aligned_size;
+        }
+
+
+        void set_modified_bit(int64_t page_index){
+            if(page_index>0 && page_index < bitset.size()) {
+                bitset[page_index] = true;
+            }
+        }
+
+        std::vector<struct delta_t> get_delta_chunks();
+
+
+        void reset_bit_vector(){
+            std::vector<bool>::iterator it;
+            for(it=bitset.begin();it != bitset.end();it++){
+                *it = false;
+            }
+        }
+#endif
+
+
 
         void setVersion(uint64_t version);
 
@@ -37,6 +84,11 @@ namespace nvs {
         uint64_t size;
         uint64_t version;
         void *ptr;
+#ifdef _DELTA_STORE
+        //bit vector to keep track of modified pages
+        std::vector<bool> bitset;
+        uint64_t aligned_size;
+#endif // _DELTA_STORE
     };
 }
 

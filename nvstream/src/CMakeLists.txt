@@ -7,7 +7,7 @@ add_subdirectory(tools)
 
 # IDE support
 set(MY_HEADERS
-        ../include/nvs/pool_id.h
+        ../include/nvs/log_id.h
         ../include/nvs/global_ptr.h
         ../include/nvs/memory_manager.h
         ../include/nvs/store.h

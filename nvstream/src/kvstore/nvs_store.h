@@ -6,8 +6,8 @@
 #include "constants.h"
 #include "object.h"
 
-#ifndef YUMA_IGTStore_H
-#define YUMA_IGTStore_H
+#ifndef NVS_STORE_H
+#define NVS_STORE_H
 
 namespace nvs {
 

@@ -12,7 +12,8 @@ TEST(StoreManager, store)
     Store *st = StoreManager::GetInstance("my_store/1");
 
     char *srcp;
-    char *retp = (char *)malloc(15 * sizeof(char));
+    //char *retp = (char *)malloc(15 * sizeof(char));
+    char *retp;
 
 
     EXPECT_EQ(NO_ERROR,
@@ -21,7 +22,7 @@ TEST(StoreManager, store)
     snprintf(srcp,15, "hello world!");
 
     EXPECT_EQ(NO_ERROR, st->put("foo",1));
-    EXPECT_EQ(NO_ERROR, st->get("foo", 1, (void **) &retp ));
+    EXPECT_EQ(NO_ERROR, st->get_with_malloc("foo", 1, (void **) &retp ));
     //compare the returned object content
     EXPECT_EQ(0,strncmp(srcp,retp,15));
 

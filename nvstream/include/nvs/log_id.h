@@ -9,8 +9,8 @@
 
 namespace nvs {
 
-    using PoolIdStorageType = uint8_t;
-    using PoolId = uint8_t;
+    using LogIdStorageType = uint8_t;
+    using LogId = uint8_t;
 
 }
 #endif //NVS_ID_H
