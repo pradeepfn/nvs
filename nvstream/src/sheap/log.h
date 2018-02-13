@@ -36,12 +36,25 @@ struct lhdr_t{
 
 };
 
+#ifdef _DELTA_STORE
+/* TODO: redundant structure declared in object.h */
+struct ledelta_t{
+    uint64_t start_offset;
+    uint64_t len;
+};
+#endif
+
+
 /* log entry header */
 struct lehdr_t{
     char kname[20];
     uint64_t version; // only if a single data item
     uint64_t len; // entry lenth
     HdrType type; // entry type
+#ifdef _DELTA_STORE
+    uint64_t delta_len;
+    struct ledelta_t deltas[5];
+#endif
 };
 
 //structure for log traversing
@@ -52,6 +65,10 @@ struct walkentry {
     uint64_t start_offset;
     char key[KEY_LEN];
     nvs::ErrorCode err;
+#ifdef _DELTA_STORE
+    uint64_t delta_len;
+    struct ledelta_t deltas[5];
+#endif
 
 };
 

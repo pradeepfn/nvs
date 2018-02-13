@@ -1,3 +1,9 @@
+//
+// Created by pradeep on 2/11/18.
+//
+
+#ifndef NVSTREAM_DELTA_STORE_H
+#define NVSTREAM_DELTA_STORE_H
 
 #include <nvs/memory_manager.h>
 #include <map>
@@ -6,12 +12,12 @@
 #include "constants.h"
 #include "object.h"
 
-#ifndef NVS_STORE_H
-#define NVS_STORE_H
+
+#define PAGE_SIZE 4096
 
 namespace nvs {
 
-    class NVSStore : public Store {
+    class DeltaStore : public Store {
     private:
 
         std::string storeId;
@@ -22,11 +28,14 @@ namespace nvs {
         objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap;
 
+        void delta_copy(char *dst, char *src,
+                        struct ledelta_t *deltas, uint64_t delta_len);
+
     protected:
     public:
-        NVSStore(std::string storeId);
+        DeltaStore(std::string storeId);
 
-        ~NVSStore();
+        ~DeltaStore();
 
         ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
 
@@ -44,4 +53,4 @@ namespace nvs {
 
 }
 
-#endif //YUMA_STORE_H
+#endif //NVSTREAM_DELTA_STORE_H
