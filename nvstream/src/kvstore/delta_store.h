@@ -31,7 +31,7 @@ namespace nvs {
         objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap;
 
-        struct sigaction old_sa; // old sigaction structure
+        static struct sigaction old_sa; // old sigaction structure
 
 
         void delta_memcpy(char *dst, char *src,

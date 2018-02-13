@@ -12,6 +12,10 @@
 
 namespace nvs{
 
+
+    struct sigaction DeltaStore::old_sa;
+
+
     DeltaStore::DeltaStore(std::string storeId):
             storeId(storeId)
     {
@@ -39,7 +43,7 @@ namespace nvs{
         }
 
         /* install signal handler */
-        //install_sighandler(this->delta_handler,&old_sa);
+        //install_sighandler(this->delta_handler,&DeltaStore::old_sa);
 
     }
 
