@@ -37,6 +37,10 @@ namespace nvs{
                 exit(1);
             }
         }
+
+        /* install signal handler */
+        //install_sighandler(this->delta_handler,&old_sa);
+
     }
 
     DeltaStore::~DeltaStore() {
@@ -102,9 +106,10 @@ namespace nvs{
             iovp = (struct iovec *)malloc(sizeof(struct iovec) * (1+dc.size()));
 
             std::vector<struct delta_t>::iterator it;
-            for(int i = 1 ,it = dc.begin(); it != dc.end; it++,i++){
+            int i;
+            for(it = dc.begin(),i=1; it != dc.end(); it++,i++){
 
-                iovp[i].iov_base = obj->getPtr() + dc[i].start_offset;
+                iovp[i].iov_base = (char *)obj->getPtr() + dc[i].start_offset;
                 iovp[i].iov_len = dc[i].len;
 
                 l_entry.deltas[i-1].start_offset = dc[i].start_offset ;
@@ -123,7 +128,7 @@ namespace nvs{
             iovp[0].iov_len = sizeof(l_entry);
 
 
-            ret = this->log->appendv(iovp,iovcnt);
+            ret = this->log->appendv(iovp,1+dc.size());
             if(ret != NO_ERROR){
                 LOG(fatal) << "Store: append failed";
                 exit(1);
@@ -134,7 +139,9 @@ namespace nvs{
              * 3. reset the bitset vector
              */
             obj->setVersion(version);
+            /* delta compression tracking */
             enable_write_protection(obj->getPtr(), obj->get_aligned_size());
+
             obj->reset_bit_vector();
             return NO_ERROR;
         }
@@ -285,7 +292,7 @@ namespace nvs{
         if((it=objectMap.find(key)) != objectMap.end()){
             obj = it->second;
             /* copying deltas */
-            delta_memcpy(obj->getPtr(),wentry.datap ,
+            delta_memcpy((char *)obj->getPtr(), (char *)wentry.datap ,
                          &wentry.deltas[0],wentry.delta_len);
             obj->setVersion(version);
             *addr = obj->getPtr();
@@ -313,7 +320,7 @@ namespace nvs{
 
 
 
-    void DeltaStore::delta_copy(char *dst, char *src,
+    void DeltaStore::delta_memcpy(char *dst, char *src,
                                 struct ledelta_t *deltas, uint64_t delta_len){
         uint64_t src_offset = 0;
         for(int i = 0; i < delta_len; i ++){
@@ -321,6 +328,8 @@ namespace nvs{
             src_offset += deltas[i].len;
         }
     }
+
+
 }
 
 

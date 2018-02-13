@@ -1,6 +1,8 @@
 
 set(YUMA_SRC
         ${YUMA_SRC}
+        ${CMAKE_CURRENT_SOURCE_DIR}/delta_store.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/delta_store.h
         ${CMAKE_CURRENT_SOURCE_DIR}/nvs_store.cc
         ${CMAKE_CURRENT_SOURCE_DIR}/nvs_store.h
         ${CMAKE_CURRENT_SOURCE_DIR}/key.h

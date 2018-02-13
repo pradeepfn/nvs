@@ -12,7 +12,7 @@ namespace nvs{
     {
 #ifdef _DELTA_STORE
         this->aligned_size = (size + PAGE_SIZE-1) & ~(PAGE_SIZE);
-        this->bitset = new std::vector<bool>(aligned_size/PAGE_SIZE);
+        this->bitset.resize(aligned_size/PAGE_SIZE);
 #endif
     }
 
@@ -27,12 +27,12 @@ namespace nvs{
         uint64_t start_offset;
         uint64_t len;
 
-        for(uint64_t i = 0; i < this->bitset->size(); i++){
-            if(!hole && !bitset->at(i)){
+        for(uint64_t i = 0; i < this->bitset.size(); i++){
+            if(!hole && !bitset[i]){
                 hole = true;
                 start_offset = i;
                 len++;
-            }else if(hole && bitset->at(i)){
+            }else if(hole && bitset[i]){
                 hole=false;
                 struct delta_t dchunk;
                 dchunk.start_offset = start_offset;
@@ -43,14 +43,14 @@ namespace nvs{
             }
         }
         // sort the vector and truncate after max 5
-        std::sort(dcvector.begin(), dcvector.end()); // TODO: need caparator
+        std::sort(dcvector.begin(), dcvector.end()); // TODO: need comparator
         //truncate the chunk vector
         dcvector.resize(5);
         return dcvector;
     }
 
     Object::~Object() {
-        delete(this->bitset);
+
     }
 
 }

@@ -256,7 +256,7 @@ namespace nvs{
 
             while(i_index < hdr->len){
                 if(!strncmp(i_hdr->kname,wentry->key, KEY_LEN) && hdr->version == wentry->version){
-                    wentry->datap = i-data;
+                    wentry->datap = i_data;
                     wentry->len = i_hdr->len;
                     wentry->err = NO_ERROR;
                     return 0;

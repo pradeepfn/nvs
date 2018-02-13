@@ -19,6 +19,11 @@ namespace nvs {
     struct delta_t{
         uint64_t start_offset;
         uint64_t len;
+
+        bool operator <(const delta_t& rhs) const{
+            return len < rhs.len;
+        }
+
     };
 #endif
 
@@ -50,7 +55,23 @@ namespace nvs {
         uint64_t get_aligned_size(){
             return aligned_size;
         }
+
+
+        void set_modified_bit(int64_t page_index){
+            if(page_index>0 && page_index < bitset.size()) {
+                bitset[page_index] = true;
+            }
+        }
+
         std::vector<struct delta_t> get_delta_chunks();
+
+
+        void reset_bit_vector(){
+            std::vector<bool>::iterator it;
+            for(it=bitset.begin();it != bitset.end();it++){
+                *it = false;
+            }
+        }
 #endif
 
 
@@ -65,7 +86,7 @@ namespace nvs {
         void *ptr;
 #ifdef _DELTA_STORE
         //bit vector to keep track of modified pages
-        std::vector<bool> *bitset;
+        std::vector<bool> bitset;
         uint64_t aligned_size;
 #endif // _DELTA_STORE
     };
