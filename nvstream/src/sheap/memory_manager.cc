@@ -9,7 +9,8 @@
 #include "nvs/memory_manager.h"
 #include "root.h"
 
-#define NVS_BASE_DIR  "/dev/shm"
+//#define NVS_BASE_DIR  "/dev/shm"
+#define NVS_BASE_DIR  "/mnt/pmfs"
 #define NVS_USER "unity"
 
 namespace nvs {

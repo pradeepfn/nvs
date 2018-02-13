@@ -7,7 +7,7 @@
 #include "nvs_store.h"
 #include "logentry.h"
 
-#define LOG_SIZE 10 * 1024 * 1024 * 30LLU
+#define LOG_SIZE 3 * 1024 * 1024 * 1024LLU
 
 namespace nvs{
 
