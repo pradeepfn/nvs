@@ -138,7 +138,7 @@ namespace nvs{
 
         iovcnt = 1+2*nvar;
         iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
-        l_entry = (struct lehdr_t *)malloc(sizeof(struct lehdr_t) * 1+nvar);
+        l_entry = (struct lehdr_t *)malloc(sizeof(struct lehdr_t) * (1+nvar));
         /* start with inner elements */
         tmp_iovp = iovp+1;
         tmp_l_entry = l_entry+1;
@@ -184,8 +184,9 @@ namespace nvs{
         }
 
         end:
-            free(l_entry);
-            free(iovp);
+            free((void *)iovp);
+            free((void *)l_entry);
+
             return ret;
     }
 
@@ -255,7 +256,7 @@ namespace nvs{
             uint64_t i_index = sizeof(struct lehdr_t) + i_hdr->len;
 
             while(i_index < hdr->len){
-                if(!strncmp(i_hdr->kname,wentry->key, KEY_LEN) && hdr->version == wentry->version){
+                if(!strncmp(i_hdr->kname,wentry->key, KEY_LEN) && i_hdr->version == wentry->version){
                     wentry->datap = i_data;
                     wentry->len = i_hdr->len;
                     wentry->err = NO_ERROR;

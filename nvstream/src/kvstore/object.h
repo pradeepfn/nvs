@@ -14,7 +14,7 @@
 
 namespace nvs {
 
-#ifdef _DELTA_STORE
+
     /* structure to keep track of delta chunks */
     struct delta_t{
         uint64_t start_offset;
@@ -25,7 +25,7 @@ namespace nvs {
         }
 
     };
-#endif
+
 
 
 
@@ -51,7 +51,7 @@ namespace nvs {
             return name;
         }
 
-#ifdef _DELTA_STORE
+
         uint64_t get_aligned_size(){
             return aligned_size;
         }
@@ -72,7 +72,7 @@ namespace nvs {
                 *it = false;
             }
         }
-#endif
+
 
 
 
@@ -84,11 +84,11 @@ namespace nvs {
         uint64_t size;
         uint64_t version;
         void *ptr;
-#ifdef _DELTA_STORE
+
         //bit vector to keep track of modified pages
         std::vector<bool> bitset;
         uint64_t aligned_size;
-#endif // _DELTA_STORE
+
     };
 }
 
