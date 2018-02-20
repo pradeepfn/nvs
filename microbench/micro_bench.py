@@ -7,8 +7,8 @@ import shutil
 DBG = 1
 
 __home = os.getcwd()
-__nvs_root = '/nethome/pfernando3/yuma/bench-yuma'  # root of fbench script location
-__micro_root = '/nethome/pfernando3/yuma/bench-yuma'
+__nvs_root = '/home/pradeep/nvs/microbench'  # root of fbench script location
+__micro_root = '/home/pradeep/nvs/microbench'
 
 __empty = ''
 __tmpfs = 'tmpfs'
@@ -34,7 +34,7 @@ parser.add_argument('-r', dest='run',action='store_true', default=False, help="r
 parser.add_argument('-w', dest='workload', default=__empty, help='', choices=__workload_l)
 parser.add_argument('-s', dest='snapsize', default=__empty, help='')
 parser.add_argument('-v', dest='varsize', default=__empty, help='')
-parser.add_argument('-n', dest='niter', default=__empty, help='')
+
 
 try:
     args = parser.parse_args()
@@ -96,7 +96,7 @@ def build_nvs(sysargs):
     w = args.workload
 
     cmd = 'cmake'
-    d = 'nvs' + '/build'
+    d = '../nvstream/build'
     cd(d)
 
     if w==__tmpfs:
@@ -104,11 +104,12 @@ def build_nvs(sysargs):
     elif w == __pmfs:
         cmd = cmd + ' -DFILE_STORE=ON -DPMFS=ON'
     elif w == __nvs:
-        cmd = cmd + ' -DNVS_STORE=ON'
+#        cmd = cmd + ' -DNVS_STORE=ON'
+         msg("nvs store")
     elif w == __nvsd:
-        cmd = cmd + ' -DNVS_DSTORE=ON'
+        cmd = cmd + ' -DDELTA_STORE=ON'
 
-    cmd = cmd + '..'
+    cmd = cmd + ' ..'
     sh(cmd)
     cmd = 'make'
     sh(cmd)
@@ -119,7 +120,7 @@ def build_micro(sysargs):
     args = sysargs
     w = args.workload
 
-    d = 'microbenchmark/src'
+    d = 'src'
     cd(d)
     cmd = 'make micro_writer'
     sh(cmd)
@@ -130,14 +131,26 @@ def build_bench(sysargs):
     build_micro(sysargs)
 
 def run_bench(sysargs):
-#clean the /dev/shm , etc
-    cmd = 'rm -rf /dev/shm/unity_NVS_ROOT*'
-    sh(cmd)
-    cmd = 'rm -rf /dev/shm/shm'
-    sh(cmd)
+    args = sysargs
+    w = args.workload
+    s = args.snapsize
+    v = args.varsize
+
+    if w == __pmfs:
+        cmd = 'rm -rf /dev/shm/shm'
+        sh(cmd)
+    elif w == __tmpfs:
+        cmd = 'rm -rf /dev/shm/shm'
+        sh(cmd)
+    elif w == __nvs:
+        cmd = 'rm -rf /dev/shm/unity_NVS_ROOT*'
+        sh(cmd)
+        cmd = 'rm -rf /dev/shm/shm'
+        sh(cmd)
+
 #format heap
-    cmd1 = 'mpirun -np 1 --bind-to core ../../nvstream/build/src/tools/nvsformat'
-    cmd2 = 'mpirun -np 4 --bind-to core ./micro_writer -v 1k -s 100k'
+    cmd1 = 'mpirun -np 1 --bind-to core ../nvstream/build/src/tools/nvsformat'
+    cmd2 = 'mpirun -np 1 --bind-to core src/micro_writer -v ' + v +' -s ' + s
     sh(cmd1)
     sh(cmd2)
 
@@ -145,7 +158,7 @@ def clean_nvs(sysargs):
     args=sysargs
     w=args.workload
 
-    d = 'nvs' + '/build'
+    d = '../nvstream/build'
     cd(d)
     msg('deleting cmake cache..')
     try:
@@ -159,7 +172,7 @@ def clean_micro(sysargs):
     args = sysargs
     w = args.workload
 
-    d = 'microbenchmark/src'
+    d = 'src'
     cd(d)
     cmd = 'make clean'
     sh(cmd)
@@ -168,42 +181,6 @@ def clean_micro(sysargs):
 def clean_bench(sysargs):
     clean_micro(sysargs)
     clean_nvs(sysargs)
-
-def fb(wl, data):
-    __t = wl + '.template'
-    __out = wl + '.f'
-
-    # generate workload file from template
-    cd('bench-yuma')
-
-    template = open(__t, "rt").read()
-
-    with open(__out, "wt") as output:
-        output.write(template % data)
-
-    cd(__home)
-    cmd = 'filebench'
-    cmd += ' -f ' + __fbench_root + '/' + __out
-    msg(cmd)
-    sh(cmd)
-
-    # delete the generated file
-    os.remove(__fbench_root + '/' + __out)
-
-    cd(__home)
-
-def mmapb(mapsize, stepsize, chunksize):
-
-    #clean /dev/shm
-    try:
-        os.remove('/dev/shm/yumamapbench')
-    except:
-        print '/dev/shm/yumamapbench does not exist'
-
-    cd('mmapbench/build')
-    cmd = './bench -t ' + mapsize + ' -s ' + stepsize + ' -c ' + chunksize
-    sh(cmd)
-    cd(__home)
 
 
 if __name__ == '__main__':
