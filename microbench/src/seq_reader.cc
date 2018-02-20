@@ -18,7 +18,7 @@ int main(){
     void *ptr = malloc(size);
     nvs::Store *st = nvs::StoreManager::GetInstance(store_name);
     //ret = st->get("var3", 1, ptr);
-    ret = st->get_with_malloc("var3", 3, &ptr);
+    ret = st->get_with_malloc("var3", 4, &ptr);
     if(ret != nvs::NO_ERROR){
         printf("get failed.\n");
         exit(1);

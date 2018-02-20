@@ -9,6 +9,27 @@
 #define row 3
 #define column 4
 
+void init_data(int **var){
+
+    int *const data = (int *)(var + row);
+
+    int i,j;
+    for(i=0; i< row; i++){
+        var[i] = data + i * column;
+    }
+
+    for(i=0; i< 3; i ++){
+        for(j=0; j < 4; j++){
+            var[i][j] = i*column + (j+1);
+            printf("%d ", var[i][j]);
+        }
+    }
+    printf("\n");
+}
+
+
+
+
 int main(int argc, char *argv[]){
 
     if(argc < 2) {
@@ -19,35 +40,31 @@ int main(int argc, char *argv[]){
 
 
     uint64_t  version = 0;
-    int **var3;
+    int **tmpvar;
     nvs::ErrorCode ret;
     std::string store_name = std::string(STORE_ID) + "/" + rank;
     int var[row][column] = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};
-    uint64_t size = row * sizeof(*var3) + row*(column * sizeof(**var3));
-    void *ptr;
+    uint64_t size = row * sizeof(*tmpvar) + row*(column * sizeof(**tmpvar));
+
     nvs::init_log(nvs::SeverityLevel::all,"");
     nvs::Store *st = nvs::StoreManager::GetInstance(store_name);
-    ret =  st->create_obj("var3", size, &ptr);
 
-    var3 = (int **)ptr;
+    void *ptr1;
+    ret =  st->create_obj("var3", size, &ptr1);
+    init_data((int **)ptr1);
 
-    int *const data = (int *)(var3 + row);
+    void *ptr2;
+    ret =  st->create_obj("var4", size, &ptr2);
+    init_data((int **)ptr2);
 
-    int i,j;
-    for(i=0; i< row; i++){
-            var3[i] = data + i * column;
-    }
-
-    for(i=0; i< 3; i ++){
-        for(j=0; j < 4; j++){
-            var3[i][j] = i*column + (j+1);
-            printf("%d ", var3[i][j]);
-        }
-    }
 
     st->put("var3", ++version);
+    st->put("var4", ++version);
     st->put("var3", ++version);
-    st->put("var3", ++version);
+    st->put("var4", ++version);
+
+    st->put_all();
+
 
     st->stats();
     return 0;

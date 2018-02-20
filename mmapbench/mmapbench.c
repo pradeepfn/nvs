@@ -217,10 +217,6 @@ main(int argc, char **argv)
 
     filesize = tonum(filesizestr);
     chunksize = tonum(chunksizestr);
-<<<<<<< HEAD
-=======
-
->>>>>>> 0f853285d7c364b1b14550790b1c29edbff87cc7
     stepsize = tonum(stepsizestr);
 
     //debug
