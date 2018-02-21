@@ -58,7 +58,7 @@ namespace nvs{
             uint64_t version = obj->getVersion()+1;
             // file name
             std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
-                                    key + std::to_string(version);
+                                    key + "_" + std::to_string(version);
 
             FILE *file = fopen(file_name.c_str(), "w");
             if (file == NULL) {
