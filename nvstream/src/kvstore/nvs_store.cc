@@ -8,8 +8,6 @@
 #include "nvs_store.h"
 
 
-#define LOG_SIZE 700 * 1024 * 1024LLU
-
 namespace nvs{
 
     NVSStore::NVSStore(std::string storeId):
