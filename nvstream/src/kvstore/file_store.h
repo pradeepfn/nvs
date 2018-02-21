@@ -9,8 +9,11 @@
 #include <nvs/store.h>
 #include "object.h"
 
-#define ROOT_FILE_PATH "/dev/shm/unity"
-
+#if defined(_TMPFS)
+    #define ROOT_FILE_PATH "/dev/shm/unity"
+#elif defined(_PMFS)
+    #define ROOT_FILE_PATH "/mnt/pmfs/unity"
+#endif
 /*
  *
  * I/O happens through file API. New file is created for each version

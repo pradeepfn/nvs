@@ -28,15 +28,39 @@ set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
 
 include_directories("${PROJECT_BINARY_DIR}")
 
+OPTION(FILE_STORE "enable file based checkpoint" OFF)
+OPTION(DELTA_STORE "enable delta" OFF)
+OPTION(PMFS "" OFF)
+OPTION(TMPFS "" OFF)
+
+
+
 #add_definitions(-DNCHECKPT)
 add_definitions(-DNDEBUG)
 add_definitions(-DDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
-#add_definitions(-D_FILE_STORE)
-#add_definitions(-D_DELTA_STORE)
 
+
+IF(FILE_STORE)
+    add_definitions(-D_FILE_STORE)
+    MESSAGE("file storage enabled")
+ENDIF(FILE_STORE)
+
+IF(PMFS)
+    add_definitions(-D_PMFS)
+    MESSAGE("pmfs as the file storage")
+ENDIF(PMFS)
+
+IF(TMPFS)
+    add_definitions(-D_TMPFS)
+    MESSAGE("tmpfs as the file system")
+ENDIF(TMPFS)
+
+IF(DELTA_STORE)
+ add_definitions(-D_DELTA_STORE)
+ENDIF(DELTA_STORE)
 
 #tests
 enable_testing()
