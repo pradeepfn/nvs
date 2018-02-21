@@ -111,7 +111,8 @@ namespace nvs{
 
         //lock this log file
         if(write_offset >= end_offset){
-            LOG(fatal) << "no space in log";
+            LOG(fatal) << "no space in log" << "write_offset : " << write_offset <<
+                        "end_offset :" << end_offset;
             errorCode =  NOT_ENOUGH_SPACE;
             goto end;
         }
