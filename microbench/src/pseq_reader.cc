@@ -11,11 +11,11 @@
  * hard-coded at the moment
  */
 
-//#define GTC_VARS {"array_1d"}
-//define GTC_NVARS 1
-#define GTC_VARS {"phi" , "phisave" , "zelectron" , "zelectron0" ,"zion" , "zion0", "zonale", "zonali"}
-#define GTC_NVARS 8
-#define N_VERSIONS 5
+#define GTC_VARS {"array_1d"}
+#define GTC_NVARS 1
+//#define GTC_VARS {"phi" , "phisave" , "zelectron" , "zelectron0" ,"zion" , "zion0", "zonale", "zonali"}
+//#define GTC_NVARS 8
+#define N_VERSIONS 3
 
 int main(int argc, char **argv)
 {

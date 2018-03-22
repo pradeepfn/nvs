@@ -56,6 +56,13 @@ namespace nvs{
             this->end_offset = this->mapped_len-1;
             assert(hdr->len == this->mapped_len);
             this->write_offset = -1; //TODO
+            /* warm up - map the physical pages */
+
+            uint k = start_offset;
+            while(k < end_offset){
+                pmemaddr[k] = 0;
+                k+=4096;
+            }
 
         }else{
             LOG(error) << "map segment";
@@ -129,14 +136,20 @@ namespace nvs{
             errorCode = NOT_ENOUGH_SPACE;
             goto end;
         }
-
+#if defined(!MEM_CPY)
         for(int i = 0 ; i < iovcnt; i++) {
             pmem_memcpy_nodrain(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
         //TODO:
         persist();
+#else
+        for(int i = 0 ; i < iovcnt; i++) {
+            memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
+            write_offset +=iovp[i].iov_len;
+        }
 
+#endif
         end:
             //unlock
             return errorCode;

@@ -92,10 +92,6 @@ namespace  nvs{
         ErrorCode walk(int (*process_chunk)(const void *buf, size_t len, void *arg),void *arg);
         ErrorCode printLog(); // debug purposes
 
-
-
-
-
         void Free (GlobalPtr global_ptr);
 
     private:
