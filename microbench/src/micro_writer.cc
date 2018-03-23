@@ -117,7 +117,7 @@ unsigned long tonum(char *ptr){
 
 int main (int argc, char *argv[]) {
     int mype, nproc;
-    int N = 1000;
+    long N = 300000;
     double *ptr_array[N];
     int x;
     long total_var_size=0;
@@ -158,7 +158,7 @@ int main (int argc, char *argv[]) {
     long mat_size = var_size/sizeof(double);
     double power = log2(mat_size);
     printf("mat size : %ld, power : %f\n", mat_size, power);
-    long row = (long)power/2;
+    long row = (long)(floor(power))/2;
     long col = power - row;
 
     col = pow(2,col);
@@ -178,7 +178,7 @@ int main (int argc, char *argv[]) {
 #if defined(NV_STREAM)
     std::string store_name = std::string(STORE_ID) + std::string("/") +std::to_string(mype);
     nvs::Store *st = nvs::StoreManager::GetInstance(store_name);
-    nvs::init_log(nvs::SeverityLevel::all,"");
+    nvs::init_log(nvs::SeverityLevel::info,"");
 
 #endif
 
@@ -191,7 +191,7 @@ int main (int argc, char *argv[]) {
 
     do{
         if(n_var >  N){
-            printf("not enough pointer array space length \n");
+            printf("not enough pointer array space length  n_var: %ld, N : %ld \n", n_var, N);
             exit(1);
         }
 

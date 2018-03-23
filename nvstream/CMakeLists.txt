@@ -30,6 +30,7 @@ include_directories("${PROJECT_BINARY_DIR}")
 
 OPTION(FILE_STORE "enable file based checkpoint" OFF)
 OPTION(DELTA_STORE "enable delta" OFF)
+OPTION(MEMCPY "enable memcpy" OFF)
 OPTION(PMFS "" OFF)
 OPTION(TMPFS "" OFF)
 
@@ -37,7 +38,7 @@ OPTION(TMPFS "" OFF)
 
 #add_definitions(-DNCHECKPT)
 add_definitions(-DNDEBUG)
-add_definitions(-DDEBUG)
+#add_definitions(-DDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
@@ -61,6 +62,13 @@ ENDIF(TMPFS)
 IF(DELTA_STORE)
  add_definitions(-D_DELTA_STORE)
 ENDIF(DELTA_STORE)
+
+IF(MEMCPY)
+ add_definitions(-D_MEMCPY)
+    MESSAGE("#################################################non persistent memcpy")
+ENDIF(MEMCPY)
+
+
 
 #tests
 enable_testing()
