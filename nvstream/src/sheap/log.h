@@ -73,6 +73,10 @@ struct walkentry {
 };
 
 
+static inline void asm_mfence(void)
+{
+    __asm__ __volatile__ ("mfence");
+}
 
 namespace  nvs{
 

@@ -15,7 +15,7 @@
 //define GTC_NVARS 1
 #define GTC_VARS {"phi" , "phisave" , "zelectron" , "zelectron0" ,"zion" , "zion0", "zonale", "zonali"}
 #define GTC_NVARS 8
-#define N_VERSIONS 5
+#define N_VERSIONS 10
 
 int main(int argc, char **argv)
 {

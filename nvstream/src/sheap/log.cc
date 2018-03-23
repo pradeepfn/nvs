@@ -42,6 +42,12 @@ namespace nvs{
 
             pmem_memcpy_persist(this->pmemaddr,&hdr,sizeof(struct lhdr_t));
 
+   	   uint64_t k=this->start_offset;
+	   while(k < this->end_offset){
+		this->pmemaddr[k] = 0;
+		k += 4096;
+	   }
+
         }else if((this->pmemaddr == NULL) &&
                 ((this->pmemaddr = (char *)pmem_map_file(logPath.c_str(), log_size, 0, 0666,
                         &(this->mapped_len), &is_pmem)) != NULL)){
@@ -56,6 +62,12 @@ namespace nvs{
             this->end_offset = this->mapped_len-1;
             assert(hdr->len == this->mapped_len);
             this->write_offset = -1; //TODO
+
+   	   uint64_t k=this->start_offset;
+	   while(k < this->end_offset){
+		this->pmemaddr[k] = 0;
+		k += 4096;
+	   }
 
         }else{
             LOG(error) << "map segment";
@@ -129,14 +141,20 @@ namespace nvs{
             errorCode = NOT_ENOUGH_SPACE;
             goto end;
         }
-
+#ifndef _MEMCPY
         for(int i = 0 ; i < iovcnt; i++) {
             pmem_memcpy_nodrain(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
         //TODO:
         persist();
-
+#else
+        for(int i = 0 ; i < iovcnt; i++) {
+            std::memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
+            write_offset +=iovp[i].iov_len;
+        }
+        asm_mfence();
+#endif
         end:
             //unlock
             return errorCode;
