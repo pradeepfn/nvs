@@ -62,6 +62,13 @@ namespace nvs{
             this->end_offset = this->mapped_len-1;
             assert(hdr->len == this->mapped_len);
             this->write_offset = -1; //TODO
+            /* warm up - map the physical pages */
+
+            uint k = start_offset;
+            while(k < end_offset){
+                pmemaddr[k] = 0;
+                k+=4096;
+            }
 
    	   uint64_t k=this->start_offset;
 	   while(k < this->end_offset){
