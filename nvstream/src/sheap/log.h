@@ -93,6 +93,7 @@ namespace  nvs{
         ErrorCode append (char *data,size_t size);
         //TODO : get rid of pmem struct from the interface
         ErrorCode appendv(struct iovec *iovp, int iovcnt);
+        ErrorCode appendmv(struct iovec **iovpp, int *iovcnt, int iovpcnt);
         ErrorCode walk(int (*process_chunk)(const void *buf, size_t len, void *arg),void *arg);
         ErrorCode printLog(); // debug purposes
 

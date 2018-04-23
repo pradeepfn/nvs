@@ -13,6 +13,8 @@
     #define ROOT_FILE_PATH "/dev/shm/unity"
 #elif defined(_PMFS)
     #define ROOT_FILE_PATH "/mnt/pmfs/unity"
+#else
+#define ROOT_FILE_PATH "INVALID"
 #endif
 /*
  *

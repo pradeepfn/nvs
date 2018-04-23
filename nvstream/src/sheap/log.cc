@@ -28,7 +28,7 @@ namespace nvs{
 
         int is_pmem;
 
-        if ((this->pmemaddr = (char *)pmem_map_file(logPath.c_str(), log_size,
+        if ((this->pmemaddr = (char *)pmem_map_file(this->logPath.c_str(), log_size,
                                       PMEM_FILE_CREATE|PMEM_FILE_EXCL,
                                       0666, &(this->mapped_len), &is_pmem)) != NULL) {
             //new map segment, populate the header
@@ -49,7 +49,7 @@ namespace nvs{
 	   }
 
         }else if((this->pmemaddr == NULL) &&
-                ((this->pmemaddr = (char *)pmem_map_file(logPath.c_str(), log_size, 0, 0666,
+                ((this->pmemaddr = (char *)pmem_map_file(this->logPath.c_str(), log_size, 0, 0666,
                         &(this->mapped_len), &is_pmem)) != NULL)){
             //verify the segment header
 
@@ -64,13 +64,13 @@ namespace nvs{
             this->write_offset = -1; //TODO
             /* warm up - map the physical pages */
 
-            uint k = start_offset;
+            uint64_t k = start_offset;
             while(k < end_offset){
                 pmemaddr[k] = 0;
                 k+=4096;
             }
 
-   	   uint64_t k=this->start_offset;
+   	   k=this->start_offset;
 	   while(k < this->end_offset){
 		this->pmemaddr[k] = 0;
 		k += 4096;
@@ -167,6 +167,60 @@ namespace nvs{
             return errorCode;
 
     }
+
+    /*appending multiple variables at once. Each varibale may well be represented by a iovector */
+    ErrorCode Log::appendmv(struct iovec **iovpp, int *iovcnt, int iovpcnt) {
+            ErrorCode errorCode = NO_ERROR;
+
+            uint64_t tot_cnt = 0;
+
+            //TODO lock this log file
+            if(write_offset >= end_offset){
+                LOG(fatal) << "no space in log" << "write_offset : " << write_offset <<
+                            "end_offset :" << end_offset;
+                errorCode =  NOT_ENOUGH_SPACE;
+                goto end;
+            }
+
+            // feasibility check
+            for(int i=0; i < iovpcnt; i++){
+				for(int j = 0 ; j < iovcnt[i]; j++){
+					tot_cnt += iovpp[i][j].iov_len;
+				}
+            }
+
+            // commit flag
+            tot_cnt += WORD_LENGTH;
+
+            if(tot_cnt > (end_offset-write_offset)){
+                LOG(fatal) << "not enough space on log";
+                errorCode = NOT_ENOUGH_SPACE;
+                goto end;
+            }
+
+    #ifndef _MEMCPY
+            for(int i=0; i < iovpcnt ; i++){
+				for(int j = 0 ; j < iovcnt; j++) {
+					pmem_memcpy_nodrain(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
+					write_offset +=iovpp[i][j].iov_len;
+				}
+            }
+            //TODO:
+            persist();
+    #else
+            for(int i=0; i < iovpcnt ; i++){
+				for(int j = 0 ; j < iovpcnt; j++) {
+					std::memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
+					write_offset +=iovpp[i][j].iov_len;
+				}
+            }
+            asm_mfence();
+    #endif
+            end:
+                //unlock
+                return errorCode;
+
+        }
 
 
     ErrorCode Log::walk( int (*process_chunk)(const void *buf, size_t len, void *arg), void *arg) {

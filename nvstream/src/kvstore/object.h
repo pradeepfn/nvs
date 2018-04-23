@@ -57,6 +57,7 @@ namespace nvs {
         }
 
 
+        /* we record the index of the modfied page in our bit-vector */
         void set_modified_bit(int64_t page_index){
             if(page_index>0 && page_index < bitset.size()) {
                 bitset[page_index] = true;

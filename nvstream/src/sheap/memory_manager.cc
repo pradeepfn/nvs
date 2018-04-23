@@ -9,8 +9,8 @@
 #include "nvs/memory_manager.h"
 #include "root.h"
 
-//#define NVS_BASE_DIR  "/dev/shm"
-#define NVS_BASE_DIR  "/mnt/pmfs"
+#define NVS_BASE_DIR  "/dev/shm"
+//#define NVS_BASE_DIR  "/mnt/pmfs"
 #define NVS_USER "unity"
 
 namespace nvs {
@@ -83,7 +83,8 @@ namespace nvs {
         }
 
         // we create a new log add it to soft state
-        Log *log = new Log(this->rootHeapPath + std::to_string(id) , size ,id);
+        std::string logPath = this->rootHeapPath + std::to_string(id);
+        Log *log = new Log(logPath, size ,id);
         std::map<LogId, Log *>::iterator it;
         if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
             this->idToLogMap[id] = log;

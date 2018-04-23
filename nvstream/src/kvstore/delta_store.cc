@@ -113,11 +113,11 @@ namespace nvs{
             int i;
             for(it = dc.begin(),i=1; it != dc.end(); it++,i++){
 
-                iovp[i].iov_base = (char *)obj->getPtr() + dc[i].start_offset;
-                iovp[i].iov_len = dc[i].len;
+                iovp[i].iov_base = (char *)obj->getPtr() + it->start_offset;
+                iovp[i].iov_len = it->len;
 
-                l_entry.deltas[i-1].start_offset = dc[i].start_offset ;
-                l_entry.deltas[i-1].len = dc[i].len;
+                l_entry.deltas[i-1].start_offset = it->start_offset ;
+                l_entry.deltas[i-1].len = it->len;
                 delta_len += it->len;
             }
 
@@ -126,13 +126,13 @@ namespace nvs{
             snprintf(l_entry.kname, KEY_LEN,"%s", obj->getName().c_str());
             l_entry.len = obj->getSize();
             l_entry.delta_len = delta_len;
-            l_entry.type = HdrType::single;
+            l_entry.type = HdrType::delta;
 
             iovp[0].iov_base = &l_entry;
             iovp[0].iov_len = sizeof(l_entry);
 
 
-            ret = this->log->appendv(iovp,1+dc.size());
+            ret = this->log->appendv(iovp,dc.size()+1);
             if(ret != NO_ERROR){
                 LOG(fatal) << "Store: append failed";
                 exit(1);
@@ -161,69 +161,81 @@ namespace nvs{
      */
     ErrorCode DeltaStore::put_all() {
 
-        struct iovec *iovp, *tmp_iovp;
         ErrorCode ret = NO_ERROR;
-        struct lehdr_t *l_entry, *tmp_l_entry;
-        uint64_t nvar, iovcnt,tot_cnt=0;
+        uint64_t iovpcnt,tot_cnt=0;
 
-        if(!(nvar = objectMap.size())){
+        if(!(objectMap.size())){
             LOG(warning) << "no objects found";
         }
-        /* figure out number of iovec needed.
-            1 - lehdr of type multiple
-            2* nvars - each variable has lehdr of type 'single' and data
-        */
 
-        iovcnt = 1+2*nvar;
-        iovp = (struct iovec *)malloc(sizeof(struct iovec) * iovcnt);
-        l_entry = (struct lehdr_t *)malloc(sizeof(struct lehdr_t) * 1+nvar);
-        /* start with inner elements */
-        tmp_iovp = iovp+1;
-        tmp_l_entry = l_entry+1;
-        std::map<std::string, Object *>::iterator it;
-        for(it = objectMap.begin(); it != objectMap.end(); it++){
-            Object *obj = it->second;
 
-            //populate header
-            tmp_l_entry->version = obj->getVersion()+1;
-            snprintf(tmp_l_entry->kname, KEY_LEN,"%s", obj->getName().c_str());
-            tmp_l_entry->len = obj->getSize();
-            tmp_l_entry->type = single;
-            /* populate copy vector */
-            tmp_iovp->iov_base = tmp_l_entry;
-            tmp_iovp->iov_len = sizeof(struct lehdr_t);
-            tmp_iovp++;
+        iovpcnt = objectMap.size() + 1;
+        struct iovec **iovpp = (struct iovec **)malloc(sizeof(struct iovec *) * iovpcnt );
+        int *iovcntp = (int *) malloc(sizeof(int) * iovpcnt);
+        struct lehdr_t *l_entryp = (struct lehdr_t *)malloc(sizeof(struct lehdr_t) * iovpcnt);
 
-            tmp_iovp->iov_base = obj->getPtr();
-            tmp_iovp->iov_len = obj->getSize();
-            tot_cnt += (sizeof(struct lehdr_t) + obj->getSize());
 
-            tmp_iovp++;
-            tmp_l_entry++;
+        std::map<std::string, Object *>::iterator mapIt;
+        int i;
+        for(mapIt = objectMap.begin(), i=1; mapIt != objectMap.end(); mapIt++, i++){
+            Object *obj = mapIt->second;
+            std::vector<struct delta_t> dc = obj->get_delta_chunks();
+            uint64_t delta_len = 0;
+
+
+            //construct 2d IO vector. IMPROVE: merge two arrays in to a struct
+		   iovpp[i] = (struct iovec *)malloc(sizeof(struct iovec) * (1+dc.size()));
+		   iovcntp[i] = 1+dc.size();
+
+		   std::vector<struct delta_t>::iterator it;
+		   int j;
+		   for(it = dc.begin(),j=1; it != dc.end(); it++,j++){
+
+			   iovpp[i][j].iov_base = (char *)obj->getPtr() + it->start_offset;
+			   iovpp[i][j].iov_len = it->len;
+
+			   l_entryp[i].deltas[j-1].start_offset = it->start_offset ;
+			   l_entryp[i].deltas[j-1].len = it->len;
+			   delta_len += it->len;
+		   }
+
+		   //populate log header
+		   l_entryp[i].version = obj->getVersion()+1;;
+		   snprintf(l_entryp[i].kname, KEY_LEN,"%s", obj->getName().c_str());
+		   l_entryp[i].len = obj->getSize();
+		   l_entryp[i].delta_len = delta_len;
+		   l_entryp[i].type = HdrType::delta;
+
+		   iovpp[i][0].iov_base = &l_entryp[i];
+		   iovpp[i][0].iov_len = sizeof(struct lehdr_t);
+
+		   tot_cnt += ( delta_len + sizeof(struct lehdr_t));
         }
 
-        l_entry->version = 0;
-        l_entry->type = multiple;
-        l_entry->len  = tot_cnt;
+        iovpp[0] = (struct iovec *)malloc(sizeof(struct iovec));
+        iovcntp[0] = 1;
 
-        iovp->iov_base = l_entry;
-        iovp->iov_len = sizeof(struct lehdr_t);
+        l_entryp[0].version = 0;
+        l_entryp[0].type = HdrType::multiple;
+        l_entryp[0].len  = tot_cnt;
 
-        if(this->log->appendv(iovp,iovcnt) != NO_ERROR){
+        iovpp[0][0].iov_base = &l_entryp[0];
+        iovpp[0][0].iov_len = sizeof(struct lehdr_t);
+
+        if(this->log->appendmv(iovpp,iovcntp, iovpcnt) != NO_ERROR){
             LOG(error) << "append error";
             ret = PMEM_ERROR;
             goto end;
         }
 
         //increase the soft state
-        for(it = objectMap.begin(); it != objectMap.end(); it++) {
-            Object *obj = it->second;
+        for(mapIt = objectMap.begin(); mapIt != objectMap.end(); mapIt++) {
+            Object *obj = mapIt->second;
             obj->setVersion(obj->getVersion()+1);
         }
 
         end:
-        free(l_entry);
-        free(iovp);
+        //TODO: free the volatile structures
         return ret;
     }
 

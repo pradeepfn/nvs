@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
 project(nvstream)
-
-
-
-
 #
 # default system include and link directories
 #
@@ -29,16 +25,16 @@ set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
 include_directories("${PROJECT_BINARY_DIR}")
 
 OPTION(FILE_STORE "enable file based checkpoint" OFF)
-OPTION(DELTA_STORE "enable delta" OFF)
-OPTION(MEMCPY "enable memcpy" OFF)
-OPTION(PMFS "" OFF)
-OPTION(TMPFS "" OFF)
+OPTION(DELTA_STORE "enable delta" ON)
+OPTION(MEMCPY "enable memcpy" ON)
+OPTION(PMFS "using PMFS" OFF)
+OPTION(TMPFS "using TMPFS" OFF)
 
 
 
 #add_definitions(-DNCHECKPT)
-add_definitions(-DNDEBUG)
-#add_definitions(-DDEBUG)
+#add_definitions(-DNDEBUG)
+add_definitions(-DDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
@@ -60,6 +56,7 @@ IF(TMPFS)
 ENDIF(TMPFS)
 
 IF(DELTA_STORE)
+ Message("enabling delta store")
  add_definitions(-D_DELTA_STORE)
 ENDIF(DELTA_STORE)
 
