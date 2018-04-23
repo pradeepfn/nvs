@@ -209,7 +209,7 @@ namespace nvs{
             persist();
     #else
             for(int i=0; i < iovpcnt ; i++){
-				for(int j = 0 ; j < iovpcnt; j++) {
+				for(int j = 0 ; j < iovcnt[i]; j++) {
 					std::memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
 					write_offset +=iovpp[i][j].iov_len;
 				}
