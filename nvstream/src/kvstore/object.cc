@@ -50,7 +50,10 @@ namespace nvs{
         			status = !WRITTEN_REGION;
         			struct delta_t dchunk;
         			dchunk.start_offset = start_offset*PAGE_SIZE;
-        			dchunk.len = len*PAGE_SIZE;
+        			if(!bitset[i])
+        				dchunk.len = len*PAGE_SIZE;
+        			else if(i == this->bitset.size()-1)
+        				dchunk.len = this->size - dchunk.start_offset; // we only copy to end of actual data
         			dcvector.push_back(dchunk);
         		}
         	}

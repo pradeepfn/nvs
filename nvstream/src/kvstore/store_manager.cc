@@ -18,6 +18,9 @@
 
 namespace nvs{
 
+#if defined(_DELTA_STORE)
+	extern DeltaStore *ds_object;
+#endif
 
     std::atomic<Store *> StoreManager::instance_;
     std::mutex StoreManager::mutex_;
@@ -39,13 +42,14 @@ namespace nvs{
 #endif
 
 #elif defined(_DELTA_STORE)
-
 #if defined (_TIMING)
-                tmp = new TimingStore(new DeltaStore(storePath));
+                DeltaStore *vtmp = new DeltaStore(storePath);
+                tmp = new TimingStore(vtmp);
+                ds_object = vtmp;
 #else
                 tmp = new DeltaStore(storePath);
+                ds_object = (DeltaStore *)tmp;
 #endif
-
 #else
 
 #if defined (_TIMING)

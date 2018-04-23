@@ -20,6 +20,8 @@
 
 namespace nvs {
 
+
+
     class DeltaStore : public Store {
     private:
 
@@ -31,7 +33,7 @@ namespace nvs {
         objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap;
 
-        static struct sigaction old_sa; // old sigaction structure
+
 
 
         void delta_memcpy(char *dst, char *src,
@@ -39,34 +41,9 @@ namespace nvs {
 
     protected:
     public:
+        void delta_handler(int sig, siginfo_t *si, void *unused);
 
 
-         void delta_handler(int sig, siginfo_t *si, void *unused){
-            if(si != NULL && si->si_addr != NULL){
-                void *pageptr;
-                uint64_t offset = 0;
-                pageptr =  si->si_addr;
-
-                std::map<std::string, Object *>::iterator it;
-                for(it=objectMap.begin(); it != objectMap.end(); it++){
-                    offset = (uint64_t)pageptr - (uint64_t)it->second->getPtr();
-                    if(offset >=0 && offset <= it->second->get_aligned_size()){ // the address belong to this object
-                        /* if(isDebugEnabled()){
-                             printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
-                         }*/
-                        //get the page start
-                        pageptr = (void *)((long)si->si_addr & ~(PAGE_SIZE-1));
-                        disable_protection(pageptr, PAGE_SIZE);
-
-                        uint64_t page_index = ((uint64_t)pageptr & ~(PAGE_SIZE-1)) - 1; // 0 based indexing
-                        it->second->set_modified_bit(page_index);
-                        return;
-                    }
-                }
-                /* the raised signal not belong to our tracking addresses */
-                call_oldhandler(sig, &(this->old_sa));
-            }
-        }
 
 
 

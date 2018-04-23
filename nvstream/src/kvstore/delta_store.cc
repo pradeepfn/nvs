@@ -12,8 +12,40 @@
 
 namespace nvs{
 
+	// global delta-store object that handles the page protection fault
 
-    struct sigaction DeltaStore::old_sa;
+	DeltaStore *ds_object;
+	struct sigaction old_sa; // old sigaction structure
+	 void delta_handler_wrapper(int sig, siginfo_t *si, void *unused){
+		 ds_object->delta_handler(sig,si,unused);
+	 }
+
+void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
+	if (si != NULL && si->si_addr != NULL) {
+		void *pageptr;
+		uint64_t offset = 0;
+		pageptr = si->si_addr;
+
+		std::map<std::string, Object *>::iterator it;
+		for (it = objectMap.begin(); it != objectMap.end(); it++) {
+			offset = (uint64_t) pageptr - (uint64_t) it->second->getPtr();
+			if (offset >= 0 && offset <= it->second->get_aligned_size()) { // the address belong to this object
+					/* if(isDebugEnabled()){
+					 printf("[%d] starting address of the matching chunk %p\n",lib_process_id, s->ptr);
+					 }*/
+				//get the page start
+				pageptr = (void *) ((long) si->si_addr & ~(PAGE_SIZE - 1));
+				disable_protection(pageptr, PAGE_SIZE);
+
+				uint64_t page_index = offset >> 12;
+				it->second->set_modified_bit(page_index);
+				return;
+			}
+		}
+		/* the raised signal not belong to our tracking addresses */
+		call_oldhandler(sig, &old_sa);
+	}
+}
 
 
     DeltaStore::DeltaStore(std::string storeId):
@@ -41,9 +73,8 @@ namespace nvs{
                 exit(1);
             }
         }
-
-        /* install signal handler */
-        //install_sighandler(this->delta_handler,&DeltaStore::old_sa);
+        /* install the signal handler for page-modification detection */
+        install_sighandler(&delta_handler_wrapper,&old_sa);
 
     }
 
@@ -77,6 +108,7 @@ namespace nvs{
             LOG(fatal) << "not implemented yet";
             exit(1);
         }
+
         *obj_addr = (uint64_t *)tmp_ptr;
 
         return NO_ERROR;
@@ -228,10 +260,11 @@ namespace nvs{
             goto end;
         }
 
-        //increase the soft state
         for(mapIt = objectMap.begin(); mapIt != objectMap.end(); mapIt++) {
             Object *obj = mapIt->second;
             obj->setVersion(obj->getVersion()+1);
+            enable_write_protection(obj->getPtr(), obj->get_aligned_size());
+            obj->reset_bit_vector();
         }
 
         end:
