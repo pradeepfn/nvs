@@ -85,7 +85,7 @@
 #  Linux and Mac, using g95 compiler, multiple processors, distributed memory using MPI
 #OPTS = -f90=g95 -ffree-form -I../include -O2
 FC = mpif90 
-OPTS = -g -I../include -I/net/hu21/pfernand/checkout/phoenix/include -L/net/hu21/pfernand/checkout/phoenix/lib  -lssl -lphoenix -lstdc++
+OPTS = -g -I../include
 CPP = cpp  -P -traditional
 DM = -DMPI
 #-----------------------------------------------------------------------------
@@ -128,6 +128,12 @@ DM = -DMPI
 #OPTS = -lmpi -O2 -FR -assume byterecl -ftz -I../include -I/usr/apps/hdf/include
 #CPP  = cpp -C -P -traditional
 #DM   = -DMPI
+
+
+
+CPLUSFLAGS=-std=c++11 -I../../nvstream/include
+
+
 #-----------------------------------------------------------------------------
 #-- You shouldn't need to change anything below here
 #-----------------------------------------------------------------------------
@@ -198,6 +204,8 @@ cm1:			$(OBJS) wrapper.o
 %.o: %.c
 			mpicc -g $(FFLAGS) -c $<
 
+%.o:    %.cc
+	    g++ $(CPLUSFLAGS) -c $<
 
 code:
 			$(AR) onefile.F $(SRC)
