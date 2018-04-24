@@ -1,0 +1,46 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+*.mod
+*.f90
+
+cm1out_*
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+gtc
+
+#swap fiels
+*.swp
+
+#log file
+*.log
+NCD*
+PHI*
+DATA_RESTART*
+*.bak
+gtc.input
+*.lck*
