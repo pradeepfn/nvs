@@ -74,17 +74,18 @@ namespace nvs {
 
         ErrorCode ret = NO_ERROR;
 
-        //TODO: heap root mod lock acquire
+
 
         if (root_heap_.isLogExist(id)){
-            //TODO: release lock
             LOG(error) << "MemoryManager : the log id (" << (uint64_t)id << ") in use";
             return ID_IN_USE;
         }
-
+        this->root_heap_.mtx->lock();
         // we create a new log add it to soft state
         std::string logPath = this->rootHeapPath + std::to_string(id);
         Log *log = new Log(logPath, size ,id);
+        this->root_heap_.mtx->unlock();
+
         std::map<LogId, Log *>::iterator it;
         if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
             this->idToLogMap[id] = log;
@@ -94,7 +95,6 @@ namespace nvs {
 
         //store the log details on heap-root. TODO: pmem transaction
         ret = root_heap_.addLog(id);
-        //TODO: heap root mod lock release
 
         if(ret != NO_ERROR){
             LOG(fatal) << "MemoryManager : error" << ret;
@@ -122,14 +122,12 @@ namespace nvs {
             assert(*log != NULL);
             return NO_ERROR;
         }else {
-            //TODO : heap root mod lock
+
             if (!root_heap_.isLogExist(id)) {
-                //TODO: release lock
                 LOG(error) << "MemoryManager : the log id (" << (uint64_t) id <<
                            ") not found";
                 return ID_NOT_FOUND;
             }
-            //TODO: release lock
 
             *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id);
 

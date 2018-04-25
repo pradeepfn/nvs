@@ -62,7 +62,7 @@ ENDIF(DELTA_STORE)
 
 IF(MEMCPY)
  add_definitions(-D_MEMCPY)
-    MESSAGE("#################################################non persistent memcpy")
+    MESSAGE("non persistent memcpy")
 ENDIF(MEMCPY)
 
 

@@ -22,70 +22,74 @@ namespace nvs{
     }
 
 
-    Log::Log(std::string logPath,uint64_t log_size, LogId log_id)
-            :logPath(logPath),log_id_(log_id)
-    {
+    Log::Log(std::string logPath, uint64_t log_size, LogId log_id) :
+		logPath(logPath), log_id(log_id),log_size(log_size) {
 
-        int is_pmem;
+	int is_pmem;
+	LOG(debug) << "log constructor : logPath , log_size, log_id" + this->logPath + " , " +
+					 std::to_string(log_size) + " , " + std::to_string(log_id);
+	if ((this->pmemaddr = (char *) pmem_map_file(this->logPath.c_str(),
+			log_size,
+			PMEM_FILE_CREATE | PMEM_FILE_EXCL, 0666, &(this->mapped_len),
+			&is_pmem)) != NULL) {
+		LOG(debug) << "new log created : logPath , log_size, mapped_len   " + this->logPath + " , " +
+				 std::to_string(log_size) + " , " + std::to_string(this->mapped_len);
+		//new map segment, populate the header
+		struct lhdr_t hdr;
+		hdr.magic_number = MAGIC_NUMBER;
+		hdr.len = this->mapped_len;
 
-        if ((this->pmemaddr = (char *)pmem_map_file(this->logPath.c_str(), log_size,
-                                      PMEM_FILE_CREATE|PMEM_FILE_EXCL,
-                                      0666, &(this->mapped_len), &is_pmem)) != NULL) {
-            //new map segment, populate the header
-            struct lhdr_t hdr;
-            hdr.magic_number = MAGIC_NUMBER;
-            hdr.len = this->mapped_len;
+		this->start_offset = sizeof(struct lhdr_t);
+		this->end_offset = this->mapped_len - 1;
+		this->write_offset = this->start_offset;
 
-            this->start_offset = sizeof(struct lhdr_t);
-            this->end_offset = this->mapped_len-1;
-            this->write_offset = this->start_offset;
+		pmem_memcpy_persist(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
 
-            pmem_memcpy_persist(this->pmemaddr,&hdr,sizeof(struct lhdr_t));
+		uint64_t k = this->start_offset;
+		while (k < this->end_offset) {
+			this->pmemaddr[k] = 0;
+			k += 4096;
+		}
 
-   	   uint64_t k=this->start_offset;
-	   while(k < this->end_offset){
-		this->pmemaddr[k] = 0;
-		k += 4096;
-	   }
+	} else if ((this->pmemaddr == NULL)
+			&& ((this->pmemaddr = (char *) pmem_map_file(this->logPath.c_str(),
+					log_size, 0, 0666, &(this->mapped_len), &is_pmem)) != NULL)) {
+		LOG(debug) << "using existing log : logPath , log_size, mapped_len   " + this->logPath + " , " +
+				std::to_string(log_size) + " , " + std::to_string(this->mapped_len);
+		//verify the segment header
+		struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
+		if (hdr->magic_number != MAGIC_NUMBER) {
+			LOG(error) << "wrong magic number";
+			exit(1);
+		}
+		this->start_offset = sizeof(struct lhdr_t);
+		this->end_offset = this->mapped_len - 1;
+		assert(hdr->len == this->mapped_len);
+		this->write_offset = -1; //TODO
+		/* warm up - map the physical pages */
 
-        }else if((this->pmemaddr == NULL) &&
-                ((this->pmemaddr = (char *)pmem_map_file(this->logPath.c_str(), log_size, 0, 0666,
-                        &(this->mapped_len), &is_pmem)) != NULL)){
-            //verify the segment header
+		uint64_t k = start_offset;
+		while (k < end_offset) {
+			pmemaddr[k] = 0;
+			k += 4096;
+		}
 
-            struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-            if(hdr->magic_number != MAGIC_NUMBER){
-                LOG(error) << "wrong magic number";
-                exit(1);
-            }
-            this->start_offset = sizeof(struct lhdr_t);
-            this->end_offset = this->mapped_len-1;
-            assert(hdr->len == this->mapped_len);
-            this->write_offset = -1; //TODO
-            /* warm up - map the physical pages */
+		k = this->start_offset;
+		while (k < this->end_offset) {
+			this->pmemaddr[k] = 0;
+			k += 4096;
+		}
 
-            uint64_t k = start_offset;
-            while(k < end_offset){
-                pmemaddr[k] = 0;
-                k+=4096;
-            }
+	} else {
+		LOG(error) << "map segment : logPath, log_id " + logPath + " , " + std::to_string(log_id) ;
+		exit(1);
+	}
 
-   	   k=this->start_offset;
-	   while(k < this->end_offset){
-		this->pmemaddr[k] = 0;
-		k += 4096;
-	   }
+	if (is_pmem != 1) {
+		LOG(error) << "not recognized as pmem region";
+	}
 
-        }else{
-            LOG(error) << "map segment";
-            exit(1);
-        }
-
-        if(is_pmem != 1){
-            LOG(error) << "not recognized as pmem region";
-        }
-
-    }
+}
 
     Log::~Log()
     {

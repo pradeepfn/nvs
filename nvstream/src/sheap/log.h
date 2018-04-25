@@ -104,12 +104,12 @@ namespace  nvs{
         char* to_addr(uint64_t offset);
         void persist();
 
-        LogId log_id_;
+        LogId log_id;
         std::string logPath;
         char *pmemaddr;
         size_t mapped_len;
 
-        size_t size_;
+        size_t log_size;
         uint64_t start_offset;
         uint64_t end_offset;
         uint64_t write_offset;

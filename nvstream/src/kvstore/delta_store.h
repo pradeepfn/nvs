@@ -17,6 +17,7 @@
 
 
 #define PAGE_SIZE 4096
+#define LOG_SIZE 500 * 1024 * 1024LLU
 
 namespace nvs {
 

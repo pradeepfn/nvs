@@ -8,7 +8,7 @@
 #include "delta_store.h"
 
 
-#define LOG_SIZE 700 * 1024 * 1024LLU
+
 
 namespace nvs{
 

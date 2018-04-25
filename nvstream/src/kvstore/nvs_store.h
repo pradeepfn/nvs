@@ -10,7 +10,7 @@
 #define NVS_STORE_H
 
 
-#define LOG_SIZE  2 *1024*1024*1024LLU // 2 GB of log space per process
+#define LOG_SIZE 2 * 1024 * 1024 * 1024LLU // 2 GB of log space per process
 
 namespace nvs {
 

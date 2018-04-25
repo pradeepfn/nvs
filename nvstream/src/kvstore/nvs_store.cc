@@ -7,7 +7,6 @@
 #include "nvs/log.h"
 #include "nvs_store.h"
 
-#define LOG_SIZE 2 *1024*1024*1024LLU
 
 namespace nvs{
 
