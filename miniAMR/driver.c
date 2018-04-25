@@ -32,7 +32,7 @@
 #include "comm.h"
 #include "timer.h"
 #include "proto.h"
-#include "phoenix.h"
+#include "wrapper.h"
 
 #include "marker_stub.h"
 
@@ -146,7 +146,7 @@ void checkpoint(void){
 	int niblk=0;
 	unsigned long blk_size;
 
-	px_snapshot();
+	nvs_snapshot(my_pe);
 /*	for (n = 0; n < max_num_blocks; n++) {
 		if(blocks[n].number >= 0){
 			nvblk++;

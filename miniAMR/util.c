@@ -33,7 +33,7 @@
 #include "comm.h"
 #include "proto.h"
 #include "timer.h"
-#include "phoenix.h"
+#include "wrapper.h"
 
 
 int get_nblocks(){
@@ -64,12 +64,7 @@ void *ma_malloc(size_t size, char *file, int line)
 		malloc_counter++;
 	}else{
 #ifdef _YUMA
-		px_obj temp;
-		px_create(varname,size,&temp);
-		assert(size == temp.size);
-		ptr = temp.data;
-		var_counter++;
-	//	printf("allocating memory of size %ld\n",size);
+		nvs_alloc(size,varname);
 #else
 		ptr = (void *) malloc(size);
 		malloc_counter++;

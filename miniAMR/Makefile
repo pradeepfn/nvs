@@ -1,22 +1,25 @@
 CC   = mpicc
 LD   = mpicc
 CPPFLAGS = -I.
-YFLAGS = -D_YUMA
-CFLAGS = $(YFLAGS) -O3 -I/net/hu21/pfernand/checkout/phoenix/include
+YFLAGS = -D_YUMA 
+CFLAGS = $(YFLAGS) -O3 -I../nvstream/include
 LDFLAGS =
-LDLIBS = -L/net/hu21/pfernand/checkout/phoenix/lib -lphoenix -lstdc++ -lssl
+LDLIBS = ../nvstream/build/src/libyuma.a ../nvstream/third-party/nvml/src/debug/libpmemlog.a ../nvstream/third-party/nvml/src/debug/libpmemobj.a ../nvstream/third-party/nvml/src/debug/libpmem.a -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lrt -lstdc++ -ldl -lm
 
 EXEC = miniAMR.x
 
 OBJS = block.o check_sum.o comm_block.o comm.o comm_parent.o comm_refine.o \
        comm_util.o driver.o init.o main.o move.o pack.o plot.o profile.o \
-       rcb.o refine.o stencil.o target.o util.o
+       rcb.o refine.o stencil.o target.o util.o wrapper.o
 
 $(EXEC): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS) $(LDLIBS)
 
 .c.o:
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $<
+
+%.o:    %.cc
+	    g++ -std=c++11 -I../nvstream/include -c $<
 
 clean:
 	rm *.o miniAMR.x
