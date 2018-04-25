@@ -27,7 +27,7 @@
       include 'mpif.h'
 #endif
       CHARACTER(LEN=10) varname
-      integer  :: cmtsize
+      integer*8  :: cmtsize
       integer :: notify
 
       integer :: nstep
@@ -330,7 +330,7 @@
       call MPI_COMM_SIZE( MPI_COMM_WORLD, numprocs, ierr )
 #endif
 
-      call px_init(myid)
+      call nvs_init(myid)
 
 !----------------------------------------------------------------------
 !  Get domain dimensions, allocate some arrays, then call PARAM
@@ -959,12 +959,12 @@
       !allocate( lu_index(ibl:iel,jbl:jel) )
       varname = "lu_index"
       cmtsize = (iel-ibl+1)*(jel-jbl+1)     
-      call alloc_2d_integer(lu_index,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
+      call alloc_2d_int(lu_index,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
 
       !allocate(   kpbl2d(ibl:iel,jbl:jel) )
       varname = "kpbl2d"
       cmtsize = (iel-ibl+1)*(jel-jbl+1)     
-      call alloc_2d_integer(kpbl2d,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
+      call alloc_2d_int(kpbl2d,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
 
 
       !allocate(     psfc(ibl:iel,jbl:jel) )
@@ -1912,7 +1912,7 @@
 !----------------------------------------------------------------------
 
 #ifdef MPI
-      call px_finalize()
+      call nvs_finalize()
       call MPI_FINALIZE(rc)
       print *,'Program terminated normally:  myid=',myid
 #else

@@ -3730,7 +3730,7 @@
        101 format(i6)
 
         nrst=nrst+1
-        call px_snapshot()
+        call nvs_snapshot(myid)
         call write_restart(nstep,nrec,prec,nwrite,nrst,nrad2d,num_soil_layers, &
                                dt,mtime,radtim,qbudget,asq,bsq,                &
                                rain,sws,svs,sps,srs,sgs,sus,shs,tsk,radbcw,radbce,radbcs,radbcn,     &

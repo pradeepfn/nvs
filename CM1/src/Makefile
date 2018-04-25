@@ -186,7 +186,8 @@ SRC   = allocate.F  adv.F \
 
 OBJS = $(addsuffix .o, $(basename $(SRC)))
 
-FFLAGS  =  $(OPTS)
+FFLAGS  =  $(OPTS) 
+FLDFLAGS = ../../nvstream/build/src/libyuma.a ../../nvstream/third-party/nvml/src/debug/libpmemlog.a ../../nvstream/third-party/nvml/src/debug/libpmemobj.a ../../nvstream/third-party/nvml/src/debug/libpmem.a -lpthread -lboost_thread -lboost_log -lboost_filesystem -lboost_system -lrt -lstdc++ -ldl
 AR      = ar cru
 
 .SUFFIXES:
@@ -195,7 +196,7 @@ AR      = ar cru
 all : cm1
 
 cm1:			$(OBJS) wrapper.o
-			$(FC) $(OBJS) wrapper.o $(FFLAGS) $(OUTPUTINC) $(OUTPUTLIB) $(LINKOPTS) -o ../run/cm1.exe
+			$(FC) $(OBJS) wrapper.o $(FFLAGS) $(FLDFLAGS) $(OUTPUTINC) $(OUTPUTLIB) $(LINKOPTS) -o ../run/cm1.exe
 
 .F.o:
 			$(CPP) $(DM) $(DP) $(ADV) $(OUTPUTOPT) $*.F > $*.f90
