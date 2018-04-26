@@ -204,7 +204,7 @@ namespace nvs{
 
     #ifndef _MEMCPY
             for(int i=0; i < iovpcnt ; i++){
-				for(int j = 0 ; j < iovcnt; j++) {
+				for(int j = 0 ; j < iovcnt[i]; j++) {
 					pmem_memcpy_nodrain(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
 					write_offset +=iovpp[i][j].iov_len;
 				}
