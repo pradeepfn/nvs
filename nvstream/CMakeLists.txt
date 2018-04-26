@@ -25,8 +25,8 @@ set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
 include_directories("${PROJECT_BINARY_DIR}")
 
 OPTION(FILE_STORE "enable file based checkpoint" OFF)
-OPTION(DELTA_STORE "enable delta" ON)
-OPTION(MEMCPY "enable memcpy" ON)
+OPTION(DELTA_STORE "enable delta" OFF)
+OPTION(MEMCPY "enable memcpy" OFF)
 OPTION(PMFS "using PMFS" OFF)
 OPTION(TMPFS "using TMPFS" OFF)
 
@@ -51,18 +51,18 @@ IF(PMFS)
 ENDIF(PMFS)
 
 IF(TMPFS)
-    add_definitions(-D_TMPFS)
-    MESSAGE("tmpfs as the file system")
+ add_definitions(-D_TMPFS)
+ MESSAGE("tmpfs as the file system")
 ENDIF(TMPFS)
 
 IF(DELTA_STORE)
- Message("enabling delta store")
  add_definitions(-D_DELTA_STORE)
+ MESSAGE("delta store enabled")
 ENDIF(DELTA_STORE)
 
 IF(MEMCPY)
  add_definitions(-D_MEMCPY)
-    MESSAGE("non persistent memcpy")
+ MESSAGE("memcpy without crash-consistency")
 ENDIF(MEMCPY)
 
 
