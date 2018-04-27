@@ -68,10 +68,10 @@ namespace nvs{
      * address and size for put operation as the kvstore already know that
      * detail.
      */
-    ErrorCode NVSStore::put(std::string key, uint64_t version)
+    uint64_t NVSStore::put(std::string key, uint64_t version)
     {
             struct iovec *iovp, *next_iovp;
-            ErrorCode ret;
+            uint64_t total_size=0;
             struct lehdr_t l_entry;// stack variable
 
             std::map<std::string, Object *>::iterator it;
@@ -97,10 +97,9 @@ namespace nvs{
                 //data
                 iovp[1].iov_base = obj->getPtr();
                 iovp[1].iov_len = obj->getSize();
+                total_size = obj->getSize() + sizeof(l_entry);
 
-
-                ret = this->log->appendv(iovp,iovcnt);
-                if(ret != NO_ERROR){
+                if(this->log->appendv(iovp,iovcnt)!= NO_ERROR){
                     LOG(fatal) << "Store: append failed";
                     exit(1);
                 }
@@ -119,10 +118,10 @@ namespace nvs{
      * implements thesnapshot method.
      *
      */
-    ErrorCode NVSStore::put_all() {
+    uint64_t NVSStore::put_all() {
 
         struct iovec *iovp, *tmp_iovp;
-        ErrorCode ret = NO_ERROR;
+        uint64_t total_size=0;
         struct lehdr_t *l_entry, *tmp_l_entry;
         uint64_t nvar, iovcnt,tot_cnt=0;
 
@@ -168,10 +167,11 @@ namespace nvs{
 
         iovp->iov_base = l_entry;
         iovp->iov_len = sizeof(struct lehdr_t);
+        total_size = tot_cnt + sizeof(lehdr_t);
 
         if(this->log->appendv(iovp,iovcnt) != NO_ERROR){
             LOG(error) << "append error";
-            ret = PMEM_ERROR;
+            total_size = PMEM_ERROR;
             goto end;
         }
 
@@ -185,7 +185,7 @@ namespace nvs{
             free((void *)iovp);
             free((void *)l_entry);
 
-            return ret;
+            return total_size;
     }
 
 

@@ -13,8 +13,8 @@ __empty = ''
 __tmpfs = 'tmpfs'
 __pmfs = 'pmfs'
 __memcpy = 'memcpy'
-__nvstream = 'nvstream'
-__dnvstream = 'dnvstream'
+__nvstream = 'nvs'
+__dnvstream = 'dnvs'
 
 
 __store_l = []
@@ -65,7 +65,7 @@ def cd(dirt):
 
 def build_nvs(args):
     #default configuration is full data copy with streaming writes with crash-consistency
-    s = args.sotre
+    s = args.store
     cmd = 'cmake .. '
     if(s == __tmpfs):
         cmd += '-DFILE_STORE=ON -DTMPFS=ON'
@@ -82,6 +82,8 @@ def build_nvs(args):
     d = __nvs_root + '/build'
     cd(d)
     sh(cmd)
+    cmd2 = 'make'
+    sh(cmd2)
     cd(__home)
 
 def clean_nvs(args):

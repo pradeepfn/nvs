@@ -33,13 +33,17 @@ namespace nvs {
 
         ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
 
-        ErrorCode put(std::string key, uint64_t version);
+        uint64_t put(std::string key, uint64_t version);
 
-        ErrorCode put_all();
+        uint64_t put_all();
 
         ErrorCode get(std::string key, uint64_t version, void *obj_addr);
 
         ErrorCode get_with_malloc(std::string key, uint64_t version, void **addr);
+
+        std::string get_store_id(){
+        	return storeId;
+        }
 
         void stats();
 

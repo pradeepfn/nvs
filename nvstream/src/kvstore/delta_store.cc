@@ -120,10 +120,10 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
      * address and size for put operation as the kvstore already know that
      * detail.
      */
-    ErrorCode DeltaStore::put(std::string key, uint64_t version)
+    uint64_t DeltaStore::put(std::string key, uint64_t version)
     {
         struct iovec *iovp, *next_iovp;
-        ErrorCode ret;
+        uint64_t total_size=0;
         struct lehdr_t l_entry;// stack variable
         uint64_t delta_len = 0;
 
@@ -163,9 +163,9 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
             iovp[0].iov_base = &l_entry;
             iovp[0].iov_len = sizeof(l_entry);
 
+            total_size = delta_len + sizeof(l_entry);
 
-            ret = this->log->appendv(iovp,dc.size()+1);
-            if(ret != NO_ERROR){
+            if(this->log->appendv(iovp,dc.size()+1) != NO_ERROR){
                 LOG(fatal) << "Store: append failed";
                 exit(1);
             }
@@ -179,7 +179,7 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
             enable_write_protection(obj->getPtr(), obj->get_aligned_size());
 
             obj->reset_bit_vector();
-            return NO_ERROR;
+            return total_size;
         }
 
         LOG(error) << "element not found";
@@ -191,9 +191,9 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
      * implements the snapshot method.
      *
      */
-    ErrorCode DeltaStore::put_all() {
+    uint64_t DeltaStore::put_all() {
 
-        ErrorCode ret = NO_ERROR;
+        uint64_t total_size=0;
         uint64_t iovpcnt,tot_cnt=0;
 
         if(!(objectMap.size())){
@@ -254,9 +254,11 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
         iovpp[0][0].iov_base = &l_entryp[0];
         iovpp[0][0].iov_len = sizeof(struct lehdr_t);
 
+        total_size = tot_cnt + sizeof(struct lehdr_t);
+
         if(this->log->appendmv(iovpp,iovcntp, iovpcnt) != NO_ERROR){
             LOG(error) << "append error";
-            ret = PMEM_ERROR;
+            total_size = PMEM_ERROR;
             goto end;
         }
 
@@ -269,7 +271,7 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
 
         end:
         //TODO: free the volatile structures
-        return ret;
+        return total_size;
     }
 
 

@@ -34,7 +34,7 @@ namespace nvs{
             if (tmp == nullptr) {
                 LOG(debug) << "testing log";
 #if defined(_FILE_STORE)
-
+                LOG(debug) << "File store enabled";
 #if defined (_TIMING)
                 tmp = new TimingStore(new FileStore(storePath));
 #else
@@ -42,6 +42,7 @@ namespace nvs{
 #endif
 
 #elif defined(_DELTA_STORE)
+                LOG(debug) << "Delta store enabled";
 #if defined (_TIMING)
                 DeltaStore *vtmp = new DeltaStore(storePath);
                 tmp = new TimingStore(vtmp);
@@ -51,7 +52,7 @@ namespace nvs{
                 ds_object = (DeltaStore *)tmp;
 #endif
 #else
-
+                LOG(debug) << "NVS store enabled";
 #if defined (_TIMING)
                 tmp = new TimingStore(new NVSStore(storePath));
 #else

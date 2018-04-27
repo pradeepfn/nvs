@@ -19,7 +19,7 @@ namespace nvs{
         }
     }
 
-    ErrorCode FileStore::put(std::string key, uint64_t version) {
+    uint64_t FileStore::put(std::string key, uint64_t version) {
         boost::trim_right(key);
         std::map<std::string, Object *>::iterator it;
         // first traverse the map and find the key object
@@ -42,13 +42,14 @@ namespace nvs{
 
             fsync(fileno(file));
             fclose(file);
-            return NO_ERROR;
+            return tsize;
         }
         LOG(error) << "FileStore: key not found";
         return ELEM_NOT_FOUND;
     }
 
-    ErrorCode FileStore::put_all() {
+    uint64_t FileStore::put_all() {
+    	uint64_t total_size=0;
         std::map<std::string, Object *>::iterator it;
         // first traverse the map and find the key object
         for(it=objectMap.begin(); it != objectMap.end(); it++) {
@@ -69,12 +70,12 @@ namespace nvs{
             size_t tsize = fwrite(obj->getPtr(),sizeof(char),
                                   obj->getSize(),file);
             assert(tsize == obj->getSize());
-
+            total_size += tsize;
             fsync(fileno(file));
             fclose(file);
             obj->setVersion(version);
         }
-            return NO_ERROR;
+        return total_size;
     }
 
     ErrorCode FileStore::get(std::string key, uint64_t version, void *addr) {
