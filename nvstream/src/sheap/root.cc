@@ -21,7 +21,7 @@ namespace nvs{
         this->mtx->lock();
         this->mtx->unlock();
         if(this->mtx == NULL){
-            LOG(error) << "mutex not found on boost shared memmory";
+            LOG(error) << "mutex not found on boost shared memory";
         }
 
     }
@@ -50,7 +50,7 @@ namespace nvs{
            TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
 
            // TODO: persist
-           D_RW(root_heap)->log_id[0] = id;
+           D_RW(root_heap)->log_id[D_RO(root_heap)->length] = id;
            D_RW(root_heap)->length = D_RO(root_heap)->length + 1;
            this->Close();
        }

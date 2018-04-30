@@ -32,7 +32,6 @@ namespace nvs{
             std::lock_guard<std::mutex> lock(mutex_);
             tmp = instance_.load(std::memory_order_relaxed);
             if (tmp == nullptr) {
-                LOG(debug) << "testing log";
 #if defined(_FILE_STORE)
                 LOG(debug) << "File store enabled";
 #if defined (_TIMING)

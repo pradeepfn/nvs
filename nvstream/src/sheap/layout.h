@@ -10,7 +10,6 @@
 
 #include <libpmemobj/base.h>
 #include <libpmemobj.h>
-#include <boost/interprocess/sync/interprocess_mutex.hpp>
 
 POBJ_LAYOUT_BEGIN(nvstream_store);
 POBJ_LAYOUT_ROOT(nvstream_store, struct nvs_root);
@@ -20,7 +19,6 @@ POBJ_LAYOUT_END(nvstream_store);
 
 struct nvs_root{
     //shared memory mutex to protect access to root object elements
-    boost::interprocess::interprocess_mutex mutex;
     int length; // how many logs
     int log_id[256];
 };
