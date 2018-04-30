@@ -105,7 +105,7 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
             obj->setVersion(0);
             objectMap[key] = obj;
         }else{
-            LOG(fatal) << "not implemented yet";
+        	LOG(fatal) << "object key already exists : " + key;
             exit(1);
         }
 

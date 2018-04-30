@@ -3731,20 +3731,20 @@
 
         nrst=nrst+1
         call nvs_snapshot(myid)
-        call write_restart(nstep,nrec,prec,nwrite,nrst,nrad2d,num_soil_layers, &
-                               dt,mtime,radtim,qbudget,asq,bsq,                &
-                               rain,sws,svs,sps,srs,sgs,sus,shs,tsk,radbcw,radbce,radbcs,radbcn,     &
-                               rho,prs,ua,va,wa,ppi,tha,                           &
-                               qpten,qtten,qvten,qcten,qiten,qa,tkea,swten,lwten,  &
-                               radsw,rnflx,radswnet,radlwin,rad2d,                 &
-                               lu_index,kpbl2d,psfc,u10,v10,hfx,qfx,xland,znt,ust, &
-                               hpbl,wspd,psim,psih,gz1oz0,br,                      &
-                               CHS,CHS2,CQS2,CPMM,ZOL,MAVAIL,                      &
-                               MOL,RMOL,REGIME,LH,FLHC,FLQC,QGH,                   &
-                               CK,CKA,CD,CDA,USTM,QSFC,T2,Q2,TH2,EMISS,THC,ALBD,   &
-                               f2d,gsw,glw,chklowq,capg,snowc,tslb,                &
-                               tmn,tml,t0ml,hml,h0ml,huml,hvml,tmoml,              &
-                               pta,pdata,rtime)
+        !call write_restart(nstep,nrec,prec,nwrite,nrst,nrad2d,num_soil_layers, &
+        !                       dt,mtime,radtim,qbudget,asq,bsq,                &
+        !                       rain,sws,svs,sps,srs,sgs,sus,shs,tsk,radbcw,radbce,radbcs,radbcn,     &
+        !                       rho,prs,ua,va,wa,ppi,tha,                           &
+        !                       qpten,qtten,qvten,qcten,qiten,qa,tkea,swten,lwten,  &
+        !                       radsw,rnflx,radswnet,radlwin,rad2d,                 &
+        !                       lu_index,kpbl2d,psfc,u10,v10,hfx,qfx,xland,znt,ust, &
+        !                       hpbl,wspd,psim,psih,gz1oz0,br,                      &
+        !                       CHS,CHS2,CQS2,CPMM,ZOL,MAVAIL,                      &
+        !                       MOL,RMOL,REGIME,LH,FLHC,FLQC,QGH,                   &
+        !                       CK,CKA,CD,CDA,USTM,QSFC,T2,Q2,TH2,EMISS,THC,ALBD,   &
+        !                       f2d,gsw,glw,chklowq,capg,snowc,tslb,                &
+        !                       tmn,tml,t0ml,hml,h0ml,huml,hvml,tmoml,              &
+        !                       pta,pdata,rtime)
         rsttim=rsttim+rstfrq
         if(timestats.ge.1) time_write=time_write+mytime()
       endif

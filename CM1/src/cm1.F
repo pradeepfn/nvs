@@ -1231,9 +1231,9 @@
       call alloc_2d_real(hml,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
 
       !allocate(  h0ml(ibl:iel,jbl:jel) )
-      varname = "dsxy"
+      varname = "h0ml"
       cmtsize = (iel-ibl+1)*(jel-jbl+1)     
-      call alloc_2d_real(dsxy,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
+      call alloc_2d_real(h0ml,iel-ibl+1,jel-jbl+1,varname,myid,cmtsize)     
 
       !allocate(  huml(ibl:iel,jbl:jel) )
       varname = "huml"

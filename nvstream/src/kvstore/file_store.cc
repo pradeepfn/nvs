@@ -155,7 +155,7 @@ namespace nvs{
         if(it == objectMap.end()){
             objectMap[key] = obj;
         }else{
-            LOG(fatal) << "not implemented yet";
+            LOG(fatal) << "object key already exists : " + key;
             exit(1);
         }
         *obj_addr = (uint64_t *)tmp_ptr;
