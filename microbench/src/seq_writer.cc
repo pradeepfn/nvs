@@ -62,6 +62,10 @@ int main(int argc, char *argv[]){
     st->put("var4", ++version);
     st->put("var3", ++version);
     st->put("var4", ++version);
+	
+
+	//free ptr1
+	st->free_obj(ptr1);
 
     st->put_all();
 

@@ -33,6 +33,8 @@ namespace nvs{
 
         ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
 
+        ErrorCode free_obj(void *obj_addr);
+
         uint64_t put(std::string key, uint64_t version);
 
         uint64_t put_all();
@@ -50,6 +52,7 @@ namespace nvs{
 
     private:
         std::map<std::string, Object *> objectMap;
+        std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
         std::string storeId;
 
     };

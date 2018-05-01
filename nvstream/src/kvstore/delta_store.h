@@ -33,9 +33,7 @@ namespace nvs {
         Key *findKey(std::string key);
         objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap;
-
-
-
+        std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
 
         void delta_memcpy(char *dst, char *src,
                         struct ledelta_t *deltas, uint64_t delta_len);
@@ -56,6 +54,8 @@ namespace nvs {
         ~DeltaStore();
 
         ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
+
+        ErrorCode free_obj(void *obj_addr);
 
         uint64_t put(std::string key, uint64_t version);
 

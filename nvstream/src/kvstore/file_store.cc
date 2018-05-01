@@ -162,6 +162,28 @@ namespace nvs{
         return NO_ERROR;
     }
 
+    ErrorCode FileStore::free_obj(void *obj_addr){
+    	std::map<uint64_t, std::string>::iterator it1;
+		std::map<std::string, Object *>::iterator it2;
+		it1 = addrMap.find((uint64_t)obj_addr);
+		if(it1 == addrMap.end()){
+			LOG(fatal) << "no object found in the nvs address map";
+			exit(1);
+		}
+		it2= objectMap.find(it1->second);
+		if(it2 == objectMap.end()){
+			LOG(fatal) << "no object found named : " + it1->second;
+			exit(1);
+		}
+
+		objectMap.erase(it2);//remove from the objectMap
+		addrMap.erase(it1); //remove from the addrMap
+		delete it2->second; // delete object
+		free(obj_addr); //free the address
+
+		return NO_ERROR;
+    }
+
 
     void FileStore::stats() {
 

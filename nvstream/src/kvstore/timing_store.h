@@ -22,6 +22,8 @@ namespace nvs{
 
         ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
 
+        ErrorCode free_obj(void *obj_addr);
+
         uint64_t put(std::string key, uint64_t version);
 
         uint64_t put_all();
@@ -113,6 +115,12 @@ namespace nvs{
         ret = this->store->create_obj(key,size,obj_addr);
         total_size += size;
         return ret;
+    }
+
+    ErrorCode TimingStore::free_obj(void *obj_addr){
+    	ErrorCode ret;
+    	ret = this->store->free_obj(obj_addr);
+    	return ret;
     }
 
     uint64_t TimingStore::put(std::string key, uint64_t version) {

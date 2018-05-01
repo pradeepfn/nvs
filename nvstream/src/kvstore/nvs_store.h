@@ -10,7 +10,7 @@
 #define NVS_STORE_H
 
 
-#define LOG_SIZE 2 * 1024 * 1024 * 1024LLU // 2 GB of log space per process
+#define LOG_SIZE 100 * 1024 * 1024LLU // 2 GB of log space per process
 
 namespace nvs {
 
@@ -23,7 +23,8 @@ namespace nvs {
         Log *log; // process local log
         Key *findKey(std::string key);
         objkey_t *lptr(uint64_t offset);
-        std::map<std::string, Object *> objectMap;
+        std::map<std::string, Object *> objectMap; // runtime representation of volatile object
+        std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
 
     protected:
     public:
@@ -32,6 +33,8 @@ namespace nvs {
         ~NVSStore();
 
         ErrorCode create_obj(std::string key, uint64_t size, void **obj_addr);
+
+        ErrorCode free_obj(void *obj_addr);
 
         uint64_t put(std::string key, uint64_t version);
 

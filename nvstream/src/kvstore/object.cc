@@ -12,7 +12,11 @@ namespace nvs{
         name(name),size(size),version(version),ptr(ptr)
     {
 
+#if defined(_DELTA_STORE)
         this->aligned_size = (size + PAGE_SIZE-1) & ~(PAGE_SIZE-1);
+#else
+        this->aligned_size = 0;
+#endif
         this->bitset.resize(aligned_size/PAGE_SIZE);
         for(int64_t i = 0; i< this->bitset.size();i++){
         	bitset[i] = 1;

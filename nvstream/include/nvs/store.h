@@ -18,6 +18,8 @@ namespace nvs {
 
         virtual ErrorCode create_obj(std::string key, uint64_t size, void **addr) = 0;
 
+        virtual ErrorCode free_obj(void *obj_addr) =0;
+
         virtual uint64_t put(std::string key, uint64_t version)=0;
 
         virtual uint64_t put_all()=0;
