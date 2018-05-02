@@ -25,6 +25,7 @@ set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
 include_directories("${PROJECT_BINARY_DIR}")
 
 OPTION(FILE_STORE "enable file based checkpoint" OFF)
+OPTION(NULL_STORE "enable no checkpoint" ON)
 OPTION(DELTA_STORE "enable delta" OFF)
 OPTION(MEMCPY "enable memcpy" OFF)
 OPTION(PMFS "using PMFS" OFF)
@@ -65,6 +66,10 @@ IF(MEMCPY)
  MESSAGE("memcpy without crash-consistency")
 ENDIF(MEMCPY)
 
+IF(NULL_STORE)
+ add_definitions(-D_NULLS_TORE)
+ MESSAGE("no checkpoints")
+ENDIF(NULL_STORE)
 
 
 #tests

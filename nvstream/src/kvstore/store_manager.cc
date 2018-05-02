@@ -11,6 +11,9 @@
 #elif defined(_DELTA_STORE)
 #include "delta_store.h"
 #include "timing_store.h"
+#elif defined(_NULL_STORE)
+#include "null_store.h"
+#include "timing_store.h"
 #else
 #include "nvs_store.h"
 #include "timing_store.h"
@@ -42,6 +45,7 @@ namespace nvs{
 
 #elif defined(_DELTA_STORE)
                 LOG(debug) << "Delta store enabled";
+
 #if defined (_TIMING)
                 DeltaStore *vtmp = new DeltaStore(storePath);
                 tmp = new TimingStore(vtmp);
@@ -50,8 +54,20 @@ namespace nvs{
                 tmp = new DeltaStore(storePath);
                 ds_object = (DeltaStore *)tmp;
 #endif
+
+
+#elif defined(_NULL_STORE)
+                LOG(debug) << "Null store enabled";
+
+#if defined(_TIMING)
+                	tmp = TimingStore(new NullStore(storePath));
+#else
+                	tmp = new NullStore(storePath);
+#endif
+
 #else
                 LOG(debug) << "NVS store enabled";
+
 #if defined (_TIMING)
                 tmp = new TimingStore(new NVSStore(storePath));
 #else
