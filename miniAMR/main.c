@@ -364,9 +364,14 @@ void allocate(void)
    num_blocks = (int *) ma_malloc((num_refine+1)*sizeof(int),
                                   __FILE__, __LINE__);
    num_blocks[0] = num_pes*init_block_x*init_block_y*init_block_z;
+
    local_num_blocks = (int *) ma_malloc((num_refine+1)*sizeof(int),
                                         __FILE__, __LINE__);
    local_num_blocks[0] = init_block_x*init_block_y*init_block_z;
+
+
+   printf("maxnb : %d, numv :%d, xsize : %d , ysize :%d, zsize : %d \n", max_num_blocks, num_vars, x_block_size, y_block_size, z_block_size);
+
 
    blocks = (block *) ma_malloc(max_num_blocks*sizeof(block),
                                 __FILE__, __LINE__);
@@ -376,10 +381,15 @@ void allocate(void)
       blocks[n].array = (double ****) ma_malloc(num_vars*sizeof(double ***),
                                                 __FILE__, __LINE__);
       for (m = 0; m < num_vars; m++) {
+#ifdef _YUMA
+         blocks[n].array[m] = bulk_malloc((x_block_size+2),(y_block_size+2),(z_block_size+2),
+				 __FILE__,__LINE__);
+#else
          blocks[n].array[m] = (double ***)
                               ma_malloc((x_block_size+2)*sizeof(double **),
                                         __FILE__, __LINE__);
          for (i = 0; i < x_block_size+2; i++) {
+
             blocks[n].array[m][i] = (double **)
                                    ma_malloc((y_block_size+2)*sizeof(double *),
                                              __FILE__, __LINE__);
@@ -388,6 +398,7 @@ void allocate(void)
                                      ma_malloc((z_block_size+2)*sizeof(double),
                                                __FILE__, __LINE__);
          }
+#endif
       }
    }
 
@@ -545,11 +556,20 @@ void deallocate(void)
    for (n = 0; n < max_num_blocks; n++) {
       for (m = 0; m < num_vars; m++) {
          for (i = 0; i < x_block_size+2; i++) {
-            for (j = 0; j < y_block_size+2; j++)
+            for (j = 0; j < y_block_size+2; j++){
+#ifndef _YUMA
                free(blocks[n].array[m][i][j]);
+#endif
+			}
+#ifndef _YUMA
             free(blocks[n].array[m][i]);
+#endif
          }
+#ifdef _YUMA
+         nvs_free(blocks[n].array[m]);
+#else
          free(blocks[n].array[m]);
+#endif
       }
       free(blocks[n].array);
    }

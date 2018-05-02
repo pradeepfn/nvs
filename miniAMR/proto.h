@@ -124,4 +124,5 @@ void zero_refine(void);
 // util.c
 double timer(void);
 void *ma_malloc(size_t, char *, int);
-
+void *nvsma_malloc(size_t, char *, int);
+double ***bulk_malloc(int x, int y, int z, char *file, int line);

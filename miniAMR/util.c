@@ -36,10 +36,13 @@
 #include "wrapper.h"
 
 
-int get_nblocks(){
-	int tot=0, m;
-	for (m=0 ; m < max_num_blocks; m++){
-		if(blocks[m].number >= 0){ // valid block
+int get_nblocks()
+{
+	int tot = 0, m;
+	for (m = 0 ; m < max_num_blocks; m++)
+	{
+		if (blocks[m].number >= 0) // valid block
+		{
 			tot++;
 		}
 	}
@@ -49,29 +52,20 @@ int get_nblocks(){
 
 double timer(void)
 {
-	return(MPI_Wtime());
+	return (MPI_Wtime());
 }
 
-int var_counter=0;
+int var_counter = 0;
 void *ma_malloc(size_t size, char *file, int line)
 {
 	void *ptr;
-	char varname[20];
-	snprintf(varname,sizeof(varname),"var%d",var_counter);
-	//if(size < 27648000 || size > 27648004){
-	if(size < 4096){
-		ptr = (void *) malloc(size);
-		malloc_counter++;
-	}else{
-#ifdef _YUMA
-		nvs_alloc(size,varname);
-#else
-		ptr = (void *) malloc(size);
-		malloc_counter++;
-#endif
-	}
-
-	if (ptr == NULL) {
+	ptr = (void *) malloc(size);
+	malloc_counter++;
+	//if(size > 4096){
+		//printf("object of size : %ld , from in %s at %d\n",size, file, line);
+	//}
+	if (ptr == NULL)
+	{
 		printf("NULL pointer from malloc call in %s at %d\n", file, line);
 		exit(-1);
 	}
@@ -79,5 +73,59 @@ void *ma_malloc(size_t size, char *file, int line)
 	counter_malloc++;
 	size_malloc += (double) size;
 
-	return(ptr);
+	return (ptr);
 }
+
+void *nvsma_malloc(size_t size, char *file, int line)
+{
+	void *ptr;
+	char varname[20];
+	snprintf(varname, sizeof(varname), "var%d", var_counter++);
+
+	ptr = nvs_alloc(size, varname);
+	malloc_counter++;
+	if (ptr == NULL)
+	{
+		printf("NULL pointer from malloc call in %s at %d\n", file, line);
+		exit(-1);
+	}
+
+	counter_malloc++;
+	size_malloc += (double) size;
+
+	return (ptr);
+}
+
+/* allocates and initialize 3d matrix in a continuous memory block */
+double ***bulk_malloc(int x, int y, int z, char *file, int line){
+	double ***var;
+	unsigned long size =  z * sizeof(*var) + z*(y*sizeof(**var)) + z*y*(x*sizeof(***var));
+	//printf("size : %ld \n", size);	
+#ifdef _YUMA
+	double ***ptr = (double ***)nvsma_malloc(size,file,line);
+#else
+	double ***ptr = (double ***)ma_malloc(size,file,line);
+#endif
+
+	double ***x_start =  ptr;
+	double **y_start = (double **)(x_start + x);
+
+	int i;
+	for(i=0; i < x; i++){
+		ptr[i] = y_start + i*y;
+	}
+	
+	double *z_start =(double *)(y_start + x*y);
+	
+	int j,k;
+	for(j=0;j<x;j++){
+		for(k=0;k<y;k++){
+			ptr[j][k] = z_start + (j*y*z) + (k*z);
+		}
+	}	
+	return ptr;
+}
+
+
+
+

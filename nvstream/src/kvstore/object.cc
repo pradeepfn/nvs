@@ -13,15 +13,20 @@ namespace nvs{
     {
 
 #if defined(_DELTA_STORE)
-        this->aligned_size = (size + PAGE_SIZE-1) & ~(PAGE_SIZE-1);
+       this->aligned_size = (size + PAGE_SIZE-1) & ~(PAGE_SIZE-1);
+       this->bitset.resize(aligned_size/PAGE_SIZE);
+	   for(int64_t i = 0; i< this->bitset.size();i++){
+		bitset[i] = 1;
+	   }
 #else
         this->aligned_size = 0;
 #endif
-        this->bitset.resize(aligned_size/PAGE_SIZE);
-        for(int64_t i = 0; i< this->bitset.size();i++){
-        	bitset[i] = 1;
-        }
-        LOG(debug)<< "aligned size , PAGE_SIZE : " << aligned_size << "," <<PAGE_SIZE;
+
+#if defined(_DELTA_STORE)
+        LOG(debug)<< "object aligned size , PAGE_SIZE : " << aligned_size << "," <<PAGE_SIZE;
+#else
+        LOG(debug)<< "object size , PAGE_SIZE : " << size << "," <<PAGE_SIZE;
+#endif
 
     }
 
