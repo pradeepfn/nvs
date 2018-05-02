@@ -41,7 +41,7 @@ namespace nvs{
 
         ErrorCode get_with_malloc(std::string key, uint64_t version, void **addr){return NO_ERROR;}
 
-        std::string get_store_id(){ return 0;}
+        std::string get_store_id(){ return storeId;}
 
         void stats(){return;}
 
