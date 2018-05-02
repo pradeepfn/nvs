@@ -18,7 +18,7 @@ namespace nvs{
 
     public:
 
-        NullStore(Store *st){}
+        NullStore(std::string storeId){}
 
         ~NullStore(){}
 
