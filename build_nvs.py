@@ -10,6 +10,7 @@ __home = os.getcwd()
 __nvs_root = 'nvstream'  # root of fbench script location
 
 __empty = ''
+__nochkpt = 'nocheckpoint'
 __tmpfs = 'tmpfs'
 __pmfs = 'pmfs'
 __memcpy = 'memcpy'
@@ -18,6 +19,7 @@ __dnvstream = 'dnvs'
 
 
 __store_l = []
+__store_l.append(__nochkpt)
 __store_l.append(__tmpfs)
 __store_l.append(__pmfs)
 __store_l.append(__memcpy)
@@ -67,6 +69,8 @@ def build_nvs(args):
     #default configuration is full data copy with streaming writes with crash-consistency
     s = args.store
     cmd = 'cmake .. '
+    if(s == __nochkpt):
+        cmd += '-DNULL_STORE=ON'
     if(s == __tmpfs):
         cmd += '-DFILE_STORE=ON -DTMPFS=ON'
     elif(s == __pmfs):
