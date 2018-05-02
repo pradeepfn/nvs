@@ -189,10 +189,11 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
             total_size = delta_len + sizeof(l_entry);
 
             if(this->log->appendv(iovp,dc.size()+1) != NO_ERROR){
+            	total_size = PMEM_ERROR;
                 LOG(fatal) << "Store: append failed";
-                exit(1);
+                goto end;
             }
-            free(iovp);
+
             /* 1. increase the soft state
              * 2. write protect the volatile buffers
              * 3. reset the bitset vector
@@ -200,9 +201,11 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
             obj->setVersion(version);
             /* delta compression tracking */
             enable_write_protection(obj->getPtr(), obj->get_aligned_size());
-
             obj->reset_bit_vector();
-            return total_size;
+
+         end:
+		 	 free(iovp);
+		 	 return total_size;
         }
 
         LOG(error) << "element not found";
@@ -227,6 +230,7 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
         iovpcnt = objectMap.size() + 1;
         struct iovec **iovpp = (struct iovec **)malloc(sizeof(struct iovec *) * iovpcnt );
         int *iovcntp = (int *) malloc(sizeof(int) * iovpcnt);
+
         struct lehdr_t *l_entryp = (struct lehdr_t *)malloc(sizeof(struct lehdr_t) * iovpcnt);
 
 
@@ -293,6 +297,12 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
         }
 
         end:
+		for(int i =0 ; i < iovpcnt;i++){
+			free(iovpp[i]);
+		}
+		free(iovpp);
+		free(iovcntp);
+		free(l_entryp);
         //TODO: free the volatile structures
         return total_size;
     }

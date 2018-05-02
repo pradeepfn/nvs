@@ -22,6 +22,7 @@ extern "C" {
     }
 
     void nvs_free(void *ptr) {
+		st->free_obj(ptr);
     }
 
     void nvs_snapshot(int proc_id) {
