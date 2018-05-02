@@ -60,7 +60,7 @@ namespace nvs{
                 LOG(debug) << "Null store enabled";
 
 #if defined(_TIMING)
-                	tmp = TimingStore(new NullStore(storePath));
+                	tmp = new  TimingStore(new NullStore(storePath));
 #else
                 	tmp = new NullStore(storePath);
 #endif

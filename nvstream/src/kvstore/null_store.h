@@ -18,7 +18,7 @@ namespace nvs{
 
     public:
 
-        NullStore(std::string storeId){}
+        NullStore(std::string storeId):storeId(storeId){}
 
         ~NullStore(){}
 
@@ -46,6 +46,7 @@ namespace nvs{
         void stats(){return;}
 
     private:
+        std::string storeId;
     };
 
 }
