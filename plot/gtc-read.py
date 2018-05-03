@@ -43,7 +43,7 @@ def sh(cmd):
 def snap_time(location, dfile):
     time_l = []
     ave_t = 0.0
-    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
+    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4="";print $0}\' >' + dfile
 
     sh(cmd)
 
@@ -52,48 +52,52 @@ def snap_time(location, dfile):
     os.remove(dfile)
 
     time_l = [float(x) for x in time_l]
-
-    return time_l
+    ave_t = sum(time_l)/len(time_l)
+    return ave_t
 
 
 
 legend_l=[]
-def line_plot(ax,y):
-    N=len(y[0][0]) # number of bar groups
+def bar_plot(ax,y):
+    N=1 # number of bar groups
     ind = np.arange(N)
 
-    rects1 = ax.plot(ind , tuple(y[0][0]), color = __cmemcpy, linewidth=1,ms=7,marker = '*')
-    rects2 = ax.plot(ind , tuple(y[0][1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None")
-    rects3 = ax.plot(ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None")
-    rects4 = ax.plot(ind , tuple(y[0][3]), color = __cnvs, linewidth=1,ms=7,marker = '.')
-    rects5 = ax.plot(ind , tuple(y[0][4]), color = __cdnvs, linewidth=1,ms=7,marker = '.',markerfacecolor="None")
+    start = 1.0
+    width = 0.2
+
+    ind = []
+    for x in range(0,5):
+        if(x==2):
+            start+= 0.05
+        temp = start + x*width
+        ind.append(temp)
 
 
 
+    y_list = [(x/y[0][0]) for x in y[0]]
+    rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
+    patterns = ('','','////','','\\\\\\\\')
+    for bar, pattern in zip(rects1,patterns):
+        bar.set_hatch(pattern)
     legend_l.append(rects1)
-    legend_l.append(rects2)
-    legend_l.append(rects3)
-    legend_l.append(rects4)
-    legend_l.append(rects5)
 
 
 
     # add some text for labels, title and axes tick
-    ax.set_ylabel('snapshot time(micro-sec)' , fontsize = '6')
-    ax.set_xlabel('iteration #',fontsize=6)
+    ax.set_ylabel('time(micro-sec)' , fontsize = '6')
+    ax.set_xlabel('GTC variables',fontsize=6)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='6')
+    ax.tick_params(axis='x',which='both',top='off',bottom=False, labelbottom=False)
     ax.tick_params(axis='y',which='both',right='off',labelsize='6')
     ax.margins(0.1,0)
-    plt.yscale('log')
 
 
 
 
 if __name__ == '__main__':
 
-    pp = PdfPages('amr-write.pdf')
+    pp = PdfPages('gtc-read.pdf')
 
     fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
 
@@ -107,24 +111,20 @@ if __name__ == '__main__':
     for idx1,n in enumerate(nth):
         tlist = []
         for idx2,item in enumerate(llist):
-            location = '../miniAMR/results/' + item + '/amr_' + item +'_t' + str(n)
+            location = '../gtc/results/' + item + '/gtc_' + item +'_t' + str(n)
             file = 'store_3.txt'
-            tlist.append(snap_time(location,file))
+            #tlist.append(snap_time(location,file))
 
         y.append(tlist)
 
+    y=[[1,1,1,1,1]]
+    print y
+    bar_plot(ax, y)
 
-    print y[0][0]
-    print y[0][1]
-    print y[0][2]
-    print y[0][3]
-    print y[0][4]
-    line_plot(ax, y)
-
-    plt.legend( (legend_l[0][0], legend_l[1][0], legend_l[2][0],
-                 legend_l[3][0],legend_l[4][0]),
+    plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
+                 legend_l[0][3],legend_l[0][4]),
                 ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
-                fontsize='6',ncol=5,bbox_to_anchor=(1.05, 1.25))
+                fontsize='6',ncol=3,bbox_to_anchor=(1.05, 1.2))
 
     plt.tight_layout(h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)
