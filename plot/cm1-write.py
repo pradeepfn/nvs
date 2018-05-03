@@ -97,10 +97,10 @@ def bar_plot(ax,y):
 
 if __name__ == '__main__':
 
-    pp = PdfPages('gtc-write.pdf')
+    pp = PdfPages('cm1-write.pdf')
 
     fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
-   
+
 
     y=[]
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
     for idx1,n in enumerate(nth):
         tlist = []
         for idx2,item in enumerate(llist):
-            location = '../gtc/results/' + item + '/gtc_' + item +'_t' + str(n)
+            location = '../CM1/results/' + item + '/cm1_' + item +'_t' + str(n)
             file = 'store_3.txt'
             tlist.append(snap_time(location,file))
 
