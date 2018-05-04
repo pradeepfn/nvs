@@ -15,7 +15,7 @@
 
 
 #define STORE_ID "micro_store"
-#define N_ITER 10
+#define N_ITER 5
 
 
 void compute_kernel(double **array, long len, long row , long col){
