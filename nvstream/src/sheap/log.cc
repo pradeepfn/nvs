@@ -111,12 +111,14 @@ namespace nvs{
         if(write_offset >= end_offset){
             LOG(fatal) << "no space in log";
             errorCode =  NOT_ENOUGH_SPACE;
-            goto end;
+            exit(1); // we dont want this error for now
+            //goto end;
         }
         if(size > (end_offset-write_offset)){
             LOG(fatal) << "not enough space on log";
             errorCode = NOT_ENOUGH_SPACE;
-            goto end;
+            exit(1); // we dont want this error for now
+            //goto end;
         }
         pmem_memcpy_nodrain(&pmemaddr[write_offset],data ,size);
         persist(); // commit flag
@@ -137,7 +139,8 @@ namespace nvs{
             LOG(fatal) << "no space in log" << "write_offset : " << write_offset <<
                         "end_offset :" << end_offset;
             errorCode =  NOT_ENOUGH_SPACE;
-            goto end;
+            exit(1); // we dont want this error for now
+            //goto end;
         }
 
         // feasibility check
@@ -150,7 +153,8 @@ namespace nvs{
         if(tot_cnt > (end_offset-write_offset)){
             LOG(fatal) << "not enough space on log";
             errorCode = NOT_ENOUGH_SPACE;
-            goto end;
+            exit(1); // we dont want this error for now
+            //goto end;
         }
 #ifndef _MEMCPY
         for(int i = 0 ; i < iovcnt; i++) {
@@ -183,7 +187,8 @@ namespace nvs{
                 LOG(fatal) << "no space in log" << "write_offset : " << write_offset <<
                             "end_offset :" << end_offset;
                 errorCode =  NOT_ENOUGH_SPACE;
-                goto end;
+                exit(1); // we dont want this error for now
+                //goto end;
             }
 
             // feasibility check
@@ -199,7 +204,8 @@ namespace nvs{
             if(tot_cnt > (end_offset-write_offset)){
                 LOG(fatal) << "not enough space on log";
                 errorCode = NOT_ENOUGH_SPACE;
-                goto end;
+                exit(1); // we dont want this error for now
+                //goto end;
             }
 
     #ifndef _MEMCPY
