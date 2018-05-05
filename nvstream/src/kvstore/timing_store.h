@@ -80,6 +80,8 @@ namespace nvs{
         putall_total=0;
         putall_niterations = 0;
         total_size=0;
+
+        snap_time = 0;
         app_start = read_tsc();
     }
 
@@ -149,6 +151,7 @@ namespace nvs{
         uint64_t iter_time;
         if(snap_time == 0){ // first snapshot
         	iter_time = putall_end - app_start;
+        	snap_time = putall_end;
         }else{
         	iter_time = putall_end - snap_time;
         	snap_time = putall_end;
