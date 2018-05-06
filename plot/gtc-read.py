@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 color = ['#de2d26','#fc9272','#fee0d2']
 
+__nocheckpoint = 'nocheckpoint'
 __tmpfs = 'tmpfs'
 __memcpy = 'memcpy'
 __pmfs = 'pmfs'
@@ -59,36 +60,34 @@ def snap_time(location, dfile):
 
 legend_l=[]
 def bar_plot(ax,y):
-    N=1 # number of bar groups
-    ind = np.arange(N)
-
     start = 1.0
     width = 0.2
 
-    ind = []
-    for x in range(0,5):
-        if(x==2):
-            start+= 0.05
-        temp = start + x*width
-        ind.append(temp)
+    l_ticks = [x[0] for x in y]
+    l_tmpfs = [float(x[1]) for x in y]
+    l_pmfs = [float(x[2]) for x in y]
+    l_nvs = [float(x[3]) for x in y]
+
+    ind = np.arange(len(l_ticks))
+    rects1 = ax.bar(ind, tuple(l_tmpfs), width,yerr=None,linewidth=0.1,color=__ctmpfs)
+    rects2 = ax.bar(ind+width, tuple(l_pmfs), width,yerr=None,linewidth=0.1, color = __cpmfs)
+    rects3 = ax.bar(ind+2*width, tuple(l_nvs), width,yerr=None,linewidth=0.1, color = __cnvs)
 
 
-
-    y_list = [(x/y[0][0]) for x in y[0]]
-    rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
-    patterns = ('','','////','','\\\\\\\\')
-    for bar, pattern in zip(rects1,patterns):
-        bar.set_hatch(pattern)
     legend_l.append(rects1)
-
-
+    legend_l.append(rects2)
+    legend_l.append(rects3)
 
     # add some text for labels, title and axes tick
     ax.set_ylabel('time(micro-sec)' , fontsize = '6')
     ax.set_xlabel('GTC variables',fontsize=6)
+
+    ax.set_xticks(ind+ ((width*3)/2))
+    ax.set_xticklabels(tuple(l_ticks),rotation=35)
+
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    ax.tick_params(axis='x',which='both',top='off',bottom=False, labelbottom=False)
+    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='6')
     ax.tick_params(axis='y',which='both',right='off',labelsize='6')
     ax.margins(0.1,0)
 
@@ -104,26 +103,14 @@ if __name__ == '__main__':
 
     y=[]
 
-    nth = [4]
+    with open('gtc-read-input.txt') as f:
+        content = f.readlines()
+    content = [y.append(x.strip().split()) for x in content]
 
-    snum = 4 #rank to get the sampling data
-
-    for idx1,n in enumerate(nth):
-        tlist = []
-        for idx2,item in enumerate(llist):
-            location = '../gtc/results/' + item + '/gtc_' + item +'_t' + str(n)
-            file = 'store_3.txt'
-            #tlist.append(snap_time(location,file))
-
-        y.append(tlist)
-
-    y=[[1,1,1,1,1]]
-    print y
     bar_plot(ax, y)
 
-    plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
-                 legend_l[0][3],legend_l[0][4]),
-                ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
+    plt.legend( (legend_l[0][1], legend_l[1][1], legend_l[2][1] ),
+                ('tmpfs', 'pmfs', 'nvs'),
                 fontsize='6',ncol=3,bbox_to_anchor=(1.05, 1.2))
 
     plt.tight_layout(h_pad=0)

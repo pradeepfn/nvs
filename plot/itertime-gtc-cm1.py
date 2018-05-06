@@ -9,12 +9,14 @@ import matplotlib.pyplot as plt
 
 color = ['#de2d26','#fc9272','#fee0d2']
 
+__nocheckpoint = 'nocheckpoint'
 __tmpfs = 'tmpfs'
 __memcpy = 'memcpy'
 __pmfs = 'pmfs'
 __nvs = 'nvs'
 __dnvs = 'dnvs'
 
+__cnochk = '#fee090'
 __cmemcpy = '#fee090'
 __ctmpfs = '#636363'
 __cpmfs = '#ce1256'
@@ -24,6 +26,7 @@ __cdnvs = '#2ca25f'
 
 
 llist = []
+llist.append(__nocheckpoint)
 llist.append(__memcpy)
 llist.append(__tmpfs)
 llist.append(__pmfs)
@@ -43,7 +46,7 @@ def sh(cmd):
 def iter_time(location, dfile):
     time_l = []
     ave_t = 0.0
-    cmd = 'grep "iteration time (mirco-sec)" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4="";print $0}\' >' + dfile
+    cmd = 'grep "iteration time (mirco-sec)" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
 
     sh(cmd)
 
@@ -52,6 +55,7 @@ def iter_time(location, dfile):
     os.remove(dfile)
 
     time_l = [float(x) for x in time_l]
+    print time_l
     return time_l
 
 
@@ -67,8 +71,8 @@ def bar_plot(ax,y):
     width = 0.2
 
     ind = []
-    for x in range(0,5):
-        if(x==2):
+    for x in range(0,len(y[0])):
+        if(x==3):
             start+= 0.05
         temp = start + x*width
         ind.append(temp)
@@ -76,8 +80,10 @@ def bar_plot(ax,y):
 
 
     y_list = [(x/y[0][0]) for x in y[0]]
-    rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
-    patterns = ('','','////','','\\\\\\\\')
+    rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cnochk,__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
+    #rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cnochk,__cmemcpy,__ctmpfs,__cpmfs, __cnvs])
+    patterns = ('////','','','////','','\\\\\\\\')
+    #patterns = ('','','','////','')
     for bar, pattern in zip(rects1,patterns):
         bar.set_hatch(pattern)
     legend_l.append(rects1)
@@ -100,7 +106,7 @@ if __name__ == '__main__':
 
     pp = PdfPages('itertime-gtc-cm1.pdf')
 
-    fig, (ax) = plt.subplots(nrows=2, ncols=1,figsize=(3.5,2.45));
+    fig, (ax) = plt.subplots(nrows=2, ncols=1,figsize=(3.5,2));
 
 
 
@@ -145,9 +151,14 @@ if __name__ == '__main__':
 
 
     plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
-                 legend_l[0][3],legend_l[0][4]),
-                ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
-                fontsize='6',ncol=5,bbox_to_anchor=(1.05, 2.4))
+                 legend_l[0][3],legend_l[0][4]
+                 ,legend_l[0][5]
+
+                 ),
+                ('nochk','memcpy', 'tmpfs', 'pmfs', 'nvs'
+                 ,'dnvs'
+                 ),
+                fontsize='6',ncol=3,bbox_to_anchor=(1.05, 2.1))
 
     plt.tight_layout(h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)

@@ -43,7 +43,7 @@ def sh(cmd):
 def iter_time(location, dfile):
     time_l = []
     ave_t = 0.0
-    cmd = 'grep "iteration time (mirco-sec)" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4="";print $0}\' >' + dfile
+    cmd = 'grep "iteration time (mirco-sec)" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
 
     sh(cmd)
 
@@ -60,10 +60,10 @@ legend_l=[]
 def line_plot(ax,y):
     N=len(y[0][0]) # number of bar groups
     ind = np.arange(N)
-
+    pmfs_ind = np.arange(len(y[0][2]))
     rects1 = ax.plot(ind , tuple(y[0][0]), color = __cmemcpy, linewidth=1,ms=7,marker = '*')
     rects2 = ax.plot(ind , tuple(y[0][1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None")
-    rects3 = ax.plot(ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None")
+    rects3 = ax.plot(pmfs_ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None")
     rects4 = ax.plot(ind , tuple(y[0][3]), color = __cnvs, linewidth=1,ms=7,marker = '.')
     rects5 = ax.plot(ind , tuple(y[0][4]), color = __cdnvs, linewidth=1,ms=7,marker = '.',markerfacecolor="None")
 

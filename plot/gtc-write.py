@@ -43,7 +43,7 @@ def sh(cmd):
 def snap_time(location, dfile):
     time_l = []
     ave_t = 0.0
-    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4="";print $0}\' >' + dfile
+    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
 
     sh(cmd)
 
@@ -52,6 +52,7 @@ def snap_time(location, dfile):
     os.remove(dfile)
 
     time_l = [float(x) for x in time_l]
+    print time_l
     ave_t = sum(time_l)/len(time_l)
     return ave_t
 
@@ -66,7 +67,7 @@ def bar_plot(ax,y):
     width = 0.2
 
     ind = []
-    for x in range(0,5):
+    for x in range(0,len(y[0])):
         if(x==2):
             start+= 0.05
         temp = start + x*width
@@ -76,7 +77,9 @@ def bar_plot(ax,y):
 
     y_list = [(x/y[0][0]) for x in y[0]]
     rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
+    #rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs])
     patterns = ('','','////','','\\\\\\\\')
+    #patterns = ('','','////','')
     for bar, pattern in zip(rects1,patterns):
         bar.set_hatch(pattern)
     legend_l.append(rects1)
@@ -100,7 +103,7 @@ if __name__ == '__main__':
     pp = PdfPages('gtc-write.pdf')
 
     fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
-   
+
 
     y=[]
 
@@ -122,8 +125,11 @@ if __name__ == '__main__':
     bar_plot(ax, y)
 
     plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
-                 legend_l[0][3],legend_l[0][4]),
+                 legend_l[0][3],
+                 legend_l[0][4]
+                 ),
                 ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
+                #('memcpy', 'tmpfs', 'pmfs', 'nvs'),
                 fontsize='6',ncol=3,bbox_to_anchor=(1.05, 1.2))
 
     plt.tight_layout(h_pad=0)

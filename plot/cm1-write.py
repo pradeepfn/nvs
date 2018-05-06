@@ -43,7 +43,7 @@ def sh(cmd):
 def snap_time(location, dfile):
     time_l = []
     ave_t = 0.0
-    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4="";print $0}\' >' + dfile
+    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
 
     sh(cmd)
 
