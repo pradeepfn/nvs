@@ -52,7 +52,7 @@ def snap_time(location, dfile):
     os.remove(dfile)
 
     time_l = [float(x) for x in time_l]
-    print time_l
+    #print time_l
     ave_t = sum(time_l)/len(time_l)
     return ave_t
 
@@ -64,7 +64,7 @@ def bar_plot(ax,y):
     ind = np.arange(N)
 
     start = 1.0
-    width = 0.2
+    width = 0.4
 
     ind = []
     for x in range(0,len(y[0])):
@@ -73,15 +73,32 @@ def bar_plot(ax,y):
         temp = start + x*width
         ind.append(temp)
 
-
+    group_start = temp
+    xl=[]
 
     y_list = [(x/y[0][0]) for x in y[0]]
+    xl.append(ind[0])
     rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
-    #rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs])
     patterns = ('','','////','','\\\\\\\\')
-    #patterns = ('','','////','')
     for bar, pattern in zip(rects1,patterns):
         bar.set_hatch(pattern)
+
+    ind = [x+group_start for x in ind]
+    y_list = [(x/y[1][0]) for x in y[1]]
+    xl.append(ind[0])
+    rects2 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
+    patterns = ('','','////','','\\\\\\\\')
+    for bar, pattern in zip(rects2,patterns):
+        bar.set_hatch(pattern)
+
+    ind = [x+group_start for x in ind]
+    y_list = [(x/y[2][0]) for x in y[2]]
+    xl.append(ind[0])
+    rects3 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
+    patterns = ('','','////','','\\\\\\\\')
+    for bar, pattern in zip(rects3,patterns):
+        bar.set_hatch(pattern)
+
     legend_l.append(rects1)
 
 
@@ -91,7 +108,11 @@ def bar_plot(ax,y):
     ax.set_xlabel('I/O type',fontsize=6)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
-    ax.tick_params(axis='x',which='both',top='off',bottom=False, labelbottom=False)
+
+    ax.set_xticks([x +(width*5/2) for x in xl])
+    ax.set_xticklabels(('n=4', 'n=16','n=64'))
+
+    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='6')
     ax.tick_params(axis='y',which='both',right='off',labelsize='6')
     ax.margins(0.1,0)
 
@@ -107,9 +128,9 @@ if __name__ == '__main__':
 
     y=[]
 
-    nth = [4]
+    nth = [4,16,64]
 
-    snum = 4 #rank to get the sampling data
+    snum = 8 #rank to get the sampling data
 
     for idx1,n in enumerate(nth):
         tlist = []
@@ -121,16 +142,20 @@ if __name__ == '__main__':
         y.append(tlist)
 
 
-    print y
+    print y[0]
+    print y[1]
+    print y[2]
+
+
     bar_plot(ax, y)
 
     plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
                  legend_l[0][3],
                  legend_l[0][4]
                  ),
-                ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
+                ('memcpy', 'tmpfs', 'pmfs', 'nvs','nvs+delta'),
                 #('memcpy', 'tmpfs', 'pmfs', 'nvs'),
-                fontsize='6',ncol=3,bbox_to_anchor=(1.05, 1.2))
+                fontsize='6',ncol=3,bbox_to_anchor=(.8, 1.2))
 
     plt.tight_layout(h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)
