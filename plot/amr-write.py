@@ -107,7 +107,7 @@ if __name__ == '__main__':
     for idx1,n in enumerate(nth):
         tlist = []
         for idx2,item in enumerate(llist):
-            location = '../miniAMR/results/' + item + '/amr_' + item +'_t' + str(n)
+            location = '../amr/results/' + item + '/amr_' + item +'_t' + str(n)
             file = 'store_3.txt'
             tlist.append(snap_time(location,file))
 
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
     plt.legend( (legend_l[0][0], legend_l[1][0], legend_l[2][0],
                  legend_l[3][0],legend_l[4][0]),
-                ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
+                ('memcpy', 'tmpfs', 'pmfs', 'nvs','nvs+delta'),
                 fontsize='6',ncol=5,bbox_to_anchor=(1.05, 1.25))
 
     plt.tight_layout(h_pad=0)

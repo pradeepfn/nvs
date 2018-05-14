@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 color = ['#de2d26','#fc9272','#fee0d2']
 
+__nocheckpoint = 'nocheckpoint'
 __tmpfs = 'tmpfs'
 __memcpy = 'memcpy'
 __pmfs = 'pmfs'
@@ -24,7 +25,8 @@ __cdnvs = '#2ca25f'
 
 
 llist = []
-llist.append(__memcpy)
+llist.append(__nocheckpoint)
+#llist.append(__memcpy)
 llist.append(__tmpfs)
 llist.append(__pmfs)
 llist.append(__nvs)
@@ -63,7 +65,7 @@ def line_plot(ax,y):
     pmfs_ind = np.arange(len(y[0][2]))
     rects1 = ax.plot(ind , tuple(y[0][0]), color = __cmemcpy, linewidth=1,ms=7,marker = '*')
     rects2 = ax.plot(ind , tuple(y[0][1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None")
-    rects3 = ax.plot(pmfs_ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None")
+    rects3 = ax.plot(pmfs_ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None",markeredgecolor=__cpmfs)
     rects4 = ax.plot(ind , tuple(y[0][3]), color = __cnvs, linewidth=1,ms=7,marker = '.')
     rects5 = ax.plot(ind , tuple(y[0][4]), color = __cdnvs, linewidth=1,ms=7,marker = '.',markerfacecolor="None")
 
@@ -94,7 +96,7 @@ if __name__ == '__main__':
 
     pp = PdfPages('itertime-amr.pdf')
 
-    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
+    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.4));
 
 
 
@@ -107,21 +109,25 @@ if __name__ == '__main__':
     for idx1,n in enumerate(nth):
         tlist = []
         for idx2,item in enumerate(llist):
-            location = '../miniAMR/results/' + item + '/amr_' + item +'_t' + str(n)
+            location = '../amr/results/' + item + '/amr_' + item +'_t' + str(n)
             file = 'store_3.txt'
             tlist.append(iter_time(location,file))
 
         y.append(tlist)
 
 
-
-
+    print y[0][0]
+    print y[0][1]
+    print y[0][2]
+    print y[0][3]
+    print y[0][4]
+    #print y[0][5]
     line_plot(ax, y)
 
 
     plt.legend( (legend_l[0][0], legend_l[1][0], legend_l[2][0],
                  legend_l[3][0],legend_l[4][0]),
-                ('memcpy', 'tmpfs', 'pmfs', 'nvs','dnvs'),
+                ('nocheckpoint', 'tmpfs', 'pmfs', 'nvs','nvs+delta'),
                 fontsize='6',ncol=5,bbox_to_anchor=(1.05, 1.25))
 
     plt.tight_layout(h_pad=0)

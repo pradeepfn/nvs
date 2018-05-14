@@ -55,7 +55,7 @@ def iter_time(location, dfile):
     os.remove(dfile)
 
     time_l = [float(x) for x in time_l]
-    print time_l
+    #print time_l
     return time_l
 
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
 
 
 
-    nth = [4]
+    nth = [64]
 
     snum = 4 #rank to get the sampling data
 
@@ -120,7 +120,7 @@ if __name__ == '__main__':
         tlist = []
         for idx2,item in enumerate(llist):
             location = '../gtc/results/' + item + '/gtc_' + item +'_t' + str(n)
-            file = 'store_3.txt'
+            file = 'store_0.txt'
             tl = iter_time(location,file)
             ave_t = sum(tl)/len(tl)
             tlist.append(ave_t)

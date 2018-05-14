@@ -108,9 +108,9 @@ def plot(ax, y_l):
 
     rects1 = ax.plot(ind, tuple(y_l[0]),  color = __cmemcpy, linewidth=1,ms=7,marker = '*')
     print y_l[0]
-    rects2 = ax.plot(ind , tuple(y_l[1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None")
+    rects2 = ax.plot(ind , tuple(y_l[1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None",markeredgecolor=__ctmpfs)
     print y_l[1]
-    rects3 = ax.plot(ind , tuple(y_l[2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None")
+    rects3 = ax.plot(ind , tuple(y_l[2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None", markeredgecolor=__cpmfs)
     print y_l[2]
     rects4 = ax.plot(ind , tuple(y_l[3]),  color = __cnvs, linewidth=1,ms=7,marker = '.')
     print y_l[3]
@@ -152,7 +152,7 @@ if __name__ == '__main__':
 
 
     pp = PdfPages('micro-write.pdf')
-    fig, (ax1) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5))
+    fig, (ax1) = plt.subplots(nrows=1, ncols=1,figsize=(3,1.4))
 
     plot(ax1,time_l)
 

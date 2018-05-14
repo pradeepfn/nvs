@@ -40,20 +40,24 @@ def sh(cmd):
         sys.exit(0)
 
 
-def snap_time(location, dfile):
-    time_l = []
-    ave_t = 0.0
-    cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
+def snap_time(location, nth):
+    gl=[]
+    for n in np.arange(nth):
+        dfile = 'store_'+ str(n) + '.txt'
+        time_l = []
+        ave_t = 0.0
+        cmd = 'grep "iteration snapshot time" ' +  location + '/' + dfile + ' | awk \'{$1=$2=$3=$4=$5="";print $0}\' >' + dfile
 
-    sh(cmd)
+        sh(cmd)
 
-    with open(dfile) as f:
-        time_l=f.read().strip().split()
-    os.remove(dfile)
+        with open(dfile) as f:
+            time_l=f.read().strip().split()
+        os.remove(dfile)
+        time_l = [float(x) for x in time_l]
+        gl.extend(time_l)
 
-    time_l = [float(x) for x in time_l]
     #print time_l
-    ave_t = sum(time_l)/len(time_l)
+    ave_t = sum(gl)/len(gl)
     return ave_t
 
 
@@ -105,7 +109,7 @@ def bar_plot(ax,y):
 
     # add some text for labels, title and axes tick
     ax.set_ylabel('normalized snapshot time' , fontsize = '6')
-    ax.set_xlabel('I/O type',fontsize=6)
+    ax.set_xlabel('# of ranks',fontsize=6)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
 
@@ -121,9 +125,9 @@ def bar_plot(ax,y):
 
 if __name__ == '__main__':
 
-    pp = PdfPages('gtc-write.pdf')
+    pp = PdfPages('gtc-cm1-write.pdf')
 
-    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
+    fig, (ax) = plt.subplots(nrows=2, ncols=1,figsize=(2.7,2.5));
 
 
     y=[]
@@ -136,8 +140,7 @@ if __name__ == '__main__':
         tlist = []
         for idx2,item in enumerate(llist):
             location = '../gtc/results/' + item + '/gtc_' + item +'_t' + str(n)
-            file = 'store_20.txt'
-            tlist.append(snap_time(location,file))
+            tlist.append(snap_time(location,n))
 
         y.append(tlist)
 
@@ -146,8 +149,28 @@ if __name__ == '__main__':
     print y[1]
     print y[2]
 
+    bar_plot(ax[0], y)
 
-    bar_plot(ax, y)
+
+    y=[]
+
+    for idx1,n in enumerate(nth):
+        tlist = []
+        for idx2,item in enumerate(llist):
+            location = '../CM1/results/' + item + '/cm1_' + item +'_t' + str(n)
+            tlist.append(snap_time(location,n))
+
+        y.append(tlist)
+
+    print ''
+    print y[0]
+    print y[1]
+    print y[2]
+    bar_plot(ax[1], y)
+
+
+    ax[0].set_title('gtc',fontsize='6')
+    ax[1].set_title('cm1',fontsize='6')
 
     plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
                  legend_l[0][3],
@@ -155,7 +178,7 @@ if __name__ == '__main__':
                  ),
                 ('memcpy', 'tmpfs', 'pmfs', 'nvs','nvs+delta'),
                 #('memcpy', 'tmpfs', 'pmfs', 'nvs'),
-                fontsize='6',ncol=3,bbox_to_anchor=(.8, 1.2))
+                fontsize='6',ncol=2,bbox_to_anchor=(.75, 2.75))
 
     plt.tight_layout(h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)

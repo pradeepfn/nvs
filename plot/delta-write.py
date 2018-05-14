@@ -84,7 +84,7 @@ def bar_plot(ax,y):
 if __name__ == '__main__':
 
     pp = PdfPages('delta-write.pdf')
-    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
+    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3,1.4));
 
     wlist=['gtc', 'CM1', 'amr']
     y=[]
@@ -104,7 +104,9 @@ if __name__ == '__main__':
     print y[1]
     bar_plot(ax,y)
 
-
+    plt.legend( (legend_l[0][0], legend_l[1][0]),
+                ('nvs','nvs+delta'),
+                fontsize='6',ncol=2,bbox_to_anchor=(1, .7))
 
     plt.tight_layout(h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)
