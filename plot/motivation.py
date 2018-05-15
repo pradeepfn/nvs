@@ -150,7 +150,7 @@ if __name__ == '__main__':
     mi=0;
 
     pp = PdfPages('motivation.pdf')
-    fig, (ax1) = plt.subplots(nrows=1, ncols=1,figsize=(3,1.5))
+    fig, (ax1) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5))
     legend = []
     for i in list:
         tmp_l = []
@@ -188,10 +188,10 @@ if __name__ == '__main__':
                 'memcpy+clflush',
                 'mempy',
                 #'stream+fence'
-                ), fontsize='6',ncol=3, loc='upper center', bbox_to_anchor=(0.5, 1.38),frameon=False)
+                ), fontsize='7',ncol=3, loc='upper center', bbox_to_anchor=(0.46, 1.47),frameon=False)
 
     #plt.tight_layout( pad=0.2, h_pad=1, w_pad=0.1)
-    plt.subplots_adjust(left=0.2, right=0.8, top=0.8, bottom=0.22)
+    plt.subplots_adjust(left=0.2, right=0.9, top=0.78, bottom=0.22)
     pp.savefig(figure=fig)
     pp.close()
 

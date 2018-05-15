@@ -9,11 +9,17 @@ from matplotlib.backends.backend_pdf import PdfPages
 import matplotlib.pyplot as plt
 
 DBG = 1
+#__cmemcpy = '#fee090'
+#__ctmpfs = '#636363'
+#__cpmfs = '#ce1256'
+#__cnvs = '#2ca25f'
+#__cdnvs = '#2ca25f'
+
 __cmemcpy = '#fee090'
-__ctmpfs = '#636363'
-__cpmfs = '#ce1256'
-__cnvs = '#2ca25f'
-__cdnvs = '#2ca25f'
+__ctmpfs = '#1f78b4'
+__cpmfs = '#1f78b4'
+__cnvs = '#33a02c'
+__cdnvs = '#33a02c'
 
 #color codes for each of the strategies
 
@@ -110,14 +116,14 @@ def plot(ax, y_l):
     print y_l[0]
     rects2 = ax.plot(ind , tuple(y_l[1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None",markeredgecolor=__ctmpfs)
     print y_l[1]
-    rects3 = ax.plot(ind , tuple(y_l[2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None", markeredgecolor=__cpmfs)
+    rects3 = ax.plot(ind , tuple(y_l[2]), color = __cpmfs, linewidth=1,ms=4,marker = 'D',markerfacecolor="None", markeredgecolor=__cpmfs)
     print y_l[2]
     rects4 = ax.plot(ind , tuple(y_l[3]),  color = __cnvs, linewidth=1,ms=7,marker = '.')
     print y_l[3]
     #rects5 = ax.plot(ind , tuple(y_l[4]),  color = __cdnvs, linewidth=1,ms=7,marker = '.',markerfacecolor="None")
 
-    ax.set_ylabel('time (microsec)' , fontsize = '6')
-    ax.set_xlabel('varibale size', fontsize='7')
+    ax.set_ylabel('time (microsec)' , fontsize = '7')
+    ax.set_xlabel('variable size', fontsize='7')
     #ax.yaxis.grid(True)
     #ax.set_xticklabels(tick_l, rotation=45)
     ax.spines['right'].set_visible(False)
@@ -152,7 +158,7 @@ if __name__ == '__main__':
 
 
     pp = PdfPages('micro-write.pdf')
-    fig, (ax1) = plt.subplots(nrows=1, ncols=1,figsize=(3,1.4))
+    fig, (ax1) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.3))
 
     plot(ax1,time_l)
 
@@ -166,11 +172,11 @@ if __name__ == '__main__':
         # glegnd_l[4][0]
          ),
         ('memcpy','tmpfs','pmfs','nvs'),
-        fontsize='6',ncol=5,bbox_to_anchor=(1.05, 1.25))
+        fontsize='7',ncol=2,bbox_to_anchor=(1, 1)).get_frame().set_linewidth(0.1)
 
 
     plt.yscale('log')
 
-    plt.tight_layout(h_pad=0)
+    plt.tight_layout(rect = [0.01,-0.1,0.98,1.09],h_pad=0)
     pp.savefig(figure=fig)
     pp.close()

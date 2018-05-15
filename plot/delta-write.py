@@ -9,11 +9,17 @@ import matplotlib.pyplot as plt
 
 color = ['#e34a33','#fdbb84','#ece7f2']
 
+#__cmemcpy = '#fee090'
+#__ctmpfs = '#636363'
+#__cpmfs = '#ce1256'
+#__cnvs = '#2ca25f'
+#__cdnvs = '#2ca25f'
+
 __cmemcpy = '#fee090'
-__ctmpfs = '#636363'
-__cpmfs = '#ce1256'
-__cnvs = '#2ca25f'
-__cdnvs = '#2ca25f'
+__ctmpfs = '#a6cee3'
+__cpmfs = '#1f78b4'
+__cnvs = '#b2df8a'
+__cdnvs = '#33a02c'
 
 def sh(cmd):
 
@@ -51,7 +57,7 @@ def bar_plot(ax,y):
     ind = np.arange(len(y[0]))
 
     start = 1.0
-    width = 0.25
+    width = 0.3
 
 
     for idx, item in enumerate(y[0]):
@@ -68,15 +74,15 @@ def bar_plot(ax,y):
     legend_l.append(rects2)
 
     # add some text for labels, title and axes tick
-    ax.set_ylabel('normalized snapshot size' , fontsize = '6')
-    ax.set_xlabel('application',fontsize=6)
+    ax.set_ylabel('snapshot size' , fontsize = '7')
+    ax.set_xlabel('application',fontsize='7',labelpad=1)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
 
     ax.set_xticks(ind+ width)
     ax.set_xticklabels(('GTC','CM1','miniAMR'))
 
-    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='6')
+    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='7')
     ax.tick_params(axis='y',which='both',right='off',labelsize='6')
     ax.margins(0.1,0)
 
@@ -84,7 +90,7 @@ def bar_plot(ax,y):
 if __name__ == '__main__':
 
     pp = PdfPages('delta-write.pdf')
-    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3,1.4));
+    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3,1));
 
     wlist=['gtc', 'CM1', 'amr']
     y=[]
@@ -106,9 +112,9 @@ if __name__ == '__main__':
 
     plt.legend( (legend_l[0][0], legend_l[1][0]),
                 ('nvs','nvs+delta'),
-                fontsize='6',ncol=2,bbox_to_anchor=(1, .7))
+                fontsize='7',ncol=2,bbox_to_anchor=(1, .7)).get_frame().set_linewidth(0.1)
 
-    plt.tight_layout(h_pad=0)
+    plt.tight_layout(rect = [0.02,-0.1,0.98,1.1],h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)
     pp.savefig(figure=fig)
     pp.close()

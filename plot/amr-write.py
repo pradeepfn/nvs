@@ -15,13 +15,17 @@ __pmfs = 'pmfs'
 __nvs = 'nvs'
 __dnvs = 'dnvs'
 
+#__cmemcpy = '#fee090'
+#__ctmpfs = '#636363'
+#__cpmfs = '#ce1256'
+#__cnvs = '#2ca25f'
+#__cdnvs = '#2ca25f'
+
 __cmemcpy = '#fee090'
-__ctmpfs = '#636363'
-__cpmfs = '#ce1256'
-__cnvs = '#2ca25f'
-__cdnvs = '#2ca25f'
-
-
+__ctmpfs = '#1f78b4'
+__cpmfs = '#1f78b4'
+__cnvs = '#33a02c'
+__cdnvs = '#33a02c'
 
 llist = []
 llist.append(__memcpy)
@@ -63,10 +67,10 @@ def line_plot(ax,y):
     ind = np.arange(N)
     pmfs_ind = np.arange(len(y[0][2]))
     rects1 = ax.plot(ind , tuple(y[0][0]), color = __cmemcpy, linewidth=1,ms=7,marker = '*')
-    rects2 = ax.plot(ind , tuple(y[0][1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None")
-    rects3 = ax.plot(pmfs_ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=7,marker = 'D',markerfacecolor="None")
+    rects2 = ax.plot(ind , tuple(y[0][1]), color = __ctmpfs, linewidth=1,ms=5,marker = 's',markerfacecolor="None",markeredgecolor=__ctmpfs)
+    rects3 = ax.plot(pmfs_ind , tuple(y[0][2]), color = __cpmfs, linewidth=1,ms=4,marker = 'D',markerfacecolor="None",markeredgecolor=__cpmfs)
     rects4 = ax.plot(ind , tuple(y[0][3]), color = __cnvs, linewidth=1,ms=7,marker = '.')
-    rects5 = ax.plot(ind , tuple(y[0][4]), color = __cdnvs, linewidth=1,ms=7,marker = '.',markerfacecolor="None")
+    rects5 = ax.plot(ind , tuple(y[0][4]), color = __cdnvs, linewidth=1,ms=7,marker = '.',markerfacecolor="None",markeredgecolor=__cdnvs)
 
 
 
@@ -79,8 +83,8 @@ def line_plot(ax,y):
 
 
     # add some text for labels, title and axes tick
-    ax.set_ylabel('snapshot time(micro-sec)' , fontsize = '6')
-    ax.set_xlabel('iteration #',fontsize=6)
+    ax.set_ylabel('snapshot time(micro-sec)' , fontsize = '7')
+    ax.set_xlabel('iteration number',fontsize='7',labelpad=1)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='6')
@@ -95,7 +99,7 @@ if __name__ == '__main__':
 
     pp = PdfPages('amr-write.pdf')
 
-    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.5));
+    fig, (ax) = plt.subplots(nrows=1, ncols=1,figsize=(3.5,1.4));
 
 
     y=[]
@@ -124,9 +128,9 @@ if __name__ == '__main__':
     plt.legend( (legend_l[0][0], legend_l[1][0], legend_l[2][0],
                  legend_l[3][0],legend_l[4][0]),
                 ('memcpy', 'tmpfs', 'pmfs', 'nvs','nvs+delta'),
-                fontsize='6',ncol=5,bbox_to_anchor=(1.05, 1.25))
+                fontsize='7',ncol=3,bbox_to_anchor=(1, .75)).get_frame().set_linewidth(0.1)
 
-    plt.tight_layout(h_pad=0)
+    plt.tight_layout(rect = [0.01,-0.1,0.99,1.08],h_pad=0)
     #plt.subplots_adjust(top=0.98, bottom=0.18)
     pp.savefig(figure=fig)
     pp.close()

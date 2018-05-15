@@ -15,11 +15,17 @@ __pmfs = 'pmfs'
 __nvs = 'nvs'
 __dnvs = 'dnvs'
 
+#__cmemcpy = '#fee090'
+#__ctmpfs = '#636363'
+#__cpmfs = '#ce1256'
+#__cnvs = '#2ca25f'
+#__cdnvs = '#2ca25f'
+
 __cmemcpy = '#fee090'
-__ctmpfs = '#636363'
-__cpmfs = '#ce1256'
-__cnvs = '#2ca25f'
-__cdnvs = '#2ca25f'
+__ctmpfs = '#a6cee3'
+__cpmfs = '#1f78b4'
+__cnvs = '#b2df8a'
+__cdnvs = '#33a02c'
 
 
 
@@ -83,7 +89,7 @@ def bar_plot(ax,y):
     y_list = [(x/y[0][0]) for x in y[0]]
     xl.append(ind[0])
     rects1 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
-    patterns = ('','','////','','\\\\\\\\')
+    patterns = ('\\\\\\\\','////','////','','\\\\\\\\')
     for bar, pattern in zip(rects1,patterns):
         bar.set_hatch(pattern)
 
@@ -91,7 +97,7 @@ def bar_plot(ax,y):
     y_list = [(x/y[1][0]) for x in y[1]]
     xl.append(ind[0])
     rects2 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
-    patterns = ('','','////','','\\\\\\\\')
+    patterns = ('\\\\\\\\','////','////','','\\\\\\\\')
     for bar, pattern in zip(rects2,patterns):
         bar.set_hatch(pattern)
 
@@ -99,7 +105,7 @@ def bar_plot(ax,y):
     y_list = [(x/y[2][0]) for x in y[2]]
     xl.append(ind[0])
     rects3 = ax.bar(ind, tuple(y_list), width,yerr=None,linewidth=0.1, color =[__cmemcpy,__ctmpfs,__cpmfs, __cnvs,__cdnvs])
-    patterns = ('','','////','','\\\\\\\\')
+    patterns = ('\\\\\\\\','////','////','','\\\\\\\\')
     for bar, pattern in zip(rects3,patterns):
         bar.set_hatch(pattern)
 
@@ -108,15 +114,15 @@ def bar_plot(ax,y):
 
 
     # add some text for labels, title and axes tick
-    ax.set_ylabel('normalized snapshot time' , fontsize = '6')
-    ax.set_xlabel('# of ranks',fontsize=6)
+    ax.set_ylabel('snapshot time' , fontsize = '7')
+    ax.set_xlabel('number of ranks',fontsize='7',labelpad=1)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
 
     ax.set_xticks([x +(width*5/2) for x in xl])
     ax.set_xticklabels(('n=4', 'n=16','n=64'))
 
-    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='6')
+    ax.tick_params(axis='x',which='both',top='off',bottom=False,labelsize='7')
     ax.tick_params(axis='y',which='both',right='off',labelsize='6')
     ax.margins(0.1,0)
 
@@ -127,7 +133,7 @@ if __name__ == '__main__':
 
     pp = PdfPages('gtc-cm1-write.pdf')
 
-    fig, (ax) = plt.subplots(nrows=2, ncols=1,figsize=(2.7,2.5));
+    fig, (ax) = plt.subplots(nrows=2, ncols=1,figsize=(3.5,2.4));
 
 
     y=[]
@@ -169,8 +175,8 @@ if __name__ == '__main__':
     bar_plot(ax[1], y)
 
 
-    ax[0].set_title('gtc',fontsize='6')
-    ax[1].set_title('cm1',fontsize='6')
+    ax[0].set_title('GTC',fontsize='7')
+    ax[1].set_title('CM1',fontsize='7')
 
     plt.legend( (legend_l[0][0], legend_l[0][1], legend_l[0][2],
                  legend_l[0][3],
@@ -178,9 +184,9 @@ if __name__ == '__main__':
                  ),
                 ('memcpy', 'tmpfs', 'pmfs', 'nvs','nvs+delta'),
                 #('memcpy', 'tmpfs', 'pmfs', 'nvs'),
-                fontsize='6',ncol=2,bbox_to_anchor=(.75, 2.75))
+                fontsize='7',ncol=2,bbox_to_anchor=(.78, 2.7)).get_frame().set_linewidth(0.1)
 
-    plt.tight_layout(h_pad=0)
+    plt.tight_layout(rect = [0.0,-0.05,1.0,1.03],h_pad=0.5)
     #plt.subplots_adjust(top=0.98, bottom=0.18)
     pp.savefig(figure=fig)
     pp.close()
