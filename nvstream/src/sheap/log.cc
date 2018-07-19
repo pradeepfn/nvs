@@ -17,8 +17,16 @@ namespace nvs{
         pmem_drain();
         //commit flag write
         pmem_memcpy_nodrain(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
+
+        //We have to fix this properly. Remove commit flag and persist head and tail values
+        pmem_memcpy_nodrain(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
+
         pmem_drain();
         write_offset += WORD_LENGTH;
+        struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
+        pmem_memcpy_nodrain(&hdr->tail,&write_offset ,sizeof(uint64_t));
+        pmem_drain();
+        LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
     }
 
 
@@ -66,7 +74,8 @@ namespace nvs{
 		this->start_offset = sizeof(struct lhdr_t);
 		this->end_offset = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
-		this->write_offset = this->start_offset; //TODO
+
+		this->write_offset = hdr->tail; //TODO
 		/* warm up - map the physical pages */
 
 		uint64_t k = start_offset;
