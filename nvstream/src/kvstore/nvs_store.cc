@@ -97,6 +97,7 @@ namespace nvs{
             uint64_t total_size=0;
             struct lehdr_t l_entry;// stack variable
 
+			LOG(debug) << "Object put : " + key ;
             std::map<std::string, Object *>::iterator it;
             // first traverse the map and find the key object
             if((it = objectMap.find(key)) != objectMap.end()){

@@ -62,10 +62,11 @@ namespace nvs{
 			LOG(error) << "wrong magic number";
 			exit(1);
 		}
+		// walk the log/ store the write-offset in the log header
 		this->start_offset = sizeof(struct lhdr_t);
 		this->end_offset = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
-		this->write_offset = -1; //TODO
+		this->write_offset = this->start_offset; //TODO
 		/* warm up - map the physical pages */
 
 		uint64_t k = start_offset;

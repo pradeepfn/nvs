@@ -20,12 +20,12 @@ set (NVS_VERSION_MINOR 3)
 set(CMAKE_BUILD_TYPE Debug)
 
 #compiler flags
-set(CMAKE_CXX_FLAGS "-g -std=c++11 -Wno-write-strings")
+set(CMAKE_CXX_FLAGS "-fpic -g -std=c++11 -Wno-write-strings")
 
 include_directories("${PROJECT_BINARY_DIR}")
 
 OPTION(FILE_STORE "enable file based checkpoint" OFF)
-OPTION(NULL_STORE "enable no checkpoint" ON)
+OPTION(NULL_STORE "enable no-checkpoint" OFF)
 OPTION(DELTA_STORE "enable delta" OFF)
 OPTION(MEMCPY "enable memcpy" OFF)
 OPTION(PMFS "using PMFS" OFF)
@@ -67,7 +67,7 @@ IF(MEMCPY)
 ENDIF(MEMCPY)
 
 IF(NULL_STORE)
- add_definitions(-D_NULLS_TORE)
+ add_definitions(-D_NULL_STORE)
  MESSAGE("no checkpoints")
 ENDIF(NULL_STORE)
 
