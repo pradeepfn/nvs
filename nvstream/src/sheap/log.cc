@@ -238,6 +238,7 @@ namespace nvs{
 
         //lock
         uint64_t data_offset = start_offset;
+        LOG(debug)<< "start offset : " << std::to_string(start_offset) << " write_offset : " << std::to_string(write_offset);
 
         while(data_offset < write_offset){
 
