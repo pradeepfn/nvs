@@ -46,11 +46,13 @@ namespace nvs{
 		struct lhdr_t hdr;
 		hdr.magic_number = MAGIC_NUMBER;
 		hdr.len = this->mapped_len;
+		
 
 		this->start_offset = sizeof(struct lhdr_t);
 		this->end_offset = this->mapped_len - 1;
 		this->write_offset = this->start_offset;
-
+		
+		hdr.tail = this->write_offset;
 		pmem_memcpy_persist(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
 
 		uint64_t k = this->start_offset;
@@ -74,8 +76,9 @@ namespace nvs{
 		this->start_offset = sizeof(struct lhdr_t);
 		this->end_offset = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
-
+		LOG(debug)<< "write offset of the log" << std::to_string(this->write_offset) ;
 		this->write_offset = hdr->tail; //TODO
+
 		/* warm up - map the physical pages */
 
 		uint64_t k = start_offset;
@@ -248,6 +251,14 @@ namespace nvs{
         //lock
         uint64_t data_offset = start_offset;
         LOG(debug)<< "start offset : " << std::to_string(start_offset) << " write_offset : " << std::to_string(write_offset);
+		 //revisit this logic, done in hurr during unity hackathon
+		struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
+		LOG(debug) << "loaded write_offset from the persistent file" << std::to_string(hdr->tail);
+		write_offset = hdr->tail;
+
+		if(data_offset >= write_offset){
+			return ID_NOT_FOUND;
+		}
 
         while(data_offset < write_offset){
 
