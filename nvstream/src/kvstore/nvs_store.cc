@@ -93,6 +93,7 @@ namespace nvs{
      */
     uint64_t NVSStore::put(std::string key, uint64_t version)
     {
+			LOG(debug) << "Object put : " + key ;
             struct iovec *iovp, *next_iovp;
             uint64_t total_size=0;
             struct lehdr_t l_entry;// stack variable
@@ -121,6 +122,14 @@ namespace nvs{
                 iovp[1].iov_base = obj->getPtr();
                 iovp[1].iov_len = obj->getSize();
                 total_size = obj->getSize() + sizeof(l_entry);
+
+				//debug - lets print this out
+				for(int i=0; i < 10; i++) {
+					printf("%d: %f\n", i, ((double *)obj->getPtr())[i]);
+				}
+
+				fflush(stdout);
+				fflush(stderr);
 
                 if(this->log->appendv(iovp,iovcnt)!= NO_ERROR){
                     LOG(fatal) << "Store: append failed";
@@ -246,7 +255,7 @@ namespace nvs{
     static int
     process_chunks(const void *buf, size_t len, void *arg)
     {
-
+		LOG(debug) << "starting log chunk processing";
         // getting result from the callback -- walkentry structure
         struct walkentry *wentry = (struct walkentry *) arg;
         wentry->err = ID_NOT_FOUND;
@@ -256,6 +265,7 @@ namespace nvs{
         if(hdr->type == HdrType::single){
             char *data = (char *)buf + sizeof(struct lehdr_t);
             if(!strncmp(hdr->kname, wentry->key,KEY_LEN) && hdr->version == wentry->version){
+				LOG(debug) <<"processing chunk, name : " << std::string(hdr->kname) << "length : " << hdr->len;
                 wentry->datap = data;
                 wentry->len = hdr->len;
                 wentry->err = NO_ERROR;
@@ -267,6 +277,7 @@ namespace nvs{
             }
 
         }else if(hdr->type == HdrType::multiple){
+			LOG(debug) << "processing batch chunk";
             /* inner data packet starts after the outer header */
             char *i_buf = (char *)buf + sizeof(struct lehdr_t);
 
@@ -306,12 +317,19 @@ namespace nvs{
      */
     ErrorCode NVSStore::get(std::string key, uint64_t version, void *obj_addr)
     {
+		LOG(debug) << "fetching object with, name : " << key << "version : "<<std::to_string(version);
         struct walkentry wentry;
         wentry.version = version;
-        //wentry.start_offset = 0;
+        wentry.start_offset = 0;
         snprintf(wentry.key,KEY_LEN,"%s",key.c_str());
 
-        this->log->walk(process_chunks, &wentry);
+		LOG(debug) << "starting log walk";
+        //this->log->walk(process_chunks, &wentry);
+		if(this->log->walk(process_chunks, &wentry)!=NO_ERROR){
+	        return ID_NOT_FOUND;
+		}
+
+
 
         if(wentry.err != NO_ERROR){
             LOG(debug) << "Object not found : " + key + " , " + std::to_string(version);
@@ -319,7 +337,13 @@ namespace nvs{
         }
 
         //*obj_addr = wentry.datap;
+		LOG(debug)<< "copying object of length :" << wentry.len;
         memcpy(obj_addr,wentry.datap,wentry.len);
+
+
+
+
+		LOG(debug)<< "object found, returning..";
         return NO_ERROR;
 
     }

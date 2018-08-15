@@ -32,6 +32,8 @@ struct lhdr_t{
 
     uint64_t magic_number;
     uint64_t len;
+    uint64_t head; // metadata for persistent queue
+    uint64_t tail;
     // locking
 
 };
