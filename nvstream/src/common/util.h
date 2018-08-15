@@ -65,6 +65,17 @@ static long disable_protection(void *page_start_addr, size_t aligned_size) {
 }
 
 
+static void gdb_attach()
+{
+	    int i = 0;
+	    char hostname[256];
+	    gethostname(hostname, sizeof(hostname));
+	    printf("PID %d on %s ready for attach\n", getpid(), hostname);
+	    fflush(stdout);
+	    while (0 == i)
+	        sleep(5);
+}
+
 static int
 affinity_set(int cpu)
 {
