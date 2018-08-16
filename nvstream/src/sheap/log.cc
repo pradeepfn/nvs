@@ -77,21 +77,9 @@ namespace nvs{
 		this->end_offset = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
 		LOG(debug)<< "write offset of the log" << std::to_string(this->write_offset) ;
-		this->write_offset = hdr->tail; //TODO
+		this->write_offset = hdr->tail;
 
-		/* warm up - map the physical pages */
-
-		uint64_t k = start_offset;
-		while (k < end_offset) {
-			pmemaddr[k] = 0;
-			k += 4096;
-		}
-
-		k = this->start_offset;
-		while (k < this->end_offset) {
-			this->pmemaddr[k] = 0;
-			k += 4096;
-		}
+		// TODO: use huge pages
 
 	} else {
 		LOG(error) << "map segment : logPath, log_id " + logPath + " , " + std::to_string(log_id) ;
@@ -248,12 +236,12 @@ namespace nvs{
 
     ErrorCode Log::walk( int (*process_chunk)(const void *buf, size_t len, void *arg), void *arg) {
 
-        //lock
+        //TODO:lock
         uint64_t data_offset = start_offset;
         LOG(debug)<< "start offset : " << std::to_string(start_offset) << " write_offset : " << std::to_string(write_offset);
-		 //revisit this logic, done in hurr during unity hackathon
+		 //TODO:revisit this logic, done in hurr during unity hackathon
 		struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-		LOG(debug) << "loaded write_offset from the persistent file" << std::to_string(hdr->tail);
+		LOG(debug) << "loaded write_offset from the persistent file " << std::to_string(hdr->tail);
 		write_offset = hdr->tail;
 
 		if(data_offset >= write_offset){
@@ -272,7 +260,7 @@ namespace nvs{
                              WORD_LENGTH);  // commit flag length
 
         }
-        //unlock
+        //TODO:unlock
         return NO_ERROR;
 
     }

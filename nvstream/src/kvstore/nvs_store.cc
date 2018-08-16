@@ -123,11 +123,6 @@ namespace nvs{
                 iovp[1].iov_len = obj->getSize();
                 total_size = obj->getSize() + sizeof(l_entry);
 
-				//debug - lets print this out
-				for(int i=0; i < 10; i++) {
-					printf("%d: %f\n", i, ((double *)obj->getPtr())[i]);
-				}
-
 				fflush(stdout);
 				fflush(stderr);
 
@@ -260,23 +255,23 @@ namespace nvs{
         struct walkentry *wentry = (struct walkentry *) arg;
         wentry->err = ID_NOT_FOUND;
 
-        struct lehdr_t *hdr = (struct lehdr_t *) buf;
+        struct lehdr_t *lehdr = (struct lehdr_t *) buf;
 
-        if(hdr->type == HdrType::single){
+        if(lehdr->type == HdrType::single){
             char *data = (char *)buf + sizeof(struct lehdr_t);
-            if(!strncmp(hdr->kname, wentry->key,KEY_LEN) && hdr->version == wentry->version){
-				LOG(debug) <<"processing chunk, name : " << std::string(hdr->kname) << "length : " << hdr->len;
+            if(!strncmp(lehdr->kname, wentry->key,KEY_LEN) && lehdr->version == wentry->version){
+				LOG(debug) <<"processing chunk, name : " << std::string(lehdr->kname) << "length : " << lehdr->len;
                 wentry->datap = data;
-                wentry->len = hdr->len;
+                wentry->len = lehdr->len;
                 wentry->err = NO_ERROR;
                 return 0;
             }else{
                 LOG(debug) << "looking for : " + std::string(wentry->key) + " , " +  std::to_string(wentry->version) +
-                              "   current entry : " + std::string(hdr->kname) + " , " + std::to_string(hdr->version);
+                              "   current entry : " + std::string(lehdr->kname) + " , " + std::to_string(lehdr->version);
                 return 1; // process next chunk
             }
 
-        }else if(hdr->type == HdrType::multiple){
+        }else if(lehdr->type == HdrType::multiple){
 			LOG(debug) << "processing batch chunk";
             /* inner data packet starts after the outer header */
             char *i_buf = (char *)buf + sizeof(struct lehdr_t);
@@ -287,7 +282,7 @@ namespace nvs{
             char *i_data = (char *)i_buf + sizeof(struct lehdr_t);
             uint64_t i_index = sizeof(struct lehdr_t) + i_hdr->len;
 
-            while(i_index < hdr->len){
+            while(i_index < lehdr->len){
                 if(!strncmp(i_hdr->kname,wentry->key, KEY_LEN) && i_hdr->version == wentry->version){
                     wentry->datap = i_data;
                     wentry->len = i_hdr->len;
@@ -304,7 +299,7 @@ namespace nvs{
             LOG(debug) << "variable not found in chunk:multiple";
             return 1;
 
-        }else if(hdr->type == HdrType::delta){
+        }else if(lehdr->type == HdrType::delta){
             LOG(error) << "not supported";
         }else{
             LOG(error) << "wrong chunk header type";
