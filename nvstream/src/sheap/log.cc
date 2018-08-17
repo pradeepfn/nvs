@@ -28,7 +28,8 @@ namespace nvs{
         pmem_drain();
         write_offset += WORD_LENGTH;
         struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-        pmem_memcpy_nodrain(&hdr->tail,&write_offset ,sizeof(uint64_t));
+        //TODO: convert to 64 bit atomic write + clflush
+        pmem_memcpy_nodrain((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
         pmem_drain();
         LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
     }
