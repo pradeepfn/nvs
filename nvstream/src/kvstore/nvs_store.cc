@@ -63,6 +63,9 @@ namespace nvs{
         return NO_ERROR;
     }
 
+
+
+
     ErrorCode NVSStore::free_obj(void *obj_addr){
     		std::map<uint64_t, std::string>::iterator it1;
     		std::map<std::string, Object *>::iterator it2;

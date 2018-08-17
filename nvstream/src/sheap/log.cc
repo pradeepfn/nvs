@@ -3,6 +3,10 @@
 #include "log.h"
 #include "libpmem.h"
 
+
+#define NVS_VSHM "nvs_boost_shm"
+#define PLOG_MTX "plog_mtx"
+
 namespace nvs{
 
 
@@ -31,8 +35,11 @@ namespace nvs{
 
 
     Log::Log(std::string logPath, uint64_t log_size, LogId log_id) :
-		logPath(logPath), log_id(log_id),log_size(log_size) {
-
+		logPath(logPath), log_id(log_id),log_size(log_size),managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
+    {
+        std::string plog_mtx = PLOG_MTX + std::to_string(log_id);
+        this->mtx = managed_shm.find_or_construct<boost::interprocess::interprocess_mutex>(
+                plog_mtx.c_str())();
 	int is_pmem;
 	LOG(debug) << "log constructor : logPath , log_size, log_id" + this->logPath + " , " +
 					 std::to_string(log_size) + " , " + std::to_string(log_id);
@@ -53,6 +60,7 @@ namespace nvs{
 		this->write_offset = this->start_offset;
 		
 		hdr.tail = this->write_offset;
+        hdr.head = sizeof(struct lhdr_t);
 		pmem_memcpy_persist(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
 
 		uint64_t k = this->start_offset;
@@ -72,12 +80,14 @@ namespace nvs{
 			LOG(error) << "wrong magic number";
 			exit(1);
 		}
-		// walk the log/ store the write-offset in the log header
-		this->start_offset = sizeof(struct lhdr_t);
+
 		this->end_offset = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
-		LOG(debug)<< "write offset of the log" << std::to_string(this->write_offset) ;
+
+        this->start_offset = hdr->head;
 		this->write_offset = hdr->tail;
+        LOG(debug)<< "head : " << std::to_string(this->start_offset) << "tail : "
+                  << std::to_string(this->write_offset)<< "of persistent log";
 
 		// TODO: use huge pages
 
@@ -216,7 +226,6 @@ namespace nvs{
 					write_offset +=iovpp[i][j].iov_len;
 				}
             }
-            //TODO:
             persist();
     #else
             for(int i=0; i < iovpcnt ; i++){
@@ -236,31 +245,31 @@ namespace nvs{
 
     ErrorCode Log::walk( int (*process_chunk)(const void *buf, size_t len, void *arg), void *arg) {
 
-        //TODO:lock
-        uint64_t data_offset = start_offset;
-        LOG(debug)<< "start offset : " << std::to_string(start_offset) << " write_offset : " << std::to_string(write_offset);
-		 //TODO:revisit this logic, done in hurr during unity hackathon
+        //we don't need any locking. head/tail are 64bit values
 		struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-		LOG(debug) << "loaded write_offset from the persistent file " << std::to_string(hdr->tail);
-		write_offset = hdr->tail;
+        uint64_t tail = hdr->tail;
+        uint64_t head = hdr->head;
 
-		if(data_offset >= write_offset){
+		LOG(debug) << "loaded head : " << std::to_string(head) <<" tail : "
+                   << std::to_string(tail) << "from persistent log";
+
+        uint64_t tmp_offset = head;
+		if(tmp_offset >= tail){
 			return ID_NOT_FOUND;
 		}
 
-        while(data_offset < write_offset){
+        while(tmp_offset < tail){
 
-            if(!(*process_chunk)(&pmemaddr[data_offset], ((struct lehdr_t *) (pmemaddr+data_offset))->len, arg)){
+            if(!(*process_chunk)(&pmemaddr[tmp_offset], ((struct lehdr_t *) (pmemaddr+tmp_offset))->len, arg)){
                 break;
             }
 
             //next log header
-            data_offset += ( sizeof(struct lehdr_t) + // current header length
-                            ((struct lehdr_t *) (pmemaddr+data_offset))->len + // data lengh
+            tmp_offset += ( sizeof(struct lehdr_t) + // current header length
+                            ((struct lehdr_t *) (pmemaddr+tmp_offset))->len + // data lengh
                              WORD_LENGTH);  // commit flag length
 
         }
-        //TODO:unlock
         return NO_ERROR;
 
     }

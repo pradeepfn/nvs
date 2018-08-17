@@ -1,7 +1,3 @@
-//
-// Created by pradeep on 10/24/17.
-//
-
 #include <libpmemobj/base.h>
 #include <libpmemobj.h>
 #include <nvs/log.h>
@@ -10,14 +6,18 @@
 #include "root.h"
 #include "layout.h"
 
+
+#define NVS_VSHM "nvs_boost_shm"
+#define ROOT_MTX "root_mtx"
+
 namespace nvs{
 
 
     RootHeap::RootHeap(std::string pathname)
-            :root_file_path(pathname),managed_shm(boost::interprocess::open_or_create, "shm", 1024)
+            :root_file_path(pathname),managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
     {
-        //boost::interprocess::managed_shared_memory managed_shm{boost::interprocess::open_or_create, "shm", 1024};
-        this->mtx = managed_shm.find_or_construct<boost::interprocess::interprocess_mutex>("mtx")();
+
+        this->mtx = managed_shm.find_or_construct<boost::interprocess::interprocess_mutex>(ROOT_MTX)();
         this->mtx->lock();
         this->mtx->unlock();
         if(this->mtx == NULL){

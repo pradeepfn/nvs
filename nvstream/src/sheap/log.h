@@ -8,13 +8,15 @@
 #include <stddef.h>
 #include <libpmemlog.h>
 #include <nvs/global_ptr.h>
+#include <boost/interprocess/sync/interprocess_mutex.hpp>
+#include <boost/interprocess/managed_shared_memory.hpp>
 #include "nvs/errorCode.h"
 #include "nvs/log_id.h"
 
 
 
 #define WORD_LENGTH 8
-#define COMMIT_FLAG -123456
+#define COMMIT_FLAG  123456
 #define MAGIC_NUMBER 555555
 
 #define KEY_LEN 20
@@ -30,16 +32,15 @@ enum HdrType {
 /* log header at the start of the log*/
 struct lhdr_t{
 
-    uint64_t magic_number;
+    uint64_t magic_number;  // error detection
     uint64_t len;
-    uint64_t head; // metadata for persistent queue
-    uint64_t tail;
-    // locking
+    volatile uint64_t head; // consume stars from head
+    volatile uint64_t tail; // producer appends to tail
 
 };
 
 
-/* TODO: redundant structure declared in object.h */
+
 struct ledelta_t{
     uint64_t start_offset;
     uint64_t len;
@@ -116,6 +117,9 @@ namespace  nvs{
         uint64_t end_offset;
         uint64_t write_offset;
         RootHeap *rootHeap;
+
+        boost::interprocess::managed_shared_memory managed_shm;
+        boost::interprocess::interprocess_mutex *mtx; // per log mutex
 
     };
 
