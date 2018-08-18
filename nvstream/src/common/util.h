@@ -7,6 +7,9 @@
 #include <signal.h>
 #include <sys/mman.h>
 
+#include <boost/asio/io_service.hpp>
+#include <boost/thread/thread.hpp>
+
 #include "nvs/log.h"
 
 namespace nvs {
@@ -142,8 +145,41 @@ atomic_add(int i, uint64_t *v)
 
 
 
+typedef struct threadpool_t_{
 
+    void init(int n_threads){
+        for(int i=0; i < n_threads; i++){
+            thread_g.create_thread(boost::bind(&boost::asio::io_service::run,&io_srv));
+        }
+    }
 
+    template<class F>
+    void submit(F f){
+        io_srv.post(f);
+    }
 
+    void stop(){
+        thread_g.join_all();
+        io_srv.stop();
+    }
+
+private:
+    boost::asio::io_service io_srv;
+    boost::thread_group thread_g;
+
+} threadpool_t;
+
+/* reading some of the configuration params file nvs.config */
+typedef struct nvs_conig_t_{
+    uint64_t plog_size;
+    int is_compactor;
+    int ncompactor_threads;
+
+    // override the default configs
+    void read_configs(){
+
+    }
+
+} nvs_config_t;
 
 #endif //NVSTREAM_UTIL_H

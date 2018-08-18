@@ -4,13 +4,14 @@
 #include "nvs/store.h"
 #include "constants.h"
 #include "object.h"
+#include "common/util.h"
 
 #ifndef NVS_STORE_H
 #define NVS_STORE_H
 
 
 #define LOG_SIZE 100 * 1024 * 1024LLU // 2 GB of log space per process
-
+#define NCOMPACTOR_THREADS 2
 namespace nvs {
 
     class NVSStore : public Store {
@@ -20,8 +21,10 @@ namespace nvs {
         ProcessId pid;
         MemoryManager *mm; // memory manager of the metadata heap
         Log *log; // process local log
+        nvs_config_t *config;
         std::map<std::string, Object *> objectMap; // runtime representation of volatile object
         std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
+        threadpool_t *log_compactor;
 
     protected:
     public:
@@ -48,6 +51,23 @@ namespace nvs {
         void stats();
 
     };
+
+/* free up log space from the persistent log */
+    typedef struct log_compactor_t_{
+
+        void *pmem;
+
+
+       void compact(){
+
+       }
+
+       void  operator ()(){
+           this->compact();
+           printf("log compactor ran\n");
+       }
+    }log_compactor_t;
+
 
 }
 

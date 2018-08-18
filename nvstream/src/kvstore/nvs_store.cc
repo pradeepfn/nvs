@@ -20,6 +20,8 @@ namespace nvs{
         std::string heapId =  storeId.substr(0,storeId.find(delimeter));
         std::string logIdStr = storeId.substr(storeId.find(delimeter) + delimeter.length());
         logId = std::stoi(logIdStr);
+        log_compactor = new threadpool_t();
+        log_compactor->init(NCOMPACTOR_THREADS);
 
         MemoryManager *mm = MemoryManager::GetInstance();
         ret = mm->FindLog(logId, &(this->log));
