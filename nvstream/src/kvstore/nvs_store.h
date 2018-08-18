@@ -2,7 +2,6 @@
 #include <nvs/memory_manager.h>
 #include <map>
 #include "nvs/store.h"
-#include "key.h"
 #include "constants.h"
 #include "object.h"
 
@@ -21,8 +20,6 @@ namespace nvs {
         ProcessId pid;
         MemoryManager *mm; // memory manager of the metadata heap
         Log *log; // process local log
-        Key *findKey(std::string key);
-        objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap; // runtime representation of volatile object
         std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
 

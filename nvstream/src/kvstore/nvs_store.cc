@@ -378,9 +378,6 @@ namespace nvs{
         return NO_ERROR;
     }
 
-    Key * NVSStore::findKey(std::string key) {
-
-    }
 
 
     void NVSStore::stats() {

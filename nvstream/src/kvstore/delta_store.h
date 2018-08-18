@@ -10,7 +10,6 @@
 #include <csignal>
 
 #include "nvs/store.h"
-#include "key.h"
 #include "constants.h"
 #include "object.h"
 #include "common/util.h"
@@ -30,8 +29,6 @@ namespace nvs {
         ProcessId pid;
         MemoryManager *mm; // memory manager of the metadata heap
         Log *log; // process local log
-        Key *findKey(std::string key);
-        objkey_t *lptr(uint64_t offset);
         std::map<std::string, Object *> objectMap;
         std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
 

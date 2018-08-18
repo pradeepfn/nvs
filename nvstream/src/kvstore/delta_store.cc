@@ -393,10 +393,6 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
 
     }
 
-    Key * DeltaStore::findKey(std::string key) {
-
-    }
-
 
     void DeltaStore::stats() {
 
