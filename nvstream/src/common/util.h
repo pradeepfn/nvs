@@ -9,6 +9,8 @@
 
 #include <boost/asio/io_service.hpp>
 #include <boost/thread/thread.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 
 #include "nvs/log.h"
 
@@ -63,6 +65,59 @@ static long disable_protection(void *page_start_addr, size_t aligned_size) {
         }
         return aligned_size;
     }
+
+
+
+
+
+
+
+    typedef struct threadpool_t_{
+
+        void init(int n_threads){
+            for(int i=0; i < n_threads; i++){
+                thread_g.create_thread(boost::bind(&boost::asio::io_service::run,&io_srv));
+            }
+        }
+
+        template<class F>
+        void submit(F f){
+            io_srv.post(f);
+        }
+
+        void stop(){
+            thread_g.join_all();
+            io_srv.stop();
+        }
+
+    private:
+        boost::asio::io_service io_srv;
+        boost::thread_group thread_g;
+
+    } threadpool_t;
+
+/* reading some of the configuration params file nvs.config */
+typedef struct nvs_conig_t_{
+    uint64_t plog_size;
+    int is_compactor;
+    int ncompactor_threads;
+
+    // override the default configs
+    void read_configs(){
+        boost::property_tree::ptree pt;
+        boost::property_tree::ini_parser::read_ini("config.ini",pt);
+
+        plog_size = pt.get<uint64_t>("nvs.plog_size");
+        is_compactor = pt.get<int>("nvs.is_compactor");
+        ncompactor_threads = pt.get<int>("nvs.ncompactor_threads");
+
+        LOG(SeverityLevel::debug) << "Persistent log size : " << std::to_string(plog_size);
+        LOG(SeverityLevel::debug) << "Log compactor enabled ? :"<< std::to_string(is_compactor);
+        LOG(SeverityLevel::debug) << "Number of compactor threads : " << std::to_string(ncompactor_threads);
+
+    }
+
+} nvs_config_t;
 
 
 }
@@ -141,45 +196,4 @@ atomic_add(int i, uint64_t *v)
     :"+m" (v)
     :"ir" (i));
 }
-
-
-
-
-typedef struct threadpool_t_{
-
-    void init(int n_threads){
-        for(int i=0; i < n_threads; i++){
-            thread_g.create_thread(boost::bind(&boost::asio::io_service::run,&io_srv));
-        }
-    }
-
-    template<class F>
-    void submit(F f){
-        io_srv.post(f);
-    }
-
-    void stop(){
-        thread_g.join_all();
-        io_srv.stop();
-    }
-
-private:
-    boost::asio::io_service io_srv;
-    boost::thread_group thread_g;
-
-} threadpool_t;
-
-/* reading some of the configuration params file nvs.config */
-typedef struct nvs_conig_t_{
-    uint64_t plog_size;
-    int is_compactor;
-    int ncompactor_threads;
-
-    // override the default configs
-    void read_configs(){
-
-    }
-
-} nvs_config_t;
-
 #endif //NVSTREAM_UTIL_H

@@ -19,14 +19,22 @@ namespace nvs{
         std::string delimeter = "/";
         std::string heapId =  storeId.substr(0,storeId.find(delimeter));
         std::string logIdStr = storeId.substr(storeId.find(delimeter) + delimeter.length());
+
+        /* populate config context with defaults */
+        this->config = new nvs_config_t();
+        this->config->plog_size = PLOG_SIZE;
+        this->config->is_compactor= IS_COMPACTOR;
+        this->config->ncompactor_threads = NCOMPACTOR_THREADS;
+        /* override configs with config.ini */
+        this->config->read_configs();
+
         logId = std::stoi(logIdStr);
-        log_compactor = new threadpool_t();
-        log_compactor->init(NCOMPACTOR_THREADS);
+
 
         MemoryManager *mm = MemoryManager::GetInstance();
         ret = mm->FindLog(logId, &(this->log));
         if(ret == ID_NOT_FOUND){
-            ret = mm->CreateLog(logId, LOG_SIZE);
+            ret = mm->CreateLog(logId, this->config->plog_size);
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error creating log";
                 exit(1);

@@ -10,6 +10,7 @@
 #include <nvs/global_ptr.h>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
+#include <common/util.h>
 #include "nvs/errorCode.h"
 #include "nvs/log_id.h"
 
@@ -24,7 +25,8 @@
 enum HdrType {
     single =0,
     multiple,
-    delta
+    delta,
+
 };
 
 
@@ -34,6 +36,7 @@ struct lhdr_t{
 
     uint64_t magic_number;  // error detection
     uint64_t len;
+    volatile uint64_t wrap_end; // wrap around start here.
     volatile uint64_t head; // consume stars from head
     volatile uint64_t tail; // producer appends to tail
 
@@ -93,8 +96,6 @@ namespace  nvs{
         Log(std::string logpath,uint64_t log_size,LogId log_id);
         ~Log();
 
-        ErrorCode append (char *data,size_t size);
-        //TODO : get rid of pmem struct from the interface
         ErrorCode appendv(struct iovec *iovp, int iovcnt);
         ErrorCode appendmv(struct iovec **iovpp, int *iovcnt, int iovpcnt);
         ErrorCode walk(int (*process_chunk)(const void *buf, size_t len, void *arg),void *arg);
@@ -111,15 +112,23 @@ namespace  nvs{
         std::string logPath;
         char *pmemaddr;
         size_t mapped_len;
+        struct lhdr_t *pmem_hdr;
 
         size_t log_size;
-        uint64_t start_offset;
-        uint64_t end_offset;
+        uint64_t start_offset; /* local volatile copy of pmem queue head */
+        uint64_t log_end;
         uint64_t write_offset;
         RootHeap *rootHeap;
 
         boost::interprocess::managed_shared_memory managed_shm;
         boost::interprocess::interprocess_mutex *mtx; // per log mutex
+        threadpool_t *log_compactor;
+
+        void (*compactor)(); // function pointer to the compactor logic
+
+
+        void compact(uint64_t,uint64_t,uint64_t);
+        int next_append(uint64_t,uint64_t *);
 
     };
 

@@ -82,7 +82,7 @@ namespace nvs{
 			exit(1);
 		}
 
-		this->end_offset = this->mapped_len - 1;
+		this->log_end = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
 
         this->start_offset = hdr->head;
@@ -112,68 +112,79 @@ namespace nvs{
 
     }
 
+    uint64_t append_threshold(uint64_t head, uint64_t tail){
 
+    }
 
-    ErrorCode Log::append(char *data, size_t size) {
-
-        ErrorCode errorCode = NO_ERROR;
-        LOG(trace) << "data " + std::to_string((long)data) +
-                    "size " + std::to_string(size);
-        //get the lock
-        if(write_offset >= end_offset){
-            LOG(fatal) << "no space in log";
-            errorCode =  NOT_ENOUGH_SPACE;
-            exit(1); // we dont want this error for now
-            //goto end;
+    /* handles log compaction */
+    void Log::compact(uint64_t append_len, uint64_t head, uint64_t tail){
+        if(append_len > critical_len){ // can't proceed, reclaim log
+            this->mtx->unlock();
+            this->log_compactor->submit(this->compactor());
+        }else if(append_len > append_threshold(head,tail)){
+            //TODO: check if we already submitted a log compaction request
+            this->log_compactor->submit(this->compactor());
         }
-        if(size > (end_offset-write_offset)){
-            LOG(fatal) << "not enough space on log";
-            errorCode = NOT_ENOUGH_SPACE;
-            exit(1); // we dont want this error for now
-            //goto end;
+    }
+
+
+
+    int Log::next_append(uint64_t apnd_size,uint64_t *apnd_offset){
+        // acquire lock before calling this method
+        uint64_t vhead = this->pmem_hdr->head;
+        uint64_t vtail = this->pmem_hdr->tail;
+        uint64_t vwrap_end = this->pmem_hdr->wrap_end;
+
+        if(vtail > vhead) {
+            if (apnd_size <= (log_end - vtail)){ //fast path
+                *apnd_offset = vtail + 1;
+                return NO_ERROR;
+            }else if(vhead >= apnd_size  && apnd_size <= vhead){ // wrap around
+
+            }else
+                goto truncate;
+
+        }else if(vtail < vhead){
+            if(apnd_size < (vhead-vtail)) { //fast path
+                *apnd_offset = vtail + 1;
+                return NO_ERROR;
+            }else
+                goto truncate;
+        }else{
+            LOG(debug) << "wrong execution path";
+            exit(1);
         }
-        pmem_memcpy_nodrain(&pmemaddr[write_offset],data ,size);
-        persist(); // commit flag
 
-        end:
-            //unlock
-            return errorCode;
-
+        truncate:
+            LOG(debug) << "no space in log, truncate!";
+            return NOT_ENOUGH_SPACE;
     }
 
     ErrorCode Log::appendv(struct iovec *iovp, int iovcnt) {
         ErrorCode errorCode = NO_ERROR;
 
         uint64_t tot_cnt = 0;
-
-        //lock this log file
-        if(write_offset >= end_offset){
-            LOG(fatal) << "no space in log" << "write_offset : " << write_offset <<
-                        "end_offset :" << end_offset;
-            errorCode =  NOT_ENOUGH_SPACE;
-            exit(1); // we dont want this error for now
-            //goto end;
-        }
-
-        // feasibility check
-        for(int i = 0 ; i < iovcnt; i++){
+        for(int i = 0 ; i < iovcnt; i++){// feasibility check
             tot_cnt += iovp[i].iov_len;
         }
-        // commit flag
-        tot_cnt += WORD_LENGTH;
+        tot_cnt += WORD_LENGTH;// commit flag
 
-        if(tot_cnt > (end_offset-write_offset)){
-            LOG(fatal) << "not enough space on log";
-            errorCode = NOT_ENOUGH_SPACE;
-            exit(1); // we dont want this error for now
-            //goto end;
+        this->mtx->lock();
+
+        uint64_t apnd_offset;
+        int retries =0;
+        while(next_append(tot_cnt, &apnd_offset) == NOT_ENOUGH_SPACE){
+            if(retries > 1){
+                LOG(error) << "Error while sync-truncating log";
+            }
+            this->compactor();
         }
+
 #ifndef _MEMCPY
         for(int i = 0 ; i < iovcnt; i++) {
-            pmem_memcpy_nodrain(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
+            pmem_memcpy_nodrain(&pmemaddr[apnd_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
-        //TODO:
         persist();
 #else
         for(int i = 0 ; i < iovcnt; i++) {
@@ -183,7 +194,7 @@ namespace nvs{
         asm_mfence();
 #endif
         end:
-            //unlock
+            this->mtx->unlock();
             return errorCode;
 
     }
@@ -274,6 +285,9 @@ namespace nvs{
         return NO_ERROR;
 
     }
+
+
+
 
 }
 
