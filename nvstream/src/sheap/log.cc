@@ -41,7 +41,7 @@ namespace nvs{
         hdr.wrap_end = this->mapped_len -1;
 
 
-		this->log_end = this->mapped_len - 1;
+		this->log_end = this->mapped_len;
         this->log_start = sizeof(struct lhdr_t);
 
 		pmem_memcpy_persist(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
@@ -65,7 +65,7 @@ namespace nvs{
 			exit(1);
 		}
 
-		this->log_end = this->mapped_len - 1;
+		this->log_end = this->mapped_len;
         this->log_start = sizeof(struct lhdr_t);
 		assert(this->pmem_hdr->len == this->mapped_len);
 
@@ -116,11 +116,11 @@ namespace nvs{
         uint64_t vtail = this->pmem_hdr->tail;
 
         if (vtail >= vhead) {
-            if (apnd_size <= (log_end - vtail)) { //fast path
-                *apnd_offset = vtail + 1;
+            if (apnd_size <= (this->log_end - vtail)) { //fast path
+                *apnd_offset = vtail;
                 return NO_ERROR;
             } else if (apnd_size <= vhead) { // wrap around
-                this->pmem_hdr->wrap_end = vtail;
+                this->pmem_hdr->wrap_end = vtail-1;
                 //TODO: persist
                 *apnd_offset = this->log_start; //start appending from the start of log
                 return NO_ERROR;
@@ -128,8 +128,8 @@ namespace nvs{
                 goto truncate;
 
         } else if (vtail < vhead) {
-            if (apnd_size < (vhead - vtail)) { //fast path
-                *apnd_offset = vtail + 1;
+            if (apnd_size <= (vhead - vtail)) { //fast path
+                *apnd_offset = vtail;
                 return NO_ERROR;
             } else
                 goto truncate;
@@ -170,7 +170,7 @@ namespace nvs{
         //TODO: convert to 64 bit atomic write + clflush
         pmem_memcpy_nodrain((void *) &(this->pmem_hdr->tail), &apnd_offset, sizeof(uint64_t));
         pmem_drain();
-        LOG(debug) << "writeoffset/tail : " << std::to_string(this->pmem_hdr->tail);
+        LOG(debug) <<"head : " <<std::to_string(this->pmem_hdr->head) << " tail : " << std::to_string(this->pmem_hdr->tail);
 
 #else
         for(int i = 0 ; i < iovcnt; i++) {
@@ -206,6 +206,7 @@ namespace nvs{
                 exit(1);
             }
             this->compactor(this->pmemaddr);
+            retries++;
         }
 
 #ifndef _MEMCPY
@@ -219,7 +220,7 @@ namespace nvs{
         //TODO: convert to 64 bit atomic write + clflush
         pmem_memcpy_nodrain((void *) &(this->pmem_hdr->tail), &apnd_offset, sizeof(uint64_t));
         pmem_drain();
-        LOG(debug) << "writeoffset/tail : " << std::to_string(this->pmem_hdr->tail);
+        LOG(debug) <<"head : " <<std::to_string(this->pmem_hdr->head) << " tail : " << std::to_string(this->pmem_hdr->tail);
 #else
         for(int i=0; i < iovpcnt ; i++){
             for(int j = 0 ; j < iovcnt[i]; j++) {
@@ -238,31 +239,27 @@ namespace nvs{
 
     ErrorCode Log::walk( int (*process_chunk)(const void *buf, size_t len, void *arg), void *arg) {
 
+        this->mtx->lock();
         //we don't need any locking. head/tail are 64bit values
-		struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-        uint64_t tail = hdr->tail;
-        uint64_t head = hdr->head;
+        uint64_t vtail = this->pmem_hdr->tail;
+        uint64_t vhead = this->pmem_hdr->head;
+        uint64_t vwrap_end = this->pmem_hdr->wrap_end;
 
-		LOG(debug) << "loaded head : " << std::to_string(head) <<" tail : "
-                   << std::to_string(tail) << "from persistent log";
+		LOG(debug) << "loaded head : " << std::to_string(vhead) <<" tail : "
+                   << std::to_string(vtail) << " wrap-end : " << std::to_string(vwrap_end) << " from persistent log";
 
-        uint64_t tmp_offset = head;
-		if(tmp_offset >= tail){
-			return ID_NOT_FOUND;
-		}
+        uint64_t tmp_offset = vhead;
 
-        while(tmp_offset < tail){
+        while(tmp_offset != vtail){
 
             if(!(*process_chunk)(&pmemaddr[tmp_offset], ((struct lehdr_t *) (pmemaddr+tmp_offset))->len, arg)){
                 break;
             }
-
             //next log header
-            tmp_offset += ( sizeof(struct lehdr_t) + // current header length
-                            ((struct lehdr_t *) (pmemaddr+tmp_offset))->len + // data lengh
-                             WORD_LENGTH);  // commit flag length
+            tmp_offset = (tmp_offset + (sizeof(struct lehdr_t) + ((struct lehdr_t*)(pmemaddr+tmp_offset))->len))%vwrap_end;
 
         }
+        this->mtx->unlock();
         return NO_ERROR;
 
     }

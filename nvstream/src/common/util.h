@@ -99,11 +99,15 @@ typedef struct nvs_conig_t_{
     // override the default configs
     void read_configs(){
         boost::property_tree::ptree pt;
-        boost::property_tree::ini_parser::read_ini("config.ini",pt);
+        try {
+            boost::property_tree::ini_parser::read_ini("config.ini", pt);
 
-        plog_size = pt.get<uint64_t>("nvs.plog_size");
-        is_compactor = pt.get<int>("nvs.is_compactor");
-        ncompactor_threads = pt.get<int>("nvs.ncompactor_threads");
+            plog_size = pt.get<uint64_t>("nvs.plog_size");
+            is_compactor = pt.get<int>("nvs.is_compactor");
+            ncompactor_threads = pt.get<int>("nvs.ncompactor_threads");
+        }catch(boost::property_tree::ini_parser::ini_parser_error& e){
+            LOG(info) << "config.ini not found/ill-formatted, using defaults";
+        }
 
         LOG(SeverityLevel::debug) << "Persistent log size : " << std::to_string(plog_size);
         LOG(SeverityLevel::debug) << "Log compactor enabled ? :"<< std::to_string(is_compactor);

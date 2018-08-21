@@ -36,7 +36,7 @@ struct lhdr_t{
 
     uint64_t magic_number;  // error detection
     uint64_t len;
-    volatile uint64_t wrap_end; // wrap around start here.
+    volatile uint64_t wrap_end; // wrap around start here. This is the last written point in the log
     volatile uint64_t head; // consume stars from head
     volatile uint64_t tail; // producer appends to tail
 
@@ -117,7 +117,7 @@ namespace  nvs{
         size_t mapped_len;
         size_t log_size;
         uint64_t log_start;
-        uint64_t log_end;
+        uint64_t log_end;  // you cannot write to log end
         RootHeap *rootHeap;
 
         boost::interprocess::managed_shared_memory managed_shm;
