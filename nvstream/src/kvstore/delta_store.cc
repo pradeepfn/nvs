@@ -60,14 +60,14 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
         logId = std::stoi(logIdStr);
 
         MemoryManager *mm = MemoryManager::GetInstance();
-        ret = mm->FindLog(logId, &(this->log));
+        ret = mm->FindLog(logId, &(this->log), nullptr);
         if(ret == ID_NOT_FOUND){
-            ret = mm->CreateLog(logId, LOG_SIZE);
+            ret = mm->CreateLog(logId, LOG_SIZE, nullptr);
             if(ret != NO_ERROR){
                 LOG(fatal) << "DeltaStore: error creating log";
                 exit(1);
             }
-            ret = mm->FindLog(logId, &(this->log)); //TODO: this code block is useless.. remove it
+            ret = mm->FindLog(logId, &(this->log), nullptr); //TODO: this code block is useless.. remove it
             if(ret != NO_ERROR){
                 LOG(fatal) << "DeltaStore: error finding log";
                 exit(1);

@@ -32,14 +32,14 @@ namespace nvs{
 
 
         MemoryManager *mm = MemoryManager::GetInstance();
-        ret = mm->FindLog(logId, &(this->log));
+        ret = mm->FindLog(logId, &(this->log), &log_compactor);
         if(ret == ID_NOT_FOUND){
-            ret = mm->CreateLog(logId, this->config->plog_size);
+            ret = mm->CreateLog(logId, this->config->plog_size,&log_compactor);
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error creating log";
                 exit(1);
             }
-            ret = mm->FindLog(logId, &(this->log)); //TODO: this code block is useless.. remove it
+            ret = mm->FindLog(logId, &(this->log),&log_compactor); //TODO: this code block is useless.. remove it
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error finding log";
                 exit(1);
@@ -134,10 +134,6 @@ namespace nvs{
                 //data
                 iovp[1].iov_base = obj->getPtr();
                 iovp[1].iov_len = obj->getSize();
-                total_size = obj->getSize() + sizeof(l_entry);
-
-				fflush(stdout);
-				fflush(stderr);
 
                 if(this->log->appendv(iovp,iovcnt)!= NO_ERROR){
                     LOG(fatal) << "Store: append failed";

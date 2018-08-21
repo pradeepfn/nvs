@@ -66,12 +66,6 @@ static long disable_protection(void *page_start_addr, size_t aligned_size) {
         return aligned_size;
     }
 
-
-
-
-
-
-
     typedef struct threadpool_t_{
 
         void init(int n_threads){

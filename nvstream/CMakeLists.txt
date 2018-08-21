@@ -87,7 +87,7 @@ add_definitions(-DBOOST_LOG_DYN_LINK)
 #include directories
 include_directories(${PROJECT_SOURCE_DIR}/include) #public headers
 include_directories(${PROJECT_SOURCE_DIR}/src) #private headers
-include_directories(${PROJECT_SOURCE_DIR}/test) #test headers
+#include_directories(${PROJECT_SOURCE_DIR}/test) #test headers
 
 
 #
@@ -102,7 +102,7 @@ include_directories(${PROJECT_SOURCE_DIR}/third-party/gtest/include)
 
 
 add_subdirectory(src)
-add_subdirectory(test)
+#add_subdirectory(test)
 #add_subdirectory(example)
 add_subdirectory(include)
 

@@ -38,10 +38,10 @@ namespace nvs {
         void *GlobalToLocal(GlobalPtr ptr);
         GlobalPtr LocalToGlobal(void *addr);
 
-        ErrorCode CreateLog(LogId id, size_t shelf_size);
+        ErrorCode CreateLog(LogId id, size_t shelf_size,int (*compactor)(volatile char *));
         ErrorCode DestroyLog(LogId id);
-        ErrorCode FindLog(LogId id, Log **log);
-        Log *FindLog(LogId id);
+        ErrorCode FindLog(LogId id, Log **log,int (*compactor)(volatile char *));
+        Log *FindLog(LogId id,int (*compactor)(volatile char *));
 
 
         bool is_ready_;
@@ -67,7 +67,7 @@ namespace nvs {
     }
 
 
-    ErrorCode MemoryManager::Impl_::CreateLog(LogId id, size_t size)
+    ErrorCode MemoryManager::Impl_::CreateLog(LogId id, size_t size,int (*compactor)(volatile char *))
     {
         assert(is_ready_);
         assert(id >= 0);
@@ -83,7 +83,7 @@ namespace nvs {
         this->root_heap_.mtx->lock();
         // we create a new log add it to soft state
         std::string logPath = this->rootHeapPath + std::to_string(id);
-        Log *log = new Log(logPath, size ,id);
+        Log *log = new Log(logPath, size ,id,compactor);
         this->root_heap_.mtx->unlock();
 
         std::map<LogId, Log *>::iterator it;
@@ -108,7 +108,7 @@ namespace nvs {
 
     }
 
-    ErrorCode MemoryManager::Impl_::FindLog(LogId id, Log **log)
+    ErrorCode MemoryManager::Impl_::FindLog(LogId id, Log **log, int (*compactor)(volatile char *))
     {
         assert(is_ready_);
         assert(id>=0);
@@ -129,7 +129,7 @@ namespace nvs {
                 return ID_NOT_FOUND;
             }
 
-            *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id);
+            *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id,compactor);
 
             return NO_ERROR;
         }
@@ -139,13 +139,13 @@ namespace nvs {
 
 
 
-    Log *MemoryManager::Impl_::FindLog(LogId id)
+    Log *MemoryManager::Impl_::FindLog(LogId id, int (*compactor)(volatile char *))
     {
         assert(is_ready_);
         assert(id>0);
 
         Log *log;
-        ErrorCode ret = FindLog(id, &log);
+        ErrorCode ret = FindLog(id, &log,compactor);
         if(ret != NO_ERROR){
             return NULL;
         }
@@ -236,9 +236,9 @@ namespace nvs {
     }
 
 
-    ErrorCode MemoryManager::CreateLog(LogId id, size_t size)
+    ErrorCode MemoryManager::CreateLog(LogId id, size_t size,int (*compactor)(volatile char *))
     {
-        return pimpl_->CreateLog(id, size);
+        return pimpl_->CreateLog(id, size,compactor);
     }
 
     ErrorCode MemoryManager::DestroyLog(LogId id)
@@ -246,14 +246,14 @@ namespace nvs {
         return pimpl_->DestroyLog(id);
     }
 
-    ErrorCode MemoryManager::FindLog(LogId id, Log **log)
+    ErrorCode MemoryManager::FindLog(LogId id, Log **log, int (*compactor)(volatile char *))
     {
-        return pimpl_->FindLog(id, log);
+        return pimpl_->FindLog(id, log, compactor);
     }
 
-    Log *MemoryManager::FindLog(LogId id)
+    Log *MemoryManager::FindLog(LogId id, int (*compactor)(volatile char *))
     {
-        return pimpl_->FindLog(id);
+        return pimpl_->FindLog(id,compactor);
     }
 
 

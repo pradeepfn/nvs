@@ -54,21 +54,9 @@ namespace nvs {
 
     };
 
-/* free up log space from the persistent log */
-    typedef struct log_compactor_t_{
-
-        void *pmem;
-
-
-       void compact(){
-
-       }
-
-       void  operator ()(){
-           this->compact();
-           printf("log compactor ran\n");
-       }
-    }log_compactor_t;
+    static int log_compactor(volatile char *pmem){
+        printf("log compactor ran\n");
+    }
 
 
 }

@@ -93,7 +93,7 @@ namespace  nvs{
     {
     public:
         Log() = delete;
-        Log(std::string logpath,uint64_t log_size,LogId log_id);
+        Log(std::string logpath,uint64_t log_size,LogId log_id,int (*fnp)(volatile char *));
         ~Log();
 
         ErrorCode appendv(struct iovec *iovp, int iovcnt);
@@ -110,21 +110,21 @@ namespace  nvs{
 
         LogId log_id;
         std::string logPath;
+
         char *pmemaddr;
-        size_t mapped_len;
         struct lhdr_t *pmem_hdr;
 
+        size_t mapped_len;
         size_t log_size;
-        uint64_t start_offset; /* local volatile copy of pmem queue head */
+        uint64_t log_start;
         uint64_t log_end;
-        uint64_t write_offset;
         RootHeap *rootHeap;
 
         boost::interprocess::managed_shared_memory managed_shm;
         boost::interprocess::interprocess_mutex *mtx; // per log mutex
         threadpool_t *log_compactor;
 
-        void (*compactor)(); // function pointer to the compactor logic
+        int (*compactor)(volatile char *); // function pointer to the compactor logic
 
 
         void compact(uint64_t,uint64_t,uint64_t);
