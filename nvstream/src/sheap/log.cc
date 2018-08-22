@@ -114,13 +114,15 @@ namespace nvs{
         // acquire lock before calling this method
         uint64_t vhead = this->pmem_hdr->head;
         uint64_t vtail = this->pmem_hdr->tail;
-
+        LOG(debug) << "next_append, head : " << std::to_string(vhead)
+                                             << " tail : " << std::to_string(vtail)
+                                             << " append_size : " << apnd_size;
         if (vtail >= vhead) {
             if (apnd_size <= (this->log_end - vtail)) { //fast path
                 *apnd_offset = vtail;
                 return NO_ERROR;
             } else if (apnd_size <= vhead) { // wrap around
-                this->pmem_hdr->wrap_end = vtail-1;
+                this->pmem_hdr->wrap_end = vtail;
                 //TODO: persist
                 *apnd_offset = this->log_start; //start appending from the start of log
                 return NO_ERROR;
@@ -252,12 +254,14 @@ namespace nvs{
 
         while(tmp_offset != vtail){
 
+            if(tmp_offset == vwrap_end){
+                tmp_offset = this->log_start;
+            }
             if(!(*process_chunk)(&pmemaddr[tmp_offset], ((struct lehdr_t *) (pmemaddr+tmp_offset))->len, arg)){
                 break;
             }
             //next log header
-            tmp_offset = (tmp_offset + (sizeof(struct lehdr_t) + ((struct lehdr_t*)(pmemaddr+tmp_offset))->len))%vwrap_end;
-
+            tmp_offset = (tmp_offset + (sizeof(struct lehdr_t) + ((struct lehdr_t*)(pmemaddr+tmp_offset))->len));
         }
         this->mtx->unlock();
         return NO_ERROR;
