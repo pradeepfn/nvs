@@ -112,7 +112,7 @@ get_cpu_freq(void)
     fclose(fd);
     return freq;
 }
-
+/*
 static uint64_t
 read_tsc(void)
 {
@@ -120,6 +120,7 @@ read_tsc(void)
     __asm __volatile("rdtsc" : "=a" (a), "=d" (d));
     return ((uint64_t) a) | (((uint64_t) d) << 32);
 }
+*/
 
 typedef uint64_t atomic_t;
 
@@ -130,6 +131,7 @@ typedef uint64_t atomic_t;
 		".previous\n"			\
 	       	"661:\n\tlock; "
 
+/*
 static __inline__ void
 atomic_add(int i, uint64_t *v)
 {
@@ -138,6 +140,7 @@ atomic_add(int i, uint64_t *v)
     :"+m" (v)
     :"ir" (i));
 }
+*/
 
 
 
