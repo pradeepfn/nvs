@@ -9,7 +9,22 @@
 
 #include "nvs/log.h"
 
+
+#define SSE_FENCE 1
+#define CLFLUSH 1
+
 namespace nvs {
+
+
+    static inline void sse_memcpy(const void *dest, const void *src, size_t n){
+
+        return;
+    }
+
+
+    static inline void clflush(const void *addr, size_t len){
+        return;
+    }
 
     static void install_sighandler(void (*sighandler)(int, siginfo_t *, void *), struct sigaction *old_sa) {
         struct sigaction sa;

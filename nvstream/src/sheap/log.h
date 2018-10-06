@@ -6,7 +6,6 @@
 #define NVS_LOG_H
 
 #include <stddef.h>
-#include <libpmemlog.h>
 #include <nvs/global_ptr.h>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
@@ -76,11 +75,6 @@ struct walkentry {
 };
 
 
-static inline void asm_mfence(void)
-{
-    __asm__ __volatile__ ("mfence");
-}
-
 namespace  nvs{
 
     class RootHeap;
@@ -90,7 +84,7 @@ namespace  nvs{
     {
     public:
         Log() = delete;
-        Log(std::string logpath,uint64_t log_size,LogId log_id);
+        Log(std::string logpath,uint64_t log_size,LogId log_id,bool is_new);
         ~Log();
 
         ErrorCode append (char *data,size_t size);

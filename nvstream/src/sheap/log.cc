@@ -1,7 +1,7 @@
 #include <nvs/log.h>
 #include <fcntl.h>
 #include "log.h"
-#include "libpmem.h"
+#include "common/util.h"
 
 
 #define NVS_VSHM "nvs_boost_shm"
@@ -17,7 +17,7 @@ namespace nvs{
 
     void Log::persist(){
 
-        uint64_t commit_flag = COMMIT_FLAG;
+        /* uint64_t commit_flag = COMMIT_FLAG;
         pmem_drain();
         //commit flag write
         pmem_memcpy_nodrain(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
@@ -28,26 +28,36 @@ namespace nvs{
         pmem_drain();
         write_offset += WORD_LENGTH;
         struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-        //TODO: convert to 64 bit atomic write + clflush
         pmem_memcpy_nodrain((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
         pmem_drain();
-        LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
+        LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail); */
     }
 
 
-    Log::Log(std::string logPath, uint64_t log_size, LogId log_id) :
+    Log::Log(std::string logPath, uint64_t log_size, LogId log_id, bool is_new) :
 		logPath(logPath), log_id(log_id),log_size(log_size),managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
     {
+        int ret;
         std::string plog_mtx = PLOG_MTX + std::to_string(log_id);
         this->mtx = managed_shm.find_or_construct<boost::interprocess::interprocess_mutex>(
                 plog_mtx.c_str())();
-	int is_pmem;
-	LOG(debug) << "log constructor : logPath , log_size, log_id" + this->logPath + " , " +
+	    LOG(debug) << "log constructor : logPath , log_size, log_id" + this->logPath + " , " +
 					 std::to_string(log_size) + " , " + std::to_string(log_id);
-	if ((this->pmemaddr = (char *) pmem_map_file(this->logPath.c_str(),
-			log_size,
-			PMEM_FILE_CREATE | PMEM_FILE_EXCL, 0666, &(this->mapped_len),
-			&is_pmem)) != NULL) {
+
+        if(is_new){
+        int fd = open(this->logPath.c_str(), O_CREAT |O_RDWR, 0600);
+        if (fd <0) {
+            std::cout << "root file create failed" << strerror(errno);
+            exit(1);
+        }
+        ret = fallocate(fd,0,0,log_size);
+        if (ret < 0) {
+            std::cout << "fallocate failed";
+            exit(1);
+        }
+        this->pmemaddr = (char *) mmap(NULL,log_size,PROT_READ| PROT_WRITE, MAP_SHARED,fd,0);
+
+        this->mapped_len = log_size;
 		LOG(debug) << "new log created : logPath , log_size, mapped_len   " + this->logPath + " , " +
 				 std::to_string(log_size) + " , " + std::to_string(this->mapped_len);
 		//new map segment, populate the header
@@ -62,7 +72,7 @@ namespace nvs{
 		
 		hdr.tail = this->write_offset;
         hdr.head = sizeof(struct lhdr_t);
-		pmem_memcpy_persist(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
+		(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
 
 		uint64_t k = this->start_offset;
 		while (k < this->end_offset) {
@@ -70,9 +80,14 @@ namespace nvs{
 			k += 4096;
 		}
 
-	} else if ((this->pmemaddr == NULL)
-			&& ((this->pmemaddr = (char *) pmem_map_file(this->logPath.c_str(),
-					log_size, 0, 0666, &(this->mapped_len), &is_pmem)) != NULL)) {
+	} else{
+            int fd = open(this->logPath.c_str(), O_RDWR, 0600);
+            if (fd <0) {
+                std::cout << "root file open failed" << strerror(errno);
+                exit(1);
+            }
+            this->pmemaddr = (char *) mmap(NULL,log_size,PROT_READ| PROT_WRITE, MAP_SHARED,fd,0);
+        this->mapped_len = log_size;
 		LOG(debug) << "using existing log : logPath , log_size, mapped_len   " + this->logPath + " , " +
 				std::to_string(log_size) + " , " + std::to_string(this->mapped_len);
 		//verify the segment header
@@ -90,25 +105,17 @@ namespace nvs{
         LOG(debug)<< "head : " << std::to_string(this->start_offset) << "tail : "
                   << std::to_string(this->write_offset)<< "of persistent log";
 
-		// TODO: use huge pages
 
-	} else {
-		LOG(error) << "map segment : logPath, log_id " + logPath + " , " + std::to_string(log_id) ;
-		exit(1);
-	}
-
-	if (is_pmem != 1) {
-		LOG(error) << "not recognized as pmem region";
 	}
 
 }
 
     Log::~Log()
     {
-        pmem_unmap(this->pmemaddr, this->mapped_len);
-        LOG(debug) << "mapped file closed";
-
-        // populate the soft state of the log
+        int ret = munmap(this->pmemaddr, this->mapped_len);
+        if(!ret) {
+            LOG(debug) << "mapped file closed";
+        }
 
     }
 
@@ -132,7 +139,7 @@ namespace nvs{
             exit(1); // we dont want this error for now
             //goto end;
         }
-        pmem_memcpy_nodrain(&pmemaddr[write_offset],data ,size);
+        sse_memcpy(&pmemaddr[write_offset],data ,size);
         persist(); // commit flag
 
         end:
@@ -170,7 +177,7 @@ namespace nvs{
         }
 #ifndef _MEMCPY
         for(int i = 0 ; i < iovcnt; i++) {
-            pmem_memcpy_nodrain(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
+            sse_memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
         //TODO:
@@ -223,7 +230,7 @@ namespace nvs{
     #ifndef _MEMCPY
             for(int i=0; i < iovpcnt ; i++){
 				for(int j = 0 ; j < iovcnt[i]; j++) {
-					pmem_memcpy_nodrain(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
+					sse_memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
 					write_offset +=iovpp[i][j].iov_len;
 				}
             }
@@ -261,7 +268,8 @@ namespace nvs{
 
         while(tmp_offset < tail){
 
-            if(!(*process_chunk)(&pmemaddr[tmp_offset], ((struct lehdr_t *) (pmemaddr+tmp_offset))->len, arg)){
+            if(!(*process_chunk)(&pmemaddr[tmp_offset],
+                                 ((struct lehdr_t *) (pmemaddr+tmp_offset))->len, arg)){
                 break;
             }
 

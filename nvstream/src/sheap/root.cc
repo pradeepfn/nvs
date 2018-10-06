@@ -1,5 +1,3 @@
-#include <libpmemobj/base.h>
-#include <libpmemobj.h>
 #include <nvs/log.h>
 #include <boost/interprocess/sync/scoped_lock.hpp>
 
@@ -9,6 +7,7 @@
 
 #define NVS_VSHM "nvs_boost_shm"
 #define ROOT_MTX "root_mtx"
+#define ROOT_SIZE 4096
 
 namespace nvs{
 
@@ -17,7 +16,8 @@ namespace nvs{
             :root_file_path(pathname),managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
     {
 
-        this->mtx = managed_shm.find_or_construct<boost::interprocess::interprocess_mutex>(ROOT_MTX)();
+        this->mtx =
+                managed_shm.find_or_construct<boost::interprocess::interprocess_mutex>(ROOT_MTX)();
         this->mtx->lock();
         this->mtx->unlock();
         if(this->mtx == NULL){
@@ -32,13 +32,14 @@ namespace nvs{
     }
 
      ErrorCode RootHeap::Open() {
-           pop =  pmemobj_open(root_file_path.c_str(),
-                               POBJ_LAYOUT_NAME(nvstream_store));
-           if(pop == NULL){
-               LOG(error) << "root.cc : error while opening root heap";
-               exit(1);
-           }
-           return NO_ERROR;
+         int fd = open(root_file_path.c_str(), O_RDWR, 0600);
+         if (fd <0) {
+             std::cout << "root file open failed" << strerror(errno);
+             return nvs::ErrorCode::OPEN_FAILED;
+         }
+         this->addr = (char *) mmap(NULL,ROOT_SIZE,PROT_READ| PROT_WRITE,
+                     MAP_SHARED,fd,0);
+         return NO_ERROR;
      }
 
 
@@ -46,13 +47,11 @@ namespace nvs{
 
        this->mtx->lock();
        {
-           this->Open();
-           TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
+           struct nvs_root *root = (struct nvs_root *)addr;
 
-           // TODO: persist
-           D_RW(root_heap)->log_id[D_RO(root_heap)->length] = id;
-           D_RW(root_heap)->length = D_RO(root_heap)->length + 1;
-           this->Close();
+           root->log_id[root->length] = id;
+           root->length = root->length+1;
+
        }
         this->mtx->unlock();
         return NO_ERROR;
@@ -65,25 +64,20 @@ namespace nvs{
 
 
     ErrorCode RootHeap::Close() {
-        pmemobj_close(pop);
-        pop = NULL;
+
     }
 
     bool RootHeap::isLogExist(LogId id) {
 
         this->mtx->lock();
         {
-            this->Open();
-            TOID(struct nvs_root) root_heap = POBJ_ROOT(pop, struct nvs_root);
-
-            for (int i = 0; i < D_RO(root_heap)->length; i++) {
-                if (D_RO(root_heap)->log_id[i] == id) {
-                    this->Close();
+            struct nvs_root *root = (struct nvs_root *)addr;
+            for(int i=0; i < root->length; i++){
+                if(root->log_id[i] == id){
                     this->mtx->unlock();
                     return true;
                 }
             }
-            this->Close();
         }
         this->mtx->unlock();
         return false;

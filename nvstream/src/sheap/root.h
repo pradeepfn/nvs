@@ -40,7 +40,7 @@ namespace nvs {
         boost::interprocess::interprocess_mutex *mtx; // global lock to sync between processes
     private:
         std::string root_file_path;
-        PMEMobjpool *pop;
+        char *addr;
         boost::interprocess::managed_shared_memory managed_shm;
 
     };

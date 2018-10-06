@@ -83,7 +83,7 @@ namespace nvs {
         this->root_heap_.mtx->lock();
         // we create a new log add it to soft state
         std::string logPath = this->rootHeapPath + std::to_string(id);
-        Log *log = new Log(logPath, size ,id);
+        Log *log = new Log(logPath, size ,id,true);
         this->root_heap_.mtx->unlock();
 
         std::map<LogId, Log *>::iterator it;
@@ -129,7 +129,7 @@ namespace nvs {
                 return ID_NOT_FOUND;
             }
 
-            *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id);
+            *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id,false);
 
             return NO_ERROR;
         }
