@@ -35,6 +35,7 @@ add_definitions(-DDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
+add_definitions(-D_INTEL_x86)
 
 
 IF(FILE_STORE)
