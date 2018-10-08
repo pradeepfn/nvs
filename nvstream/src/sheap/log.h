@@ -87,12 +87,10 @@ namespace  nvs{
         Log(std::string logpath,uint64_t log_size,LogId log_id,bool is_new);
         ~Log();
 
-        ErrorCode append (char *data,size_t size);
         //TODO : get rid of pmem struct from the interface
         ErrorCode appendv(struct iovec *iovp, int iovcnt);
         ErrorCode appendmv(struct iovec **iovpp, int *iovcnt, int iovpcnt);
         ErrorCode walk(int (*process_chunk)(const void *buf, size_t len, void *arg),void *arg);
-        ErrorCode printLog(); // debug purposes
 
         void Free (GlobalPtr global_ptr);
 
@@ -110,7 +108,6 @@ namespace  nvs{
         uint64_t start_offset;
         uint64_t end_offset;
         uint64_t write_offset;
-        RootHeap *rootHeap;
 
         boost::interprocess::managed_shared_memory managed_shm;
         boost::interprocess::interprocess_mutex *mtx; // per log mutex

@@ -17,9 +17,15 @@ typedef uintptr_t memword_t;
 #define sfence() asm volatile("sync");
 #define mfence() asm volatile("sync");
 
-static forceinline void asm_clflush(mem_word_t *addr)
+
+/*
+ * usage learn: https://android.googlesource.com/platform/prebuilts/gcc/darwin-x86/host/i686-apple-darwin-4.2.1/+/android-4.3_r1.1/include/gcc/darwin/4.2/ppc_intrinsics.h
+ *
+ */
+
+static forceinline void asm_clflush(memword_t *addr)
 {
-    _dcbf((char *) addr,0);
+    __asm__ ("dcbf %0, %1" : /*no result*/ : "b%" (0), "r" (addr) : "memory")
 }
 
 static forceinline void
@@ -34,7 +40,7 @@ flush_clflush(const void *addr, size_t len)
      */
     for (uptr = (uintptr_t)addr & ~(FLUSH_ALIGN - 1);
          uptr < (uintptr_t)addr + len; uptr += FLUSH_ALIGN) {
-        _dcbf((char *) uptr,0);
+        __asm__ ("dcbf %0, %1" : /*no result*/ : "b%" (0), "r" (addr) : "memory")
     }
     //full memory fence as PPC has relaxed memory consistency
 }

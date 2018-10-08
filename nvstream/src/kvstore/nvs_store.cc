@@ -22,16 +22,11 @@ namespace nvs{
         logId = std::stoi(logIdStr);
 
         MemoryManager *mm = MemoryManager::GetInstance();
-        ret = mm->FindLog(logId, &(this->log));
+        ret = mm->FindLog(logId, &(this->log),LOG_SIZE);
         if(ret == ID_NOT_FOUND){
-            ret = mm->CreateLog(logId, LOG_SIZE);
+            ret = mm->CreateLog(logId, LOG_SIZE,&(this->log));
             if(ret != NO_ERROR){
                 LOG(fatal) << "NVSStore: error creating log";
-                exit(1);
-            }
-            ret = mm->FindLog(logId, &(this->log)); //TODO: this code block is useless.. remove it
-            if(ret != NO_ERROR){
-                LOG(fatal) << "NVSStore: error finding log";
                 exit(1);
             }
         }

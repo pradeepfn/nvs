@@ -6,9 +6,10 @@
 
 #include <sys/mman.h>
 #include <fcntl.h>
+#include <string>
 
-#include "nvs/log.h"
-#include "nvs/errorCode.h"
+#include "sheap/layout.h"
+#include "common/util.h"
 
 #define ROOT_SIZE 4096
 
@@ -18,26 +19,27 @@ int main(int argc, char *argv[]) {
     int fd,ret;
     char *addr;
     std::string root_file_path = "/dev/shm/unity_NVS_ROOT";
-    nvs::init_log(nvs::SeverityLevel::all, "");
 
     fd = open(root_file_path.c_str(), O_CREAT|O_RDWR, 0600);
     if (fd <0) {
         std::cout << "root file open failed" << strerror(errno);
-        return nvs::ErrorCode::OPEN_FAILED;
+        exit(1);
     }
     ret = fallocate(fd,0,0,ROOT_SIZE);
     if (ret < 0) {
         std::cout << "fallocate failed";
-        return nvs::ErrorCode::OPEN_FAILED;
+        exit(1);
     }
 
-    /*
-    addr = mmap(NULL,ROOT_SIZE,PROT_READ| PROT_WRITE,
-                MAP_SHARED,fd,0);
-    */
 
+    addr = (char *) mmap(NULL,ROOT_SIZE,PROT_READ| PROT_WRITE,
+                MAP_SHARED,fd,0);
+
+    struct nvs_root *root = (struct nvs_root *)addr;
+    root->length = 0;
+    _clflush((uintptr_t *)&(root->length));
     close(fd);
     std::cout << "successfully created the root heap";
 
-    return nvs::ErrorCode::NO_ERROR;
+    return 0;
 }

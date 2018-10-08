@@ -57,7 +57,7 @@ typedef uintptr_t memword_t;
 #define sfence() __asm__ __volatile__ ("sfence")
 #define mfence() __asm__ __volatile__ ("mfence")
 
-static forceinline void asm_clflush(mem_word_t *addr)
+static forceinline void _clflush(memword_t *addr)
 {
 	__asm__ __volatile__ ("clflush %0" : : "m"(*addr));
 }

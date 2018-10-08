@@ -10,32 +10,9 @@
 namespace nvs{
 
 
-    char* Log::to_addr(uint64_t offset) {
-        return pmemaddr + offset;
-    }
-
-
-    void Log::persist(){
-
-        /* uint64_t commit_flag = COMMIT_FLAG;
-        pmem_drain();
-        //commit flag write
-        pmem_memcpy_nodrain(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
-
-        //We have to fix this properly. Remove commit flag and persist head and tail values
-        pmem_memcpy_nodrain(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
-
-        pmem_drain();
-        write_offset += WORD_LENGTH;
-        struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
-        pmem_memcpy_nodrain((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
-        pmem_drain();
-        LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail); */
-    }
-
-
     Log::Log(std::string logPath, uint64_t log_size, LogId log_id, bool is_new) :
-		logPath(logPath), log_id(log_id),log_size(log_size),managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
+		logPath(logPath), log_id(log_id),log_size(log_size),
+        managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
     {
         int ret;
         std::string plog_mtx = PLOG_MTX + std::to_string(log_id);
@@ -72,14 +49,21 @@ namespace nvs{
 		
 		hdr.tail = this->write_offset;
         hdr.head = sizeof(struct lhdr_t);
-		(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
+		nvs_memcpy(this->pmemaddr, &hdr, sizeof(struct lhdr_t));
+#if defined(_INTEL_x86)
+         sfence();
+#elif defined(_POWER_PC)
+         flush_clflush(this->pmemaddr, sizeof(struct lhdr_t));
+#endif
 
 		uint64_t k = this->start_offset;
 		while (k < this->end_offset) {
 			this->pmemaddr[k] = 0;
 			k += 4096;
 		}
-
+            close(fd);
+            LOG(debug)<< "head : " << std::to_string(this->start_offset) << "tail : "
+                      << std::to_string(this->write_offset)<< "of persistent log";
 	} else{
             int fd = open(this->logPath.c_str(), O_RDWR, 0600);
             if (fd <0) {
@@ -99,12 +83,12 @@ namespace nvs{
 
 		this->end_offset = this->mapped_len - 1;
 		assert(hdr->len == this->mapped_len);
-
+        //TODO: read the second time mapped length by reading the header. use mremap
         this->start_offset = hdr->head;
 		this->write_offset = hdr->tail;
+        close(fd);
         LOG(debug)<< "head : " << std::to_string(this->start_offset) << "tail : "
                   << std::to_string(this->write_offset)<< "of persistent log";
-
 
 	}
 
@@ -112,6 +96,7 @@ namespace nvs{
 
     Log::~Log()
     {
+        LOG(debug) << "unmapping log file";
         int ret = munmap(this->pmemaddr, this->mapped_len);
         if(!ret) {
             LOG(debug) << "mapped file closed";
@@ -120,41 +105,15 @@ namespace nvs{
     }
 
 
-
-    ErrorCode Log::append(char *data, size_t size) {
-
-        ErrorCode errorCode = NO_ERROR;
-        LOG(trace) << "data " + std::to_string((long)data) +
-                    "size " + std::to_string(size);
-        //get the lock
-        if(write_offset >= end_offset){
-            LOG(fatal) << "no space in log";
-            errorCode =  NOT_ENOUGH_SPACE;
-            exit(1); // we dont want this error for now
-            //goto end;
-        }
-        if(size > (end_offset-write_offset)){
-            LOG(fatal) << "not enough space on log";
-            errorCode = NOT_ENOUGH_SPACE;
-            exit(1); // we dont want this error for now
-            //goto end;
-        }
-        sse_memcpy(&pmemaddr[write_offset],data ,size);
-        persist(); // commit flag
-
-        end:
-            //unlock
-            return errorCode;
-
-    }
-
     ErrorCode Log::appendv(struct iovec *iovp, int iovcnt) {
         ErrorCode errorCode = NO_ERROR;
-
+        uint64_t commit_flag = COMMIT_FLAG;
         uint64_t tot_cnt = 0;
 
+        LOG(debug)<< "head : " << std::to_string(this->start_offset) << "tail : "
+                  << std::to_string(this->write_offset);
         //lock this log file
-        if(write_offset >= end_offset){
+        if(this->write_offset >= this->end_offset){
             LOG(fatal) << "no space in log" << "write_offset : " << write_offset <<
                         "end_offset :" << end_offset;
             errorCode =  NOT_ENOUGH_SPACE;
@@ -175,19 +134,30 @@ namespace nvs{
             exit(1); // we dont want this error for now
             //goto end;
         }
-#ifndef _MEMCPY
+#if defined(_INTEL_x86)
         for(int i = 0 ; i < iovcnt; i++) {
-            sse_memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
+            nvs_memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
-        //TODO:
-        persist();
-#else
+        nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
+        sfence();
+        write_offset += WORD_LENGTH;
+        struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
+        nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
+        sfence();
+        LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
+
+#elif defined(_POWER_PC)
         for(int i = 0 ; i < iovcnt; i++) {
-            std::memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
+            nvs_memcpy(&pmemaddr[write_offset], iovp[i].iov_base, iovp[i].iov_len);
             write_offset +=iovp[i].iov_len;
         }
-        asm_mfence();
+        nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
+        flush_clflush();
+        write_offset += WORD_LENGTH;
+        nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
+        flush_clflush();
+        LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
 #endif
         end:
             //unlock
@@ -198,7 +168,7 @@ namespace nvs{
     /*appending multiple variables at once. Each varibale may well be represented by a iovector */
     ErrorCode Log::appendmv(struct iovec **iovpp, int *iovcnt, int iovpcnt) {
             ErrorCode errorCode = NO_ERROR;
-
+        uint64_t commit_flag = COMMIT_FLAG;
             uint64_t tot_cnt = 0;
 
             //TODO lock this log file
@@ -227,22 +197,33 @@ namespace nvs{
                 //goto end;
             }
 
-    #ifndef _MEMCPY
+    #if defined(_INTEL_x86)
             for(int i=0; i < iovpcnt ; i++){
 				for(int j = 0 ; j < iovcnt[i]; j++) {
-					sse_memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
+					nvs_memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
 					write_offset +=iovpp[i][j].iov_len;
 				}
             }
-            persist();
-    #else
+            nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
+            sfence();
+            write_offset += WORD_LENGTH;
+            struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
+            nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
+            sfence();
+            LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
+    #elif defined(_POWER_PC)
             for(int i=0; i < iovpcnt ; i++){
 				for(int j = 0 ; j < iovcnt[i]; j++) {
-					std::memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
+					nvs_memcpy(&pmemaddr[write_offset], iovpp[i][j].iov_base, iovpp[i][j].iov_len);
 					write_offset +=iovpp[i][j].iov_len;
 				}
             }
-            asm_mfence();
+            nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
+            flush_clflush();
+            write_offset += WORD_LENGTH;
+            nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
+            flush_clflush();
+            LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
     #endif
             end:
                 //unlock

@@ -38,10 +38,10 @@ namespace nvs {
         void *GlobalToLocal(GlobalPtr ptr);
         GlobalPtr LocalToGlobal(void *addr);
 
-        ErrorCode CreateLog(LogId id, size_t shelf_size);
+        ErrorCode CreateLog(LogId id, size_t shelf_size, Log **log);
         ErrorCode DestroyLog(LogId id);
-        ErrorCode FindLog(LogId id, Log **log);
-        Log *FindLog(LogId id);
+        ErrorCode FindLog(LogId id, Log **log, size_t);
+        //Log *FindLog(LogId id);
 
 
         bool is_ready_;
@@ -67,7 +67,7 @@ namespace nvs {
     }
 
 
-    ErrorCode MemoryManager::Impl_::CreateLog(LogId id, size_t size)
+    ErrorCode MemoryManager::Impl_::CreateLog(LogId id, size_t size, Log **log)
     {
         assert(is_ready_);
         assert(id >= 0);
@@ -83,17 +83,16 @@ namespace nvs {
         this->root_heap_.mtx->lock();
         // we create a new log add it to soft state
         std::string logPath = this->rootHeapPath + std::to_string(id);
-        Log *log = new Log(logPath, size ,id,true);
+        *log = new Log(logPath, size ,id,true);
         this->root_heap_.mtx->unlock();
 
         std::map<LogId, Log *>::iterator it;
         if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
-            this->idToLogMap[id] = log;
+            this->idToLogMap[id] = *log;
         }else{
             LOG(error) << "Log corresponding to PoolID already exists";
         }
 
-        //store the log details on heap-root. TODO: pmem transaction
         ret = root_heap_.addLog(id);
 
         if(ret != NO_ERROR){
@@ -108,7 +107,7 @@ namespace nvs {
 
     }
 
-    ErrorCode MemoryManager::Impl_::FindLog(LogId id, Log **log)
+    ErrorCode MemoryManager::Impl_::FindLog(LogId id, Log **log,size_t log_size)
     {
         assert(is_ready_);
         assert(id>=0);
@@ -129,74 +128,12 @@ namespace nvs {
                 return ID_NOT_FOUND;
             }
 
-            *log = new Log(this->rootHeapPath + std::to_string(id),0 ,id,false);
+            *log = new Log(this->rootHeapPath + std::to_string(id),log_size ,id,false);
 
             return NO_ERROR;
         }
 
     }
-
-
-
-
-    Log *MemoryManager::Impl_::FindLog(LogId id)
-    {
-        assert(is_ready_);
-        assert(id>0);
-
-        Log *log;
-        ErrorCode ret = FindLog(id, &log);
-        if(ret != NO_ERROR){
-            return NULL;
-        }
-        return log;
-    }
-
-    void* MemoryManager::Impl_::GlobalToLocal(GlobalPtr ptr) {
-        assert(is_ready_ == true);
-
-        if (ptr.IsValid() == false)
-        {
-            LOG(error) << "MemoryManager: Invalid Global Pointer: " << ptr;
-            return NULL;
-        }
-
-        ErrorCode ret = NO_ERROR;
-        LogId pool_id = ptr.GetPoolId();
-        Offset offset = ptr.GetOffset();
-        //void *addr = FindLogBase(pool_id);
-        void *addr;
-        if (addr != NULL)
-        {
-            addr = (void*)((char*)addr+offset);
-            LOG(trace) << "GetLocalPtr: global ptr" << ptr
-                       << " offset " << offset
-                       << " returned ptr " << (uintptr_t)addr;
-        }
-        return addr;
-    }
-
-    GlobalPtr MemoryManager::Impl_::LocalToGlobal(void *addr)
-    {
-       /* void *base = NULL;
-        PoolId pool_id = FindLogPool(addr, base); // pass by reference
-        if (pool_id.IsValid())
-        {
-            LOG(error) << "GetGlobalPtr failed";
-            return GlobalPtr(); // return an invalid global pointer
-        }
-        else
-        {
-            Offset offset = (uintptr_t)addr - (uintptr_t)base;
-            GlobalPtr global_ptr = GlobalPtr(pool_id, offset);
-            LOG(trace) << "GetGlobalPtr: local ptr " << (uintptr_t)addr
-                       << " offset " << offset
-                       << " returned ptr " << global_ptr;
-            return global_ptr;
-        }*/
-    }
-
-
 
 /*
  * Public APIs of MemoryManager
@@ -236,9 +173,9 @@ namespace nvs {
     }
 
 
-    ErrorCode MemoryManager::CreateLog(LogId id, size_t size)
+    ErrorCode MemoryManager::CreateLog(LogId id, size_t size, Log **log)
     {
-        return pimpl_->CreateLog(id, size);
+        return pimpl_->CreateLog(id, size, log);
     }
 
     ErrorCode MemoryManager::DestroyLog(LogId id)
@@ -246,25 +183,9 @@ namespace nvs {
         return pimpl_->DestroyLog(id);
     }
 
-    ErrorCode MemoryManager::FindLog(LogId id, Log **log)
+    ErrorCode MemoryManager::FindLog(LogId id, Log **log,size_t log_size)
     {
-        return pimpl_->FindLog(id, log);
-    }
-
-    Log *MemoryManager::FindLog(LogId id)
-    {
-        return pimpl_->FindLog(id);
-    }
-
-
-    void *MemoryManager::GlobalToLocal(GlobalPtr ptr)
-    {
-        return pimpl_->GlobalToLocal(ptr);
-    }
-
-    GlobalPtr MemoryManager::LocalToGlobal(void *addr)
-    {
-        return pimpl_->LocalToGlobal(addr);
+        return pimpl_->FindLog(id, log, log_size);
     }
 
 

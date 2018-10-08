@@ -23,7 +23,7 @@ namespace nvs{
         if(this->mtx == NULL){
             LOG(error) << "mutex not found on boost shared memory";
         }
-
+        this->Open();
     }
 
     RootHeap::~RootHeap()
@@ -34,7 +34,8 @@ namespace nvs{
      ErrorCode RootHeap::Open() {
          int fd = open(root_file_path.c_str(), O_RDWR, 0600);
          if (fd <0) {
-             std::cout << "root file open failed" << strerror(errno);
+             std::cout << "root file "<< root_file_path.c_str()
+                       << "open failed " << strerror(errno);
              return nvs::ErrorCode::OPEN_FAILED;
          }
          this->addr = (char *) mmap(NULL,ROOT_SIZE,PROT_READ| PROT_WRITE,
@@ -49,6 +50,7 @@ namespace nvs{
        {
            struct nvs_root *root = (struct nvs_root *)addr;
 
+           //TODO: transactional update
            root->log_id[root->length] = id;
            root->length = root->length+1;
 
@@ -64,7 +66,7 @@ namespace nvs{
 
 
     ErrorCode RootHeap::Close() {
-
+        int ret = munmap(this->addr, ROOT_SIZE);
     }
 
     bool RootHeap::isLogExist(LogId id) {
