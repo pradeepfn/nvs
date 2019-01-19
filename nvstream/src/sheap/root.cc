@@ -71,7 +71,7 @@ namespace nvs{
 
     bool RootHeap::isLogExist(LogId id) {
 
-        this->mtx->lock();
+        //this->mtx->lock();
         {
             struct nvs_root *root = (struct nvs_root *)addr;
             for(int i=0; i < root->length; i++){
@@ -81,7 +81,7 @@ namespace nvs{
                 }
             }
         }
-        this->mtx->unlock();
+        //this->mtx->unlock();
         return false;
     }
  }

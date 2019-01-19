@@ -107,29 +107,49 @@ namespace nvs {
 
     }
 
-    ErrorCode MemoryManager::Impl_::FindLog(LogId id, Log **log,size_t log_size)
+    ErrorCode MemoryManager::Impl_::FindOrCreateLog(LogId id, Log **log,size_t log_size)
     {
         assert(is_ready_);
         assert(id>=0);
 
         ErrorCode  ret = NO_ERROR;
-
+        root_heap_.mtx->lock();
         // first look through soft state map
         std::map<LogId , Log *> :: iterator it;
         if((it = this->idToLogMap.find(id)) != this->idToLogMap.end()){
             *log = it->second;
             assert(*log != NULL);
+            root_heap_.mtx->unlock();
             return NO_ERROR;
         }else {
 
             if (!root_heap_.isLogExist(id)) {
-                LOG(error) << "MemoryManager : the log id (" << (uint64_t) id <<
-                           ") not found";
-                return ID_NOT_FOUND;
+                LOG(error) << "MemoryManager : the log id (" << (uint64_t) id <<") not found. Creating new";
+
+                // we create a new log add it to soft state
+                std::string logPath = this->rootHeapPath + std::to_string(id);
+                *log = new Log(logPath, log_size ,id,true);
+
+                std::map<LogId, Log *>::iterator it;
+                if((it = idToLogMap.find(id)) == this->idToLogMap.end()){
+                    this->idToLogMap[id] = *log;
+                }else{
+                    LOG(error) << "Log corresponding to PoolID already exists";
+                }
+
+                ret = root_heap_.addLog(id);
+
+                if(ret != NO_ERROR){
+                    LOG(fatal) << "MemoryManager : error" << ret;
+                }
+
+                root_heap_.mtx->unlock();
+                return ret;
             }
 
             *log = new Log(this->rootHeapPath + std::to_string(id),log_size ,id,false);
 
+            root_heap_.mtx->unlock();
             return NO_ERROR;
         }
 
@@ -183,9 +203,9 @@ namespace nvs {
         return pimpl_->DestroyLog(id);
     }
 
-    ErrorCode MemoryManager::FindLog(LogId id, Log **log,size_t log_size)
+    ErrorCode MemoryManager::FindOrCreateLog(LogId id, Log **log,size_t log_size)
     {
-        return pimpl_->FindLog(id, log, log_size);
+        return pimpl_->FindOrCreateLog(id, log, log_size);
     }
 
 

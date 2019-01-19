@@ -47,7 +47,7 @@ namespace nvs{
 
         ErrorCode DestroyLog(LogId id);
 
-        ErrorCode FindLog(LogId id, Log **log,size_t log_size);
+        ErrorCode FindOrCreateLog(LogId id, Log **log,size_t log_size);
 
        // Log *FindLog(LogId id);
 
