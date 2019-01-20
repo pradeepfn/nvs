@@ -38,7 +38,7 @@ namespace nvs{
     ErrorCode NVSStore::create_obj(std::string key, uint64_t size, void **obj_addr)
     {
 
-        LOG(debug) << "Object created : " + key;
+        LOG(debug) << "Object create  key : " + key + " size : " + std::to_string(size);
         void *tmp_ptr = malloc(size);
         Object *obj = new Object(key,size,0,tmp_ptr);
         std::map<std::string, Object *>::iterator it =   objectMap.find(key);
@@ -88,7 +88,7 @@ namespace nvs{
      */
     uint64_t NVSStore::put(std::string key, uint64_t version)
     {
-			LOG(debug) << "Object put : " + key ;
+	    LOG(debug) << "Object put key :  " + key + " version : " + std::to_string(version);
             struct iovec *iovp, *next_iovp;
             uint64_t total_size=0;
             struct lehdr_t l_entry;// stack variable
@@ -307,7 +307,7 @@ namespace nvs{
      */
     ErrorCode NVSStore::get(std::string key, uint64_t version, void *obj_addr)
     {
-		LOG(debug) << "fetching object with, name : " << key << "version : "<<std::to_string(version);
+  	LOG(debug) << "Object get, key :  " << key << "version : "<<std::to_string(version);
         struct walkentry wentry;
         wentry.version = version;
         wentry.start_offset = 0;
@@ -340,6 +340,7 @@ namespace nvs{
 
     ErrorCode NVSStore::get_with_malloc(std::string key, uint64_t version, void **addr) {
 
+  	LOG(debug) << "Object get, key :  " << key << "version : "<<std::to_string(version);
         struct walkentry wentry;
         wentry.version = version;
         wentry.start_offset = 0;

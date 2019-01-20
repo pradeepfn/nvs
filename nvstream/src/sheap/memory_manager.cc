@@ -40,7 +40,7 @@ namespace nvs {
 
         ErrorCode CreateLog(LogId id, size_t shelf_size, Log **log);
         ErrorCode DestroyLog(LogId id);
-        ErrorCode FindLog(LogId id, Log **log, size_t);
+        ErrorCode FindOrCreateLog(LogId id, Log **log, size_t);
         //Log *FindLog(LogId id);
 
 

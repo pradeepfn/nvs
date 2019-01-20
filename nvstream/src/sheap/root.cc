@@ -46,7 +46,7 @@ namespace nvs{
 
     ErrorCode RootHeap::addLog(LogId id) {
 
-       this->mtx->lock();
+       //this->mtx->lock();
        {
            struct nvs_root *root = (struct nvs_root *)addr;
 
@@ -55,7 +55,7 @@ namespace nvs{
            root->length = root->length+1;
 
        }
-        this->mtx->unlock();
+        //this->mtx->unlock();
         return NO_ERROR;
 
     }

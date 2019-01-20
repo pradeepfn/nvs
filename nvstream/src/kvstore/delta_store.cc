@@ -60,14 +60,10 @@ void DeltaStore::delta_handler(int sig, siginfo_t *si, void *unused) {
         logId = std::stoi(logIdStr);
 
         MemoryManager *mm = MemoryManager::GetInstance();
-        ret = mm->FindLog(logId, &(this->log),LOG_SIZE);
-        if(ret == ID_NOT_FOUND){
-            ret = mm->CreateLog(logId, LOG_SIZE, &(this->log));
-            if(ret != NO_ERROR){
-                LOG(fatal) << "DeltaStore: error creating log";
-                exit(1);
-            }
-
+        ret = mm->FindOrCreateLog(logId, &(this->log),LOG_SIZE);
+        if(ret != NO_ERROR){
+           LOG(fatal) << "DeltaStore: error creating log";
+           exit(1);
         }
         /* install the signal handler for page-modification detection */
         install_sighandler(&delta_handler_wrapper,&old_sa);
