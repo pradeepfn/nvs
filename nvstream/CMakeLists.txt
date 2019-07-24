@@ -89,6 +89,46 @@ include_directories(${PROJECT_SOURCE_DIR}/include) #public headers
 include_directories(${PROJECT_SOURCE_DIR}/src) #private headers
 include_directories(${PROJECT_SOURCE_DIR}/test) #test headers
 
+# Some boilerplate to setup nice output directories
+set(CMAKE_INSTALL_BINDIR bin CACHE STRING "Installation runtime subdirectory")
+set(CMAKE_INSTALL_LIBDIR lib CACHE STRING "Installation library subdirectory")
+set(CMAKE_INSTALL_INCLUDEDIR include
+  CACHE STRING "Installation include subdirectory")
+if(WIN32 AND NOT CYGWIN)
+  set(CMAKE_INSTALL_CMAKEDIR CMake
+    CACHE STRING "Installation CMake subdirectory")
+else()
+  set(CMAKE_INSTALL_CMAKEDIR ${CMAKE_INSTALL_LIBDIR}/cmake/ffs
+    CACHE STRING "Installation CMake subdirectory")
+endif()
+mark_as_advanced(CMAKE_INSTALL_BINDIR)
+mark_as_advanced(CMAKE_INSTALL_LIBDIR)
+mark_as_advanced(CMAKE_INSTALL_INCLUDEDIR)
+mark_as_advanced(CMAKE_INSTALL_CMAKEDIR)
+
+list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake)
+if(NOT CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
+  set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY
+  ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+endif()
+if(NOT CMAKE_LIBRARY_OUTPUT_DIRECTORY)
+  set(CMAKE_LIBRARY_OUTPUT_DIRECTORY
+  ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR})
+endif()
+if(NOT CMAKE_RUNTIME_OUTPUT_DIRECTORY)
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY
+  ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
+endif()
+
+list(INSERT CMAKE_PREFIX_PATH 0 ${CMAKE_INSTALL_PREFIX})
+
+# Default to a RelWithDebInfo build if not specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY VALUE RelWithDebugInfo)
+endif()
+
+include(CMakeDependentOption)
+
 
 #
 # third-party libraries
