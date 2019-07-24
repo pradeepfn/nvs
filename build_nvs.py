@@ -41,11 +41,11 @@ except:
 
 def dbg(s):
     if DBG == 1:
-        print s
+        print (s)
 
 
 def msg(s):
-    print '\n' + '>>>' + s + '\n'
+    print ('\n' + '>>>' + s + '\n')
 
 
 def cd(dirt):
@@ -61,7 +61,7 @@ def cd(dirt):
         try:
             os.chdir(path)
         except:
-            print 'invalid directory ', path
+            print ('invalid directory ', path)
             sys.exit(0)
 
 
@@ -106,7 +106,7 @@ def sh(cmd):
     try:
         os.system(cmd)
     except:
-        print 'invalid cmd', cmd
+        print ('invalid cmd', cmd)
         sys.exit(0)
 
 
