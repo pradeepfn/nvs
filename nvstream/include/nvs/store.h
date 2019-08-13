@@ -14,7 +14,7 @@ namespace nvs {
     class Store {
     public:
 
-        ~Store(){};
+        virtual ~Store(){};
 
         virtual ErrorCode create_obj(std::string key, uint64_t size, void **addr) = 0;
 
