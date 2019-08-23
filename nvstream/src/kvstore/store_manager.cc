@@ -27,14 +27,28 @@ namespace nvs{
 
     std::atomic<Store *> StoreManager::instance_;
     std::mutex StoreManager::mutex_;
+    std::map<std::string,Store*> m_Map;
 
     Store * StoreManager::GetInstance(std::string storePath) {
         Store *tmp = instance_.load(std::memory_order_relaxed);
         std::atomic_thread_fence(std::memory_order_acquire);
-        if (tmp == nullptr) {
-            std::lock_guard<std::mutex> lock(mutex_);
-            tmp = instance_.load(std::memory_order_relaxed);
-            if (tmp == nullptr) {
+	/* If there's an existing store and the names match, return it */
+	if ((tmp != nullptr) && (tmp->get_store_id() == storePath)) return tmp;
+
+	/* didn't find first store, or first store name didn't match, try again with a lock */
+	std::lock_guard<std::mutex> lock(mutex_);
+	tmp = instance_.load(std::memory_order_relaxed);
+	if (tmp)
+	    std::cout << "Found store with name " << tmp->get_store_id() << std::endl;
+	if ((tmp != nullptr) && (tmp->get_store_id() == storePath)) return tmp;
+
+	/* no first, or first name didn't match, check map */
+	auto it = m_Map.find(storePath);
+	if (it  != m_Map.end()) {
+	    tmp = it->second;
+	    return tmp;
+	}
+
 #if defined(_FILE_STORE)
                 LOG(debug) << "File store enabled";
 #if defined (_TIMING)
@@ -75,10 +89,9 @@ namespace nvs{
 #endif
 
 #endif
+                m_Map[tmp->get_store_id()] = tmp;
                 std::atomic_thread_fence(std::memory_order_release);
                 instance_.store(tmp, std::memory_order_relaxed);
-            }
-        }
         return tmp;
 
     }

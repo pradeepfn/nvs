@@ -33,8 +33,7 @@ namespace nvs{
         ErrorCode get_with_malloc(std::string key, uint64_t version, void **addr);
 
         std::string get_store_id(){
-        	LOG(debug) << "not supported";
-        	return nullptr;
+            return store->get_store_id();
         }
 
         void stats();
@@ -244,7 +243,7 @@ namespace nvs{
     }
 
     TimingStore::~TimingStore() {
-
+        delete this->store;
     }
 
 }

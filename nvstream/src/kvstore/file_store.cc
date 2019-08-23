@@ -7,7 +7,21 @@ namespace nvs{
 
 
     FileStore::FileStore(std::string storeId):storeId(storeId){
-        boost::filesystem::path fsPath = boost::filesystem::path(std::string(ROOT_FILE_PATH) + "/" + this->storeId);
+	if (storeId == "") {
+	    if(!boost::filesystem::exists(ROOT_FILE_PATH)){
+		bool ret = boost::filesystem::create_directories(ROOT_FILE_PATH);
+	    }
+	    char *templ = (char*)malloc(strlen(ROOT_FILE_PATH) + strlen("nvsXXXXXXXXX") + 2);
+	    strcpy(templ, ROOT_FILE_PATH);
+	    strcat(templ, "/");
+	    strcat(templ, "nvsXXXXXXXXX");
+	    char *full_store_name = mkdtemp(templ);
+	    char *tmp_store_name = rindex(full_store_name, '/') + 1;
+	    fsPath = boost::filesystem::path(std::string(full_store_name));
+	    this->storeId = tmp_store_name;
+	} else {
+	    fsPath = boost::filesystem::path(std::string(ROOT_FILE_PATH) + "/" + this->storeId);
+	}
         if(!boost::filesystem::exists(fsPath)){
             bool ret = boost::filesystem::create_directories(fsPath);
             if (ret == false)
@@ -18,6 +32,11 @@ namespace nvs{
             }
         }
     }
+
+    FileStore::~FileStore(){
+	boost::filesystem::remove_all(fsPath);
+    }
+
 
     uint64_t FileStore::put(std::string key, uint64_t version) {
         boost::trim_right(key);
@@ -83,21 +102,21 @@ namespace nvs{
             // file name
             boost::trim_right(key);
             std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
-                                     key + std::to_string(version);
+                                     key  + "_" + std::to_string(version);
 
             //find the size of the file
             boost::filesystem::path path(file_name);
             boost::system::error_code ec;
             boost::uintmax_t  filesize = boost::filesystem::file_size(path, ec);
         if(ec){
-            LOG(fatal) << "FileStore: file size error";
+            LOG(fatal) << "FileStore: file size error \"" << file_name << "\" Error " << ec.category().name() << ':' << ec.value();
             return ELEM_NOT_FOUND;
 
         }
 
             FILE *file = fopen(file_name.c_str(), "r");
             if (file == NULL) {
-                LOG(fatal) << "FileStore: file open failed";
+                LOG(fatal) << "FileStore: file open failed \"" << file_name << "\"";
                 return ELEM_NOT_FOUND;
             }
 
@@ -114,18 +133,18 @@ namespace nvs{
         // file name
         boost::trim_right(key);
         std::string file_name = std::string(ROOT_FILE_PATH) + "/" + this->storeId + "/" +
-                                key + std::to_string(version);
+                                key  + "_" + std::to_string(version);
         //find the size of the file
         boost::filesystem::path path(file_name);
         boost::system::error_code ec;
         boost::uintmax_t  filesize = boost::filesystem::file_size(path, ec);
         if(ec){
-            LOG(fatal) << "FileStore: file size error";
+            LOG(fatal) << "FileStore: file size error \"" << file_name << "\" Error " << ec.category().name() << ':' << ec.value();
             return ELEM_NOT_FOUND;
         }
         FILE *file = fopen(file_name.c_str(), "r");
         if (file == NULL) {
-            LOG(fatal) << "FileStore: file open failed";
+	    LOG(fatal) << "FileStore: file open failed \"" << file_name << "\"";
             return ELEM_NOT_FOUND;
         }
 

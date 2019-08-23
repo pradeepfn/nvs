@@ -54,7 +54,7 @@ namespace nvs{
         std::map<std::string, Object *> objectMap;
         std::map<uint64_t,std::string> addrMap; // address to object mapping. we use this for free
         std::string storeId;
-
+        boost::filesystem::path fsPath;
     };
 }
 
