@@ -19,4 +19,4 @@ set(MY_HEADERS
 
 add_library(yuma STATIC ${YUMA_SRC} ${MY_HEADERS})
 add_library(nvsshared SHARED ${YUMA_SRC} ${MY_HEADERS})
-target_link_libraries(yuma boost_filesystem boost_thread boost_log boost_system pmemobj pmemlog)
+target_link_libraries(yuma boost_filesystem boost_thread boost_log boost_system)

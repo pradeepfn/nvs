@@ -13,7 +13,9 @@ namespace nvs{
 
 
     RootHeap::RootHeap(std::string pathname)
-            :root_file_path(pathname),managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
+      : addr(NULL),
+        root_file_path(pathname),
+        managed_shm(boost::interprocess::open_or_create, NVS_VSHM, 1024)
     {
 
         this->mtx =
@@ -38,8 +40,8 @@ namespace nvs{
                        << "open failed " << strerror(errno);
              return nvs::ErrorCode::OPEN_FAILED;
          }
-         this->addr = (char *) mmap(NULL,ROOT_SIZE,PROT_READ| PROT_WRITE,
-                     MAP_SHARED,fd,0);
+         addr = (char *) mmap(NULL, ROOT_SIZE, PROT_READ|PROT_WRITE,
+                              MAP_SHARED, fd, 0);
          return NO_ERROR;
      }
 
@@ -49,6 +51,10 @@ namespace nvs{
        //this->mtx->lock();
        {
            struct nvs_root *root = (struct nvs_root *)addr;
+           if (NULL == root) {
+               this->mtx->unlock();
+               return nvs::ErrorCode::HEAP_NOT_EXIST;
+           }
 
            //TODO: transactional update
            root->log_id[root->length] = id;
@@ -66,7 +72,12 @@ namespace nvs{
 
 
     ErrorCode RootHeap::Close() {
-        int ret = munmap(this->addr, ROOT_SIZE);
+        if (NULL != addr) {
+            int ret = munmap(addr, ROOT_SIZE);
+            if (0 == ret)
+                addr = NULL;
+        }
+        return NO_ERROR;
     }
 
     bool RootHeap::isLogExist(LogId id) {
@@ -74,10 +85,12 @@ namespace nvs{
         //this->mtx->lock();
         {
             struct nvs_root *root = (struct nvs_root *)addr;
-            for(int i=0; i < root->length; i++){
-                if(root->log_id[i] == id){
-                    this->mtx->unlock();
-                    return true;
+            if (NULL != root) {
+                for(int i=0; i < root->length; i++){
+                    if(root->log_id[i] == id){
+                        this->mtx->unlock();
+                        return true;
+                    }
                 }
             }
         }

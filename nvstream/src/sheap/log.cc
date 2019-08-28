@@ -109,6 +109,7 @@ namespace nvs{
         ErrorCode errorCode = NO_ERROR;
         uint64_t commit_flag = COMMIT_FLAG;
         uint64_t tot_cnt = 0;
+        struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
 
         LOG(debug)<< "head : " << std::to_string(this->start_offset) << "tail : "
                   << std::to_string(this->write_offset);
@@ -142,7 +143,6 @@ namespace nvs{
         nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
         sfence();
         write_offset += WORD_LENGTH;
-        struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
         nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
         sfence();
         LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
@@ -153,10 +153,10 @@ namespace nvs{
             write_offset +=iovp[i].iov_len;
         }
         nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
-        flush_clflush();
+        //flush_clflush();
         write_offset += WORD_LENGTH;
         nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
-        flush_clflush();
+        //flush_clflush();
         LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
 #endif
         end:
@@ -168,8 +168,9 @@ namespace nvs{
     /*appending multiple variables at once. Each varibale may well be represented by a iovector */
     ErrorCode Log::appendmv(struct iovec **iovpp, int *iovcnt, int iovpcnt) {
             ErrorCode errorCode = NO_ERROR;
-        uint64_t commit_flag = COMMIT_FLAG;
+            uint64_t commit_flag = COMMIT_FLAG;
             uint64_t tot_cnt = 0;
+            struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
 
             //TODO lock this log file
             if(write_offset >= end_offset){
@@ -207,7 +208,6 @@ namespace nvs{
             nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
             sfence();
             write_offset += WORD_LENGTH;
-            struct lhdr_t *hdr = (struct lhdr_t *) this->pmemaddr;
             nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
             sfence();
             LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
@@ -219,10 +219,10 @@ namespace nvs{
 				}
             }
             nvs_memcpy(&pmemaddr[write_offset],&commit_flag ,WORD_LENGTH);
-            flush_clflush();
+            //flush_clflush();
             write_offset += WORD_LENGTH;
             nvs_memcpy((void*)&hdr->tail,&write_offset ,sizeof(uint64_t));
-            flush_clflush();
+            //flush_clflush();
             LOG(debug) << "writeoffset/tail : " << std::to_string(hdr->tail);
     #endif
             end:
