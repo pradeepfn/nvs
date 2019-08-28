@@ -14,8 +14,8 @@ extern "C" {
 #define FLUSH_ALIGN ((uintptr_t)64)
 typedef uintptr_t memword_t;
 
-#define sfence() asm volatile("sync");
-#define mfence() asm volatile("sync");
+#define sfence() asm volatile("sync")
+#define mfence() asm volatile("sync")
 
 
 /*
@@ -23,9 +23,9 @@ typedef uintptr_t memword_t;
  *
  */
 
-static forceinline void asm_clflush(memword_t *addr)
+static forceinline void _clflush(memword_t *addr)
 {
-    __asm__ ("dcbf %0, %1" : /*no result*/ : "b%" (0), "r" (addr) : "memory")
+    __asm__ ("dcbf %0, %1" : /*no result*/ : "b%" (0), "r" (addr) : "memory");
 }
 
 static forceinline void
@@ -40,7 +40,7 @@ flush_clflush(const void *addr, size_t len)
      */
     for (uptr = (uintptr_t)addr & ~(FLUSH_ALIGN - 1);
          uptr < (uintptr_t)addr + len; uptr += FLUSH_ALIGN) {
-        __asm__ ("dcbf %0, %1" : /*no result*/ : "b%" (0), "r" (addr) : "memory")
+        __asm__ ("dcbf %0, %1" : /*no result*/ : "b%" (0), "r" (addr) : "memory");
     }
     //full memory fence as PPC has relaxed memory consistency
 }

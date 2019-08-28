@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
 project(nvstream)
 #
 # default system include and link directories
 #
-link_directories(/usr/lib)
-include_directories(/usr/include)
-link_directories(/usr/local/lib)
-include_directories(/usr/local/include)
+#link_directories(/usr/lib)
+#include_directories(/usr/include)
+#link_directories(/usr/local/lib)
+#include_directories(/usr/local/include)
 
 #version number
 set (NVS_VERSION_MAJOR 1)
@@ -35,7 +37,9 @@ add_definitions(-DDEBUG)
 add_definitions(-DDEDUP)
 add_definitions(-D_TIMING)
 add_definitions(-DSTATS)
-add_definitions(-D_INTEL_x86)
+#add_definitions(-D_INTEL_x86)
+add_definitions(-D_POWER_PC)
+#add_definitions(-D_GLIBCXX_USE_CXX11_ABI=0)
 
 
 IF(FILE_STORE)

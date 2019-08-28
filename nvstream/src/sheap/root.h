@@ -8,7 +8,6 @@
 
 #include <string>
 #include <nvs/log_id.h>
-#include <libpmemobj.h>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
 
@@ -39,8 +38,8 @@ namespace nvs {
 
         boost::interprocess::interprocess_mutex *mtx; // global lock to sync between processes
     private:
-        std::string root_file_path;
         char *addr;
+        std::string root_file_path;
         boost::interprocess::managed_shared_memory managed_shm;
 
     };

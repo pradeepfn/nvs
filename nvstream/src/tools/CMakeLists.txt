@@ -13,7 +13,6 @@ target_link_libraries(nvsformat
         boost_log
         boost_filesystem
         boost_system
-        pmemobj
-        pmemlog
         yuma
+	stdc++
         dl)
